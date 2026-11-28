@@ -6,7 +6,7 @@ import {
   defineIR,
   defineTransformation,
 } from '../../dist/framework/contracts/index.js';
-import { makeCorrespondence } from '../../dist/framework/ir/correspondence.js';
+import { checkCoverage, makeCorrespondence } from '../../dist/framework/ir/correspondence.js';
 import { semanticCorrespondence } from '../../dist/framework/passes/define-pass.js';
 
 function fixture(enumerate = true) {
@@ -115,4 +115,16 @@ test('coverage modes check each side and reject contradictory insertions and del
   await verify('both', [...partial, { from: ['b'], to: [] }, { from: [], to: ['c'] }]);
   await assert.rejects(verify('partial', [{ from: [], to: ['a'] }]), /surviving/);
   await assert.rejects(verify('partial', [{ from: ['a'], to: [] }]), /surviving/);
+});
+
+
+test('coverage checks each side and empty mappings', () => {
+  const c = { sourceEntities: ['s1', 's2'], targetEntities: ['t1'], entries: [{ from: ['s1'], to: ['t1'] }] };
+  assert.equal(checkCoverage(c, 'partial'), undefined);
+  assert.equal(checkCoverage(c, 'nonempty'), undefined);
+  assert.equal(checkCoverage(c, 'source'), 'source');
+  assert.equal(checkCoverage(c, 'target'), undefined);
+  assert.equal(checkCoverage(c, 'both'), 'source');
+  assert.equal(checkCoverage({ ...c, entries: [{ from: [], to: [] }] }, 'nonempty'), 'empty');
+  assert.equal(checkCoverage({ sourceEntities: [], targetEntities: [], entries: [] }, 'nonempty'), undefined);
 });
