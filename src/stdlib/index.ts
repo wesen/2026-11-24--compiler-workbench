@@ -21,12 +21,15 @@
  *             distance vectors over them (a read's index per position against the consumer's axis)
  *             directions — direction vectors, strip-mining, and the legality of a loop order with parallel loops
  *   num/      binary32 arithmetic on bit patterns, and min/max under a named IEEE 754-2019 profile
+ *   term/     signature — a term's operator, children and immediate; structural key, hash and equality
+ *             pattern — patterns and templates with variables, `match` and `instantiate`
+ *             rules — rules as data, indexed by root operator, first match with the domain's guards
+ *             verify — Alive-style validation of a rule on generated cases, with a counterexample
  *
  * Later modules, one line each (each enters under the admission rule, with its two clients):
  *   graph/    dominance frontiers
  *   num/      exact small-number helpers (saturating and wrapping arithmetic)
  *   ssa/      SSA construction — from a graph and dominators to phi placement
- *   term/     terms over a signature, matching and substitution
  *   pe/       partial evaluation — specialization over a term and an affine form
  *   check/    executable laws over library results (a checker per admitted algorithm)
  *   measure/  cost measures over library results (sizes, depths)
@@ -73,3 +76,25 @@ export type { Direction, OrderViolation, ScheduledLoop } from './affine/directio
 
 export { solveFor } from './flow/solve-for.js';
 export type { Budget, Equations, Solution as LocalSolution } from './flow/solve-for.js';
+
+export { equalStructure, size, structuralHash, structuralKey } from './term/signature.js';
+export type { Signature } from './term/signature.js';
+export { instantiate, match, patternOp, patternVariables, templateVariables } from './term/pattern.js';
+export type {
+  Bindings,
+  Builder,
+  ConstantValue,
+  OpPattern,
+  Pattern,
+  Template,
+} from './term/pattern.js';
+export { firstMatch, indexRules } from './term/rules.js';
+export type { MatchOptions, MatchResult, Rule, RuleIndex } from './term/rules.js';
+export { verifyRule } from './term/verify.js';
+export type {
+  CaseGenerator,
+  Counterexample,
+  RuleSemantics,
+  RuleVerdict,
+  VerifyModel,
+} from './term/verify.js';

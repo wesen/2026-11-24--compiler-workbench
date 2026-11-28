@@ -35,11 +35,14 @@ import type { Rv32Image } from './backend/image.js';
 import { F32_RESULT } from './f32.js';
 import { COMPARE } from './listing.js';
 import type { StmtRec, TypedBlocks, ValueOp, ValueRec } from './model.js';
-import { firstMatch, indexRules, numOf, type Bindings } from './rules/compile.js';
+import { instantiate as instantiateIn, type Builder } from '../stdlib/term/pattern.js';
+import type { RuleIndex } from '../stdlib/term/rules.js';
+import { numOf, type Bindings } from './rules/compile.js';
+import { firstMatch, indexRules } from './rules/compile.js';
 import { IDENTITY_RULES } from './rules/identities.js';
 import { ALL_EVIDENCE } from './rules/listing.js';
 import { FOLD_RULES } from './rules/fold.js';
-import type { Rule, RuleSet, Tpl } from './rules/form.js';
+import type { Guard, RuleSet } from './rules/form.js';
 import { SIMPLIFY_RULES } from './rules/simplify.js';
 import type { Edit, ValueHandle } from './tx.js';
 
@@ -128,40 +131,42 @@ const handle = (t: Tree): TreeHandle => ({
   isBoolean: COMPARE.has(t.op),
   same: other => sameTree(t, other.tree),
 });
-const treeBound = (b: Bindings, x: string): Tree => (b[x] as unknown as TreeHandle).tree;
-
-/** A rule's right-hand side as a tree, with the types `Tx.const` and `Tx.make` give. */
-function instantiate(t: Tpl, b: Bindings): Tree {
-  if ('var' in t) return treeBound(b, t.var);
-  if ('const' in t)
-    return {
+/**
+ * A rule's right-hand side as a tree, with the types `Tx.const` and `Tx.make` give: the instantiation itself is the
+ * standard library's (IRWB-060-B) over this file's handle type, so the second copy of a rule's template semantics
+ * is gone.
+ */
+const treeBuilder: Builder<ValueHandle> = {
+  constant: (value, attrs) =>
+    handle({
       op: 'const',
-      imm: numOf(t.const, x => treeBound(b, x).imm as number) | 0,
-      type: t.type,
+      imm: value | 0,
+      type: (attrs as { type?: 'f32' } | undefined)?.type,
       args: [],
-    };
-  return {
-    op: t.op,
-    imm: undefined,
-    type: F32_RESULT.has(t.op) ? 'f32' : undefined,
-    args: t.args.map(a => instantiate(a, b)),
-  };
-}
+    }) as unknown as ValueHandle,
+  operator: (op, args) =>
+    handle({
+      op: op as ValueOp,
+      imm: undefined,
+      type: F32_RESULT.has(op as ValueOp) ? 'f32' : undefined,
+      args: args.map(a => (a as unknown as TreeHandle).tree),
+    }) as unknown as ValueHandle,
+};
 
 /** `t` rewritten bottom-up by a table: operands first, then the first matching rule at the root, not revisited. */
-export function normalize(t: Tree, index: ReadonlyMap<string, readonly Rule[]>, fired: string[]): Tree {
+export function normalize(t: Tree, index: RuleIndex<ValueHandle, Guard>, fired: string[]): Tree {
   const args = t.args.map(a => normalize(a, index, fired));
   const n: Tree = args.some((a, i) => a !== t.args[i]) ? { ...t, args } : t;
   const m = firstMatch(index, handle(n) as unknown as ValueHandle);
   if (!m) return n;
   fired.push(m.rule.name);
-  return instantiate(m.rule.rhs, m.bindings);
+  return (instantiateIn(m.rule.rhs, m.bindings, treeBuilder, handle(n) as unknown as ValueHandle) as unknown as TreeHandle).tree;
 }
 
 /** The verified tables an edit may be an instance of. */
 export const VERIFIED_TABLES: readonly RuleSet[] = [SIMPLIFY_RULES, FOLD_RULES, IDENTITY_RULES];
 const STRENGTHS = ['proof', 'exhaustive', 'by-construction', 'reduced-width+argument', 'sampled', 'none'];
-const INDEXES = new Map<RuleSet, Map<string, Rule[]>>();
+const INDEXES = new Map<RuleSet, RuleIndex<ValueHandle, Guard>>();
 
 /** The first table that rewrites `a` into `b`, with the rules it fired; undefined when none does. */
 export function rederive(
