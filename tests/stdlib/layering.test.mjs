@@ -37,3 +37,11 @@ test('the library index exports the liveness primitive', async () => {
   );
   assert.deepEqual([...r.in[0]], [1]);
 });
+
+test('the library index exports the graph primitives', async () => {
+  const { depthFirst, dominators, naturalLoops } = await import('../../dist/stdlib/index.js');
+  const g = { nodes: ['e', 'a'], entry: 'e', succ: n => (n === 'e' ? ['a'] : []) };
+  assert.deepEqual(depthFirst(g).rpo, ['e', 'a']);
+  assert.deepEqual([...dominators(g).idom], [['e', 'e'], ['a', 'e']]);
+  assert.deepEqual(naturalLoops(g), []);
+});
