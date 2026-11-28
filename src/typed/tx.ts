@@ -12,6 +12,7 @@ import { prune } from './lift.js';
 import { describeText, show, showStmt, COMPARE } from './listing.js';
 import { hasEffect, isPure, readsOf } from './analyses.js';
 import { F32_RESULT } from './f32.js';
+import type { DerivationStep } from '../framework/ir/derivation.js';
 import {
   typeClass,
   type BlockRec,
@@ -60,6 +61,11 @@ export interface MakeOptions {
   readonly because?: readonly (Ref | string)[];
   readonly note?: string;
   readonly imm?: number | string;
+  /**
+   * IRWB-056-A: the verified rule that licenses this edit (a rule table entry's name). Recorded in the derivation
+   * step and the edit record's citations, never in the entity's origin (the origin keeps `via`, `because`, `note`).
+   */
+  readonly rule?: string;
   /**
    * The result type of a made value. Derived for get (the local's) and the f32 operators; needed for a constant,
    * a load or a result leaf of an f32 (absent: i32).
@@ -168,13 +174,51 @@ export class Tx {
   readonly writes: ReadonlySet<WriteKind>;
   private cur: string | null = null;
   private sid: string | null = null;
+  /** IRWB-056-A: the rules cited for the statement field `rewrite` is walking, attached to its edit record. */
+  private cited: string[] | null = null;
+  /** IRWB-056-A: the premises (the `because` of what the walk made), attached to the same edit record. */
+  private licensed: string[] | null = null;
+  /** The entities of the input revision: a step is recorded only for a change an input entity licensed. */
+  private readonly input: ReadonlySet<string> | undefined;
+  /**
+   * IRWB-056-A: the derivation — one step per made entity an input entity licensed, and per removed input entity.
+   * Recorded only when `input` names the input revision's entities; `typedPass` passes that set, so every Typed
+   * pass that works through this transaction records its derivation.
+   */
+  readonly steps: DerivationStep[] = [];
   constructor(
     readonly st: Store,
     readonly fn: WorkFn,
     readonly pass: PassInfo,
     readonly rev: number,
+    input?: ReadonlySet<string>,
   ) {
     this.writes = new Set(pass.writes);
+    this.input = input;
+  }
+
+  /**
+   * IRWB-056-A: cite the verified rule that licenses the replacement being made, so the edit record `rewrite`
+   * writes for this statement field names the rules that fired in it. A citation outside `rewrite` is kept in the
+   * next `rewrite`'s records.
+   */
+  cite(rule: string): void {
+    if (this.cited && !this.cited.includes(rule)) this.cited.push(rule);
+  }
+
+  /** IRWB-056-A: one derivation step: what licensed the change, its site and its premises. */
+  private step(from: string | undefined | null, produces: readonly string[], opts: MakeOptions): void {
+    if (!this.input || !from || !this.input.has(from)) return;
+    const premises = this.because(opts);
+    if (this.licensed) for (const b of premises) if (!this.licensed.includes(b)) this.licensed.push(b);
+    this.steps.push({
+      by: opts.rule ?? this.pass.name,
+      consumes: [from],
+      produces,
+      premises,
+      relation: this.pass.name,
+      ...(opts.note ? { note: opts.note } : {}),
+    });
   }
 
   private may(kind: WriteKind, what: string): void {
@@ -217,7 +261,8 @@ export class Tx {
   /** A constant; an f32 constant (`type: 'f32'`) is given as its bits. */
   const(n: number, opts: MakeOptions = {}): string {
     this.may('values', 'made a constant');
-    return this.st.add<ValueRec>({
+    const from = id(opts.from) ?? this.cur;
+    const made = this.st.add<ValueRec>({
       id: this.st.fresh(`v:${this.fn.name}`),
       kind: 'value',
       fn: this.fn.id,
@@ -225,8 +270,10 @@ export class Tx {
       args: [],
       ...(opts.type === 'f32' ? { type: 'f32' as const } : {}),
       imm: n | 0,
-      origin: this.origin(id(opts.from) ?? this.cur, opts),
+      origin: this.origin(from, opts),
     }).id;
+    this.step(from, [made], opts);
+    return made;
   }
   /** The type a made value has: given, or the local's for a get, or f32 for the f32 operators. */
   private typeOf(op: ValueOp, opts: MakeOptions): TypeClass {
@@ -241,17 +288,20 @@ export class Tx {
       rest.length && typeof last === 'object' && last && !(last as { id?: string }).id && !Array.isArray(last)
         ? (rest.pop() as MakeOptions)
         : {};
+    const from = id(opts.from) ?? this.cur;
     const rec: ValueRec = {
       id: this.st.fresh(`v:${this.fn.name}`),
       kind: 'value',
       fn: this.fn.id,
       op,
       args: (rest as Ref[]).map(a => id(a)!),
-      origin: this.origin(id(opts.from) ?? this.cur, opts),
+      origin: this.origin(from, opts),
     };
     if (this.typeOf(op, opts) === 'f32') rec.type = 'f32';
     if (opts.imm !== undefined) rec.imm = opts.imm;
-    return this.st.add(rec).id;
+    const made = this.st.add(rec).id;
+    this.step(from, [made], opts);
+    return made;
   }
   get(local: number | string | { index: number }, opts: MakeOptions = {}): string {
     return this.make('get', { imm: this.local_(local), ...opts });
@@ -287,25 +337,31 @@ export class Tx {
   // statements
   set(local: number | string, value: Ref, opts: MakeOptions = {}): string {
     this.may('stmts', 'made a statement');
-    return this.st.add<StmtRec>({
+    const from = id(opts.from) ?? id(value);
+    const made = this.st.add<StmtRec>({
       id: this.st.fresh(`s:${this.fn.name}`),
       kind: 'stmt',
       fn: this.fn.id,
       op: 'set',
       local: this.local_(local),
       value: id(value),
-      origin: this.origin(id(opts.from) ?? id(value), opts),
+      origin: this.origin(from, opts),
     }).id;
+    this.step(from, [made], opts);
+    return made;
   }
   stmt(fields: Partial<StmtRec> & { op: StmtRec['op'] }, opts: MakeOptions = {}): string {
     this.may('stmts', 'made a statement');
-    return this.st.add({
+    const from = id(opts.from);
+    const made = this.st.add({
       id: this.st.fresh(`s:${this.fn.name}`),
       kind: 'stmt',
       fn: this.fn.id,
       ...fields,
-      origin: this.origin(id(opts.from), opts),
+      origin: this.origin(from, opts),
     } as StmtRec).id;
+    this.step(from, [made], opts);
+    return made;
   }
   blockOf(sid: string): BlockRec | undefined {
     return this.fn.blocks.find(b => b.stmts.includes(sid));
@@ -360,6 +416,7 @@ export class Tx {
     const b = this.blockOf(sid);
     if (!b) throw new TxError('absent', `${sid} is not in ${this.fn.name} at this revision`);
     b.stmts.splice(b.stmts.indexOf(sid), 1);
+    this.step(sid, [], opts);
     this.record('remove', {
       stmt: sid,
       block: b.id,
@@ -425,6 +482,7 @@ export class Tx {
     };
     this.st.add(b);
     this.fn.blocks.push(b);
+    this.step(id(opts.from), [b.id], opts);
     this.record('block', { block: b.id, because: this.because(opts) });
     return b.id;
   }
@@ -451,6 +509,7 @@ export class Tx {
         if (v.type) rec.type = v.type;
         if (v.imm !== undefined) rec.imm = v.imm;
         cur = this.st.add(rec).id;
+        this.step(vid, [cur], { note: 'rebuilt around a changed argument' });
       }
       this.cur = cur;
       const r = visit(valueHandle(this.st, cur, { stmt: this.sid ?? undefined }));
@@ -463,7 +522,13 @@ export class Tx {
         this.sid = sid;
         for (const k of ['value', 'cond', 'addr'] as const)
           if (s[k]) {
+            this.cited = [];
+            this.licensed = [];
             const n = walk(s[k]!);
+            const rules = this.cited,
+              licensed = this.licensed;
+            this.cited = null;
+            this.licensed = null;
             if (n !== s[k]) {
               this.record('replace', {
                 stmt: sid,
@@ -472,6 +537,8 @@ export class Tx {
                 to: n,
                 text: show(this.st, n),
                 because: this.because(opts),
+                ...(rules.length ? { rules: [...rules] } : {}),
+                ...(licensed.length ? { licensed: [...licensed].sort() } : {}),
               });
               s[k] = n;
             }

@@ -17,6 +17,8 @@ import { canonical } from '../core/data.js';
 import { createIRArtifact, openIR } from '../ir/index.js';
 import { diff } from '../ir/diff.js';
 import { makeCorrespondence } from '../ir/correspondence.js';
+import { stepsToCorrespondence } from '../ir/derivation.js';
+import type { DerivationStep } from '../ir/derivation.js';
 import type {
   ChangeSet,
   CorrespondenceEntry,
@@ -70,9 +72,14 @@ export interface PassRunContext<S, N extends Needs, P> {
   readonly edit: IREdit<S>;
 }
 
-/** A native result: the new value, and how its entities relate to the input's (merge, split, replace…). */
+/** A native result: the new value, its derivation (why each change is valid), and how its entities relate. */
 export interface NativeResult<S> {
   readonly native: S;
+  /**
+   * IRWB-056-A: the derivation steps the producer recorded. When present, the correspondence is computed from
+   * them (`stepsToCorrespondence`) and the diff audits the claims; a hand-written `correspondence` is ignored.
+   */
+  readonly derivation?: readonly DerivationStep[];
   readonly correspondence?: readonly CorrespondenceEntry[];
   /** How many edits the pass made, for reporting (Compiler Workbench shows edits per pass). */
   readonly edits?: number;
@@ -117,6 +124,8 @@ export interface PassResult<S> {
   readonly artifact: Artifact<S>;
   readonly changes?: ChangeSet;
   readonly correspondence?: EntityCorrespondence;
+  /** IRWB-056-A: the derivation steps of the pass that ran, next to its edits and correspondence. */
+  readonly derivation?: readonly DerivationStep[];
   readonly edits: number;
   readonly preserved: readonly PreservationOutcome[];
   readonly contract?: unknown;
@@ -180,13 +189,20 @@ export function prepareNative<S>(
   // the runner publishes it, and the evidence about it, once every check has accepted it.
   const afterView = openIR(after, pass.adapter);
   const changes = diff(view, afterView);
+  // the projections' entity ids, in order (what `view.entities()` names, without a reference per entity)
+  const sourceEntities = view.graph().entities.map(e => e.id),
+    targetEntities = afterView.graph().entities.map(e => e.id);
+  // IRWB-056-A: the correspondence comes from the derivation when the producer recorded one, and the diff audits
+  // the steps' claims (an empty or false site is rejected); else from the caller's entries, else from the coverage
+  // completion alone
   const correspondence = makeCorrespondence(
     { artifact: before.id, revision: before.revision },
     { artifact: after.id, revision: after.revision },
-    // the projections' entity ids, in order (what `view.entities()` names, without a reference per entity)
-    view.graph().entities.map(e => e.id),
-    afterView.graph().entities.map(e => e.id),
-    produced.correspondence ?? [],
+    sourceEntities,
+    targetEntities,
+    produced.derivation
+      ? stepsToCorrespondence(produced.derivation, sourceEntities, targetEntities)
+      : (produced.correspondence ?? []),
   );
   const edits = produced.edits ?? changes.entities.length;
   return { after, changes, correspondence, edits };

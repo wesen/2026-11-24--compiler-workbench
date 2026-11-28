@@ -24,7 +24,17 @@ const { canonical } = await import('../../dist/framework/core/data.js');
 
 const FULL = process.env.IRWB_FULL === '1';
 const SUBSET = ['blend', 'algebra', 'checksum', 'dead-code', 'strength', 'value-numbering', 'constants', 'start-here'];
-const sig = r => [r.artifact.revision, canonical(r.report?.edits ?? []), canonical(r.correspondence?.entries ?? [])];
+// IRWB-056-A: the table pass's records cite the rules that fired (rules) and the premises the walk relied on
+// (licensed); the hand-written body does not. Everything else must still be identical.
+const uncited = e => {
+  const { rules, licensed, ...rest } = e;
+  return rest;
+};
+const sig = r => [
+  r.artifact.revision,
+  canonical((r.report?.edits ?? []).map(uncited)),
+  canonical(r.correspondence?.entries ?? []),
+];
 
 /** Every pipeline with simplify or fold; at each such step, apply `alt[name]` to the same input and compare. */
 async function compareOnCorpus(ids, alt) {

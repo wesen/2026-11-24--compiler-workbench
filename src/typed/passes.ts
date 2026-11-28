@@ -12,6 +12,7 @@ import { defineTransformation } from '../framework/contracts/definitions.js';
 import type { TransformationDefinition } from '../framework/contracts/types.js';
 import type { CorrespondenceEntry } from '../framework/ir/types.js';
 import { transformation, type Pass } from '../framework/passes/transformation.js';
+import type { DerivationStep } from '../framework/ir/derivation.js';
 import type { DataflowResult } from '../framework/dataflow/analysis.js';
 import {
   ANALYSES,
@@ -197,18 +198,23 @@ export function typedPass(spec: TypedPassSpec): TypedPass {
     prepare: ({ before, facts, params }) => {
       const st = Store.from(before.value),
         rev = before.value.rev + 1;
+      // the input revision's entities: the transaction records a derivation step only for a change one of them
+      // licensed (so the step's site lies on the revision boundary)
+      const inputIds = entityIdSet(before.value);
       const edits: Edit[] = [],
-        touched: string[] = [];
+        touched: string[] = [],
+        steps: DerivationStep[] = [];
       for (const f of st.fns.values()) {
         const views: FactViews = {};
         for (const [alias, name] of Object.entries(spec.needs ?? {}))
           views[alias] = view(name, facts[alias], st, f.name);
-        const tx = new Tx(st, f, { name: spec.name, writes: spec.writes }, rev);
+        const tx = new Tx(st, f, { name: spec.name, writes: spec.writes }, rev, inputIds);
         spec.body({ st, f, tx, facts: views, params: (params ?? {}) as Record<string, unknown> });
         tx.commit();
         if (tx.edits.length) {
           edits.push(...tx.edits);
           touched.push(f.name);
+          steps.push(...tx.steps);
         }
       }
       if (!edits.length) return;
@@ -219,9 +225,14 @@ export function typedPass(spec: TypedPassSpec): TypedPass {
         {},
       );
       const report: RevisionReport = { pass: spec.name, rev, edits, fns: touched, kinds };
+      const published = entityIdSet(native);
       return {
         native,
-        correspondence: revisionCorrespondence(before.value, native, edits),
+        // IRWB-056-A: the derivation is the producer's record; the runner computes the correspondence from it.
+        // A step whose product did not survive the commit was superseded within the revision: the derivation
+        // carries the published revision's boundary, so such a step is dropped here (the derivation's site must
+        // name entities that exist).
+        derivation: steps.filter(s => s.produces.every(p => published.has(p))),
         edits: edits.length,
         report,
       };

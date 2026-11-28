@@ -72,7 +72,11 @@ const noteOf = (text: string, b: Bindings): string =>
 function provenance(r: Rule, v: ValueHandle, b: Bindings): MakeOptions {
   const because =
     r.because === 'const-args' ? v.args.filter(x => x.isConst) : r.because === 'args' ? v.args : undefined;
-  return { ...(because ? { because } : {}), ...(r.note ? { note: noteOf(r.note, b) } : {}) };
+  return {
+    ...(because ? { because } : {}),
+    ...(r.note ? { note: noteOf(r.note, b) } : {}),
+    rule: r.name,
+  };
 }
 
 function instantiate(t: Tpl, b: Bindings, tx: Tx, prov: MakeOptions): string {
@@ -82,7 +86,7 @@ function instantiate(t: Tpl, b: Bindings, tx: Tx, prov: MakeOptions): string {
       numOf(t.const, x => b[x].imm as number),
       t.type ? { ...prov, type: t.type } : prov,
     );
-  const ids = t.args.map(a => instantiate(a, b, tx, {}));
+  const ids = t.args.map(a => instantiate(a, b, tx, { rule: prov.rule }));
   return tx.make(t.op, ...ids, prov);
 }
 
@@ -125,6 +129,8 @@ export function compileRules(
     const m = firstMatch(index, v);
     if (!m) return undefined;
     if (firings) firings.set(m.rule.name, (firings.get(m.rule.name) ?? 0) + 1);
+    // IRWB-056-A: the rule licenses every value the instantiation makes, and the edit record `rewrite` writes
+    tx.cite(m.rule.name);
     return instantiate(m.rule.rhs, m.bindings, tx, provenance(m.rule, v, m.bindings));
   };
 }

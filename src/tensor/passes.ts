@@ -1,5 +1,6 @@
 import type { Artifact } from '../framework/core/types.js';
 import { transformation, type EnsuresCheck, type Transformation } from '../framework/passes/index.js';
+import type { DerivationStep } from '../framework/ir/derivation.js';
 import { meaningGate, type Relation } from './contract.js';
 import { adapter, TixIR } from './ir.js';
 import {
@@ -20,7 +21,16 @@ function replaceIndices(expr: Expr, bindings: Map<string, Affine>): Expr {
     e.kind === 'load' ? { ...e, indices: e.indices.map(a => substitute(a, bindings)) } : e,
   );
 }
-function inline(fn: Fn): Fn {
+/**
+ * IRWB-056-A: a merge recorded while inlining: the producer statement, and the statement that absorbed it at the
+ * time. A consumer can itself be merged later (a chain), so the derivation resolves each merge to the final
+ * survivor before it is published.
+ */
+interface Merge {
+  readonly producer: string;
+  readonly consumer: string;
+}
+function inlineFn(fn: Fn, merges: Merge[]): Fn {
   const statements = [...fn.statements];
   for (let i = 0; i < statements.length; i++) {
     const p = statements[i];
@@ -49,8 +59,24 @@ function inline(fn: Fn): Fn {
       }),
     };
     statements.splice(i--, 1);
+    merges.push({ producer: p.name, consumer: s.name });
   }
   return { ...fn, statements };
+}
+/** The derivation steps of a function's merges: each producer statement, merged into its final survivor. */
+function mergeSteps(fn: Fn, merges: readonly Merge[]): DerivationStep[] {
+  const into = new Map(merges.map(m => [m.producer, m.consumer]));
+  return merges.map(({ producer, consumer }) => {
+    let final = consumer;
+    while (into.has(final)) final = into.get(final)!;
+    return {
+      by: 'inline',
+      consumes: [`${fn.name}/${producer}`],
+      produces: [`${fn.name}/${final}`],
+      premises: [`${fn.name}/${producer} is pointwise`, `${fn.name}/${producer} has one use, at ${fn.name}/${final}`],
+      relation: 'merged',
+    };
+  });
 }
 function split(fn: Fn): Fn {
   return {
@@ -109,5 +135,29 @@ function pass(name: string, relation: Relation, transform: (fn: Fn) => Fn): TixP
     obligations: { ensures: [tixMeaning] },
   });
 }
-export const inlinePass = pass('inline', 'exact', inline);
+/**
+ * `inline`, recording its derivation: each merged statement is a step naming the statement that absorbed it, so the
+ * correspondence computed from the steps says `merged` with the consumer as its target — where the two-projection
+ * completion alone said `removed` with no link to the consumer (R3's K2 finding).
+ */
+export const inlinePass = transformation<Module>({
+  id: 'tensor.inline',
+  version: '1',
+  description: 'inline',
+  ir: TixIR,
+  adapter,
+  writes: { entities: ['tensor'], relations: ['reads', 'contains'] },
+  relation: 'exact',
+  prepare: ({ before }) => {
+    const steps: DerivationStep[] = [];
+    const functions = before.value.functions.map(f => {
+      const merges: Merge[] = [];
+      const out = inlineFn(f, merges);
+      steps.push(...mergeSteps(f, merges));
+      return out;
+    });
+    return { native: { functions }, derivation: steps };
+  },
+  obligations: { ensures: [tixMeaning] },
+});
 export const splitPass = pass('split-sum', 'tolerance', split);

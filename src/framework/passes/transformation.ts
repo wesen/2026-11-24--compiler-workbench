@@ -26,7 +26,7 @@
 import type { Artifact } from '../core/types.js';
 import { canonical } from '../core/data.js';
 import { openIR } from '../ir/index.js';
-import type { ChangeSet, EntityCorrespondence, IREdit, IRStore, IRView } from '../ir/index.js';
+import type { ChangeSet, DerivationStep, EntityCorrespondence, IREdit, IRStore, IRView } from '../ir/index.js';
 import type { AnalysisManager } from '../contracts/analysis-manager.js';
 import { wait, driveAsync, driveSync, type Steps } from '../contracts/steps.js';
 import type {
@@ -290,6 +290,7 @@ export function* runTransformation<S, N extends Needs, P>(
   }
   let after: Artifact<S>, changes: ChangeSet, correspondence: EntityCorrespondence, edits: number;
   let report: unknown;
+  let derivation: readonly DerivationStep[] | undefined;
   if (produced && typeof produced === 'object' && 'native' in produced) {
     if (edit?.state === 'open') edit.rollback('native result');
     ({ after, changes, correspondence, edits } = prepareNative(
@@ -299,6 +300,7 @@ export function* runTransformation<S, N extends Needs, P>(
       options.outputId ?? before.id,
     ));
     report = produced.report;
+    derivation = produced.derivation;
   } else {
     if (edit && edit.state !== 'open')
       throw new PassError('badResult', `Pass ${t.id} closed its edit itself`);
@@ -415,6 +417,7 @@ export function* runTransformation<S, N extends Needs, P>(
     preserved,
     contract: contract ?? verdict,
     report,
+    ...(derivation ? { derivation } : {}),
     obligations: evidence,
   };
 }
