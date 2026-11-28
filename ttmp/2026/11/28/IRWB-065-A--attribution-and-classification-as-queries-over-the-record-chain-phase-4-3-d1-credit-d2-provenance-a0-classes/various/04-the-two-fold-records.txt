@@ -1,0 +1,14 @@
+
+=== constants: revision r3 (fold), edits 2
+edit edit:r3.0 kind=replace stmt=s:poly.1 field=value from=v:poly.25 to=v:poly.32 steps=[0,1,2]
+edit edit:r3.1 kind=replace stmt=s:poly.3 field=value from=v:poly.29 to=v:poly.34 steps=[3,4]
+  step 0: {"rule":"fold-shl","table":"fold"} consumes=["v:poly.24","v:poly.23","v:poly.20"] produces=["v:poly.30"] premises=["v:poly.20","v:poly.23"] relation=modified
+  step 1: {"decision":"rebuild"} consumes=["v:poly.25"] produces=["v:poly.31"] premises=[] relation=modified
+  step 2: {"rule":"fold-add","table":"fold"} consumes=["v:poly.31","v:poly.30","v:poly.4"] produces=["v:poly.32"] premises=["v:poly.30","v:poly.4"] relation=modified
+
+=== orders: revision r2 (fold), edits 2
+edit edit:r2.0 kind=replace stmt=s:kernel.0 field=value from=v:kernel.2 to=v:kernel.44 steps=[0]
+edit edit:r2.0 kind=replace stmt=s:rescale.0 field=value from=v:rescale.4 to=v:rescale.22 steps=[1,2,3]
+  step 1: {"rule":"fold-mul","table":"fold"} consumes=["v:rescale.2","v:rescale.0","v:rescale.1"] produces=["v:rescale.20"] premises=["v:rescale.0","v:rescale.1"] relation=modified
+  step 2: {"decision":"rebuild"} consumes=["v:rescale.4"] produces=["v:rescale.21"] premises=[] relation=modified
+  step 3: {"rule":"fold-sub","table":"fold"} consumes=["v:rescale.21","v:rescale.20","v:rescale.3"] produces=["v:rescale.22"] premises=["v:rescale.20","v:rescale.3"] relation=modified

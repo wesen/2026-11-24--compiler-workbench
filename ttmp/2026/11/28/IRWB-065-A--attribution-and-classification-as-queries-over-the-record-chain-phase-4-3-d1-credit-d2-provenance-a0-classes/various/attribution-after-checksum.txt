@@ -1,0 +1,173 @@
+runVm(1024, 34, 12, 8): r0 6874 -> r10 5605 instructions (-1269)
+
+revision       instructions   step
+r0 ingest              6874   
+r1 cfg                 6287   -587
+r2 fold                6127   -160
+r3 copies              6127   0
+r4 dce                 6127   0
+r5 cfg                 5968   -159
+r6 licm                5677   -291
+r7 guards              5605   -72
+r8 subst-mem           5605   0
+r9 cfg                 5605   0
+r10 subst-mem          5605   0
+
+   delta    after  groups  decision
+    +268     1212       4  subst-mem: replace
+      +2        2       2  licm: insert (hoisted out of loop:runVm@bb:runVm.3)
+       0      216       9  cfg: move
+       0        0       3  cfg: remove (merged with its only successor)
+       0      800       1  copies: replace
+       0        0       1  dce: remove
+     -72        0       3  guards: replaceStmt (always false: geu([0, 2], [4, 4]))
+    -159        0       1  cfg: indirect
+    -160        0       1  cfg: replaceStmt
+    -160      160       1  fold: replace
+    -268        0       4  subst-mem: remove (substituted into its only reader)
+    -293      928      15  licm: replace
+    -427     1185      46  cfg: retarget
+
+r1    +50  cfg: retarget  [bb:runVm.29]
+          s:runVm.41     goto .1
+
+r1    +24  cfg: retarget  [bb:runVm.18]
+          s:runVm.28     goto .1
+
+r1    +24  cfg: retarget  [bb:runVm.40]
+          s:runVm.54     goto .1
+
+r1    +12  cfg: retarget  [bb:runVm.85]
+          s:runVm.114    goto .1
+
+r1    +12  cfg: retarget  [bb:runVm.55]
+          s:runVm.74     goto .1
+
+r1    +12  cfg: retarget  [bb:runVm.70]
+          s:runVm.94     goto .1
+
+r1     +1  cfg: retarget  [bb:runVm.94]
+          s:runVm.123    goto .1
+
+r1    -12  cfg: retarget  [bb:runVm.95]
+          s:runVm.131    goto .95
+
+r1    -25  cfg: retarget  [bb:runVm.85]
+          s:runVm.132    goto .85
+
+r1    -37  cfg: retarget  [bb:runVm.70]
+          s:runVm.133    goto .70
+
+r1    -49  cfg: retarget  [bb:runVm.55]
+          s:runVm.134    goto .55
+
+r1    -61  cfg: retarget  [bb:runVm.40]
+          s:runVm.135    goto .40
+
+r1    -85  cfg: retarget  [bb:runVm.29]
+          s:runVm.136    goto .29
+
+r1   -135  cfg: retarget  [bb:runVm.18]
+          s:runVm.137    goto .18
+
+r1   -159  cfg: retarget  [bb:runVm.11]
+          s:runVm.138    goto .11
+
+r1   -159  cfg: indirect  []
+          s:runVm.139    goto .1
+
+r2   -160  fold: replace  []
+          s:runVm.7      if 0 goto .2 else .3
+
+r5     +1  cfg: retarget  [bb:runVm.1]
+          s:runVm.6      goto .3
+
+r5   -160  cfg: replaceStmt  [v:runVm.247]
+          s:runVm.7      if 0 goto .2 else .3
+
+r6     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
+          s:runVm.143    inv = frame+0
+
+r6     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
+          s:runVm.144    inv1 = frame+16
+
+r6    -12  licm: replace  [loop:runVm@bb:runVm.3]
+          s:runVm.101    right = load32[(inv + (sp << 2))+0]
+
+r6    -12  licm: replace  [loop:runVm@bb:runVm.3]
+          s:runVm.107    left = load32[(inv + (sp << 2))+0]
+
+r6    -12  licm: replace  [loop:runVm@bb:runVm.3]
+          s:runVm.112    store32[(inv + (sp << 2))+0] = (left * right)
+
+r6    -12  licm: replace  [loop:runVm@bb:runVm.3]
+          s:runVm.61     right = load32[(inv + (sp << 2))+0]
+
+r6    -12  licm: replace  [loop:runVm@bb:runVm.3]
+          s:runVm.67     left = load32[(inv + (sp << 2))+0]
+
+r6    -12  licm: replace  [loop:runVm@bb:runVm.3]
+          s:runVm.72     store32[(inv + (sp << 2))+0] = (left + right)
+
+r6    -12  licm: replace  [loop:runVm@bb:runVm.3]
+          s:runVm.81     right = load32[(inv + (sp << 2))+0]
+
+r6    -12  licm: replace  [loop:runVm@bb:runVm.3]
+          s:runVm.87     left = load32[(inv + (sp << 2))+0]
+
+r6    -12  licm: replace  [loop:runVm@bb:runVm.3]
+          s:runVm.92     store32[(inv + (sp << 2))+0] = (left - right)
+
+r6    -13  licm: replace  [loop:runVm@bb:runVm.3]
+          s:runVm.121    if (load32[(inv + (sp << 2))+0] == 0) goto .92 else .3
+
+r6    -24  licm: replace  [loop:runVm@bb:runVm.3]
+          s:runVm.26     store32[(inv + (sp << 2))+0] = operand
+
+r6    -24  licm: replace  [loop:runVm@bb:runVm.3]
+          s:runVm.48     t18 = (inv1 + (operand << 2))
+
+r6    -24  licm: replace  [loop:runVm@bb:runVm.3]
+          s:runVm.53     store32[t18+0] = load32[(inv + (sp << 2))+0]
+
+r6    -50  licm: replace  [loop:runVm@bb:runVm.3]
+          s:runVm.34     t17 = (inv + (sp << 2))
+
+r6    -50  licm: replace  [loop:runVm@bb:runVm.3]
+          s:runVm.39     store32[t17+0] = load32[(inv1 + (operand << 2))+0]
+
+r7    -24  guards: replaceStmt (always false: geu([0, 2], [4, 4]))  [s:runVm.103, s:runVm.97]
+          s:runVm.108    if (sp >=u 4) goto .81 else .84
+          s:runVm.147    goto .84
+
+r7    -24  guards: replaceStmt (always false: geu([0, 2], [4, 4]))  [s:runVm.57, s:runVm.63]
+          s:runVm.145    goto .54
+          s:runVm.68     if (sp >=u 4) goto .51 else .54
+
+r7    -24  guards: replaceStmt (always false: geu([0, 2], [4, 4]))  [s:runVm.77, s:runVm.83]
+          s:runVm.146    goto .69
+          s:runVm.88     if (sp >=u 4) goto .66 else .69
+
+r8   +160  subst-mem: replace  []
+          s:runVm.11     operand = load16[caddr(code, (pc + 1))+4]
+
+r8   -160  subst-mem: remove (substituted into its only reader)  [s:runVm.11]
+          s:runVm.10     t8 = (pc + 1)
+
+r10    +36  subst-mem: replace  []
+          s:runVm.112    store32[(inv + (sp << 2))+0] = (load32[(inv + (sp << 2))+0] * right)
+
+r10    +36  subst-mem: replace  []
+          s:runVm.72     store32[(inv + (sp << 2))+0] = (load32[(inv + (sp << 2))+0] + right)
+
+r10    +36  subst-mem: replace  []
+          s:runVm.92     store32[(inv + (sp << 2))+0] = (load32[(inv + (sp << 2))+0] - right)
+
+r10    -36  subst-mem: remove (substituted into its only reader)  [s:runVm.112]
+          s:runVm.107    left = load32[(inv + (sp << 2))+0]
+
+r10    -36  subst-mem: remove (substituted into its only reader)  [s:runVm.72]
+          s:runVm.67     left = load32[(inv + (sp << 2))+0]
+
+r10    -36  subst-mem: remove (substituted into its only reader)  [s:runVm.92]
+          s:runVm.87     left = load32[(inv + (sp << 2))+0]

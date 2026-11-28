@@ -1,0 +1,7 @@
+pass simplify edits 1
+  edit:r1.0 replace stmt=s:f.2 field=value from=v:f.10 to=v:f.13 steps=[0,1,2]
+A = {"op":"add","args":[{"op":"mul","args":[{"op":"get","imm":1,"args":[]},{"op":"const","imm":2,"args":[]}]},{"op":"get","imm":2,"args":[]}]}
+B = {"op":"add","args":[{"op":"shl","args":[{"op":"get","imm":1,"args":[]},{"op":"const","imm":1,"args":[]}]},{"op":"get","imm":2,"args":[]}]}
+  step 0: {"rule":"mul-pow2","table":"simplify"} consumes=["v:f.4","v:f.2","v:f.3"] produces=["v:f.11"] premises=["guard:pow2(v:f.3)","v:f.3"] note=x * 2 = x << 1
+  step 1: {"rule":"mul-pow2","table":"simplify"} consumes=["v:f.4","v:f.2","v:f.3"] produces=["v:f.12"] premises=["guard:pow2(v:f.3)","v:f.3"] note=x * 2 = x << 1
+  step 2: {"decision":"rebuild"} consumes=["v:f.10"] produces=["v:f.13"] premises=[] note=rebuilt around a changed argument

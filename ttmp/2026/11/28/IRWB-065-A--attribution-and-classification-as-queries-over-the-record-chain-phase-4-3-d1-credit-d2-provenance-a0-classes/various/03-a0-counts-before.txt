@@ -1,0 +1,6 @@
+G classifyApplication local: {"subst":51,"simplify":140,"constprop":141,"fold":43,"strength":20} = 395
+query scoped: {"simplify":140,"fold":43,"strength":20} = 203
+query in-place: {"subst":51,"simplify":140,"constprop":141,"fold":41,"strength":20} = 393
+disagreements (G vs in-place query): 2
+  constants edit:r3.0 fold: G=local, query=structural; steps 0,1,2
+  orders edit:r2.0 fold: G=local, query=structural; steps 1,2,3
