@@ -72,7 +72,7 @@ test(
 );
 
 // ---------- F33 (probe 03): nothing about a rejected candidate is published ----------
-test('F33: a candidate the contract rejects does not become a store head', { todo: 'F33' }, async () => {
+test('F33: a candidate the contract rejects does not become a store head', async () => {
   const p = compileTix('fn f(x:f32[N]):f32[N] { y[i] = x[i] * 2; z[i] = y[i] + 1; return z; }');
   const no = C.defineInvariant({
     id: 'r3.no',
@@ -110,7 +110,6 @@ test('F33: a candidate the contract rejects does not become a store head', { tod
 
 test(
   'F33: no accepted execution or fact survives a later preservation failure',
-  { todo: 'F33' },
   async () => {
     const p = compileTix('fn f(x:f32[N]):f32[N] { y[i] = x[i] * 2; z[i] = y[i] + 1; return z; }');
     const candidate = optimizeTix(p, ['inline']).program.current;

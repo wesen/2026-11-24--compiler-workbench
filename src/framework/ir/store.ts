@@ -99,18 +99,40 @@ export class IRStore {
     )
       throw new IRError('ir.revision', 'Edit base does not match the retained artifact');
   }
+  /**
+   * Put a prepared revision in the store. With `base` it replaces that lineage's head under compare-and-swap (the
+   * protocol an edit commit uses); without it, it opens a lineage the store does not hold yet, like `retain`. The
+   * acceptance's commit runs inside the atomic publication window, so the revision and the evidence justifying it
+   * become visible together, and a throwing commit leaves the store exactly as it was (F33).
+   */
+  publish<T>(
+    next: Artifact<T>,
+    options: {
+      readonly base?: Artifact<T>;
+      readonly generation?: number;
+      readonly acceptance?: EditAcceptance;
+    } = {},
+  ): Artifact<T> {
+    return this.#publish(options.base, next, options.acceptance, options.generation);
+  }
   /** Internal commit protocol. No asynchronous operation is permitted inside publication. */
   #publish<T>(
-    base: Artifact<T>,
+    base: Artifact<T> | undefined,
     next: Artifact<T>,
     acceptance: EditAcceptance | undefined,
-    generation: number,
+    generation: number | undefined,
   ): Artifact<T> {
     if (this.#publishing) throw new IRError('ir.reentrant', 'Reentrant IR publication is forbidden');
-    this.assertHead(base, generation);
+    if (base) this.assertHead(base, generation);
     const a = this.#snapshot(next);
-    if (a.id !== base.id || a.kind !== base.kind || a.schemaVersion !== base.schemaVersion)
-      throw new IRError('ir.lineage', 'An edit must preserve artifact identity and native type');
+    if (base) {
+      if (a.id !== base.id || a.kind !== base.kind || a.schemaVersion !== base.schemaVersion)
+        throw new IRError('ir.lineage', 'An edit must preserve artifact identity and native type');
+    } else if (this.#heads.has(a.id))
+      throw new IRError(
+        'ir.lineage',
+        `${a.id} already has a head; a prepared revision of another lineage cannot open it`,
+      );
     if (acceptance) {
       if (typeof acceptance.commit !== 'function' || typeof acceptance.rollback !== 'function')
         throw new IRError('ir.acceptance', 'Verification must return commit and rollback functions');
@@ -128,7 +150,8 @@ export class IRStore {
         a,
       );
       this.#heads.set(a.id, a.revision);
-      this.#generations.set(a.id, this.#generations.get(a.id)! + 1);
+      // an opened lineage starts at generation 0, as `retain` leaves it
+      this.#generations.set(a.id, base ? this.#generations.get(a.id)! + 1 : 0);
       return a;
     } finally {
       this.#publishing = false;
