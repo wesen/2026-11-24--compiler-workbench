@@ -447,3 +447,59 @@ taken against O2's total, which also includes it.
 
 `scripts/01-rule-path-measurement.mjs`: check that the copied matcher is the pre-change one (`git show
 e01f5cb:src/typed/rules/compile.ts`) and that the two paths really compute the same revisions (the script prints it).
+
+## Step 8 — Acceptance run, report, and what I would tell a reviewer
+
+### What I did
+
+Ran every acceptance check on the working tree and wrote the report (`reference/02-report.md`), this ticket's tasks
+and changelog, and the index summary. Prettier on the seven files I touched that were formatted before (the seven
+files `npm run format:check` still reports were unformatted at `e01f5cb` and are nobody's here), then
+`node tools/build-site.mjs`.
+
+The numbers, all on the last commit: my 9 tests in `tests/stdlib/term.test.mjs` pass; the baselines print
+`no differences` (run twice, once after the last code change); `tests/typed` 193 pass / 0 fail / 2 pre-existing skips,
+`tests/framework` 266 / 0, `tests/workbench` 24 / 0 / 1 pre-existing skip, `tests/stdlib` 70 / 0, `tests/tensor`
+without `*-gpu` 51 / 0; `npm run check` clean; the site builds.
+
+### Why
+
+The brief's acceptance list is judged on the last commit, so it has to be run on the last commit — and the baselines
+after the last change to `src/`, not an earlier one.
+
+### What worked
+
+Everything above, and in particular `tests/typed/derivations.test.mjs`'s 183-rule-citing-record test, which is the
+sharpest check that the Typed port changed nothing observable.
+
+### What didn't work
+
+Nothing new. The one mistake of the session is recorded in step 7: a glob (`tests/tensor/*.test.mjs`) matched the five
+`*-gpu.test.mjs` files and ran them once. The brief says not to; I re-ran only the 51 non-GPU tests afterwards.
+
+### What I learned
+
+That the baselines take two minutes and the whole typed suite two and a half, so running both after every change is
+affordable — which is how I caught that the Typed port really did keep the images identical before building on it.
+
+### What was tricky
+
+The `merged` entry, and only that. Everything else had a single obvious shape once the two hooks (`MatchResult.node`
+for a guard, `Template.build` for a binder) existed.
+
+### What warrants a second pair of eyes
+
+1. F40's trade (a truthful correspondence entry for Tix's derivation; the brief's literal instruction is impossible
+   in this framework — report's "Answers to the lane's open questions").
+2. `builderFor` in `src/typed/rules/compile.ts`: provenance on the replacement root only, and `attrs` spread after it.
+3. Whether the library should have a traversal (I argue no, one client).
+4. The measurement's shape: the meaning contract is ~89 % of the rule passes' time and identical on both paths, so the
+   *difference* is clean but the absolute rule-pass times are diluted.
+
+### Code review instructions
+
+Read `reference/02-report.md` first, then in this order: `src/stdlib/term/pattern.ts`, `src/stdlib/term/rules.ts`,
+`src/typed/rules/compile.ts` (beside `git show e01f5cb:src/typed/rules/compile.ts`), `src/tensor/rules.ts`,
+`src/tensor/passes.ts`, `tests/stdlib/term.test.mjs`. Then run, in the worktree root: `npm run build`,
+`node --test tests/stdlib/term.test.mjs`, and the baselines script. The whole diff is 12 files,
++1232/−237 (`git diff --stat e01f5cb -- src tests`).
