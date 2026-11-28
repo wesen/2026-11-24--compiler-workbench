@@ -10,7 +10,7 @@ DocType: index
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: repo://scripts/03-liveness-ab.mjs
+    - Path: repo://ttmp/2026/11/27/IRWB-053-A--stdlib-flow-the-fixpoint-solver-moved-from-the-framework-s-dataflow-layer-liveness-rewritten-on-it/scripts/03-liveness-ab.mjs
       Note: the interleaved old-vs-new liveness A/B that decided the 10% question
     - Path: repo://src/framework/dataflow/solver.ts
       Note: |-
