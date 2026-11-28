@@ -230,3 +230,37 @@ Decisions it left to me, and follow-ups:
   - A non-rejection failure in `optimizeTix` is wrapped in `StrategyExecutionError`.
   - With Typed's worker pool installed, the synchronous driver is refused.
 - **Still asynchronous:** the manager's `execute`, which no pass uses. An abandoned plan leaves its records `running`.
+
+## Step 7: the solver move and F39 merged; cleanup and phase 4 lanes launched
+
+**Solver move (IRWB-053).** Both cells scored clean, and both moved `solve` into `stdlib/flow` behind a re-export shim and rewrote liveness on it. I merged GLM's cell (053-A), because of how it handled the speed question:
+- **GLM** measured both implementations interleaved in one process on the corpus's machine CFGs and found a 5× slowdown. The cause was a per-edge closure; it now passes the closure only when unreachable blocks exist. Final numbers: median ratio 0.91 and minimum ratio 1.00, so equal.
+- **DeepSeek** reports about 20% per call, which it did not remove. Its corpus totals moved by +0.4%, +2.5% and −5.7% across runs, which is noise.
+- **Brief ambiguity:** DeepSeek pointed out that "keep both, with the numbers" reads two ways, keep both copies or keep the change and report the numbers. It chose the second.
+
+**F39 (IRWB-054, DeepSeek): there was no race.**
+- The CUDA sanitizers (`racecheck`, `memcheck`, `synccheck`, `initcheck`) report 0 hazards and 0 errors on all four variants of `batched`. 800 repeats give one bit pattern, equal to the interpreter's, and case generation is deterministic.
+- The cause is sshd on bling dropping connections past `MaxStartups 10:30:100`; its journal shows 125 dropped connections.
+- **The fix,** in `tools/cuda-remote.mjs`: classify a failed ssh step as a dropped connection or a failed command. On a drop, repeat the whole job in a fresh remote directory, up to 6 attempts with jittered backoff. Compile errors and program exits are never retried.
+- **Effect:**
+  - at 6 workers, 35 of 72 checks failed before and 0 of 2,952 after;
+  - at 48 simultaneous jobs, 144 of 144 failed before and 0 after, with 202 dropped connections absorbed.
+- The T6 exactness claims stand. BACKLOG F39 is done.
+
+**Merged** both by cherry-pick onto the working branch, with no conflicts. Checks:
+- tsc clean; Prettier shows the same 8 pre-existing files;
+- suites: typed 186, framework 259, workbench 24, stdlib 56, tensor CPU 45;
+- baselines `no differences`; the site builds.
+- I did not run the GPU suite on the branch, because the phase-4 fusion cell (Fable) holds the GPU. I'll run it when Fable is done.
+
+**Launched** on `v7-p4-base` (`ab23152`). Briefs come from `scripts/10-write-briefs-p4.py`; Fable's cell uses the Agent tool, the rest `scripts/11-launch-p4-lanes.sh`.
+
+| Lane | Ticket | Cells | Decision point |
+|---|---|---|---|
+| cleanup: `steps.ts` into core, one identity algorithm, one plan builder | IRWB-055 | Terra low | — |
+| derivations (K2) | IRWB-056 | GLM high, DeepSeek xhigh | rule-citing records 0 → 183; correspondence from steps equals today's; both A0 policies as queries; more than about 2× cost means local terms on demand |
+| fusion and scheduling as decide/eligible/prepare (K6) | IRWB-057 | Fable | the extent-17 counterexample is rejected; CUDA byte-identical; different `eligible` signatures withdraw the unification |
+| `solveFor` and `pe` | IRWB-058 | Sol low | the restated B1 specializer is at most half the original's lines, or `unfold` is dropped |
+
+- **Held back:** term rules (4.6) and lowering on the runner. Both collide with the derivations lane, the first on `typed/rules`, the second on the runner.
+- **The PR:** the user asked to open a PR into `main` when v7 is done. `main` stays at `c07a1e4` until then.
