@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Compiler,task,ref} from '../../dist/framework/core/index.js';
+import { Compiler, ref } from '../../dist/labs/runtime.js';
+import { task } from '../../dist/framework/core/types.js';
 
 function fixture(body=()=>7) {
   const compiler=new Compiler();

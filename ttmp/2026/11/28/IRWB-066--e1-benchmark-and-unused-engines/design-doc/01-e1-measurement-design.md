@@ -8,47 +8,19 @@ Topics:
 DocType: design-doc
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/framework/passes/transformation.ts
+      Note: The shared runner still obtains a generic IR transaction.
+    - Path: repo://ttmp/2026/11/28/IRWB-066--e1-benchmark-and-unused-engines/scripts/01-e1.mjs
+      Note: Reproduces the E1 edit stream and checks matching facts and verdicts.
 ExternalSources: []
-Summary: ""
+Summary: Paired Typed edit-stream benchmark and R3 adoption gate.
 LastUpdated: 2026-11-28T03:39:32.594958463-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
 
 # E1 measurement design
-
-## Executive Summary
-
-<!-- Provide a high-level overview of the design proposal -->
-
-## Problem Statement
-
-<!-- Describe the problem this design addresses -->
-
-## Proposed Solution
-
-<!-- Describe the proposed solution in detail -->
-
-## Design Decisions
-
-<!-- Document key design decisions and rationale -->
-
-## Alternatives Considered
-
-<!-- List alternative approaches that were considered and why they were rejected -->
-
-## Implementation Plan
-
-<!-- Outline the steps to implement this design -->
-
-## Open Questions
-
-<!-- List any unresolved questions or concerns -->
-
-## References
-
-<!-- Link to related documents, RFCs, or external resources -->
 
 ## Benchmark
 
@@ -65,3 +37,7 @@ Alternate measurement order and use distinct case seeds per repetition to avoid 
 Move the runtime if the gate fails. Moving preserves the conformance usage, unlike deletion. Move the graph pattern and rewrite scheduler and use the existing stdlib term shape as Typed's rule listing pattern. Keeping the graph conversion would retain an approximate representation of structural repeats.
 
 Keep the transaction implementation where the shared transformation runner can use it. Its lazy `ctx.edit` is backed by `View.beginEdit`. Keep traversal's shared implementation while the in-scope view changes leave its other public queries in place. Moving either module wholesale would create a framework-to-labs dependency.
+
+## Matched chess sizes
+
+The intact programs expose actual whole-project costs, but the edited function and number of affected roots differ. Add a controlled chess comparison as well. Pick an eligible chess function without callers, preferring the smallest call closure, and hold its two edits fixed. Compare its closed subprogram, a closed subset near the midpoint of function counts, and full chess. Preserve the global frame-array flag across sizes. In each, check all the functions present. This holds the edited work and invalidated meaning roots constant while adding unaffected functions. Repeating the intact-project comparison alone would confound size with evaluation cost.

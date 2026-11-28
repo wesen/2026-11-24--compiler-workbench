@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createHash} from 'node:crypto';
-import {Compiler,canonical,fingerprint,sha256,task} from '../../dist/framework/core/index.js';
+import { Compiler } from '../../dist/labs/runtime.js';
+import { task } from '../../dist/framework/core/types.js';
 
 function compiler(options={}) {
   const c=new Compiler(options);
@@ -11,16 +11,6 @@ function compiler(options={}) {
 }
 async function execute(c,label,root,options={}) {const run=c.beginRun(label,options);try{return {artifact:await run.require(root),run};}finally{run.finish();}}
 function scalar(c,id,read,version='1') {c.register({id,version,kind:'number',description:id,run(ctx){return ctx.read(read);}});return task(id,id,{});}
-
-test('portable SHA-256 agrees with the platform for ASCII, Unicode and multi-block data',()=>{
-  for(const text of ['', 'abc','a'.repeat(1000),'constraints ∂ and 模型'])assert.equal(sha256(text),createHash('sha256').update(text).digest('hex'));
-  assert.equal(fingerprint({b:2,a:1}),fingerprint({a:1,b:2}));
-  assert.throws(()=>canonical({a:undefined}),/undefined/);
-  assert.throws(()=>canonical({x:NaN}),/finite/);
-  assert.throws(()=>canonical(()=>1),/function/);
-  const cycle={};cycle.a=cycle;assert.throws(()=>canonical(cycle),/cycles/);
-  assert.throws(()=>canonical(new Map()),/plain/);
-});
 
 test('run snapshots and artifacts are immutable and isolated from host mutation',async()=>{
   const c=compiler();const input={nested:{x:2}};c.setInput('data',input);

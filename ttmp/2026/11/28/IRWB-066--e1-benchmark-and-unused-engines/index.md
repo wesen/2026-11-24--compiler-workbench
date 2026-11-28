@@ -10,7 +10,7 @@ Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
-Summary: ""
+Summary: E1 measurements and the extraction of unused engines to labs.
 LastUpdated: 2026-11-28T03:39:31.565407628-05:00
 WhatFor: ""
 WhenToUse: ""
@@ -20,12 +20,14 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Compare incremental checking with the existing manager and with the query runtime. The runtime reduces some per-edit costs but fails the size-scaling gate. Labs now own the query runtime, graph patterns, and rewrite scheduler. The framework retains traversal and transactions used by its shared IR APIs.
 
 ## Key Links
 
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
+- [Measurement design](design-doc/01-e1-measurement-design.md)
+- [Diary](reference/01-diary.md)
+- [Results and engine disposition](reference/02-e1-results-and-engine-disposition.md)
+- [Benchmark](scripts/01-e1.mjs)
 
 ## Status
 
@@ -43,12 +45,3 @@ See [tasks.md](./tasks.md) for the current task list.
 ## Changelog
 
 See [changelog.md](./changelog.md) for recent changes and decisions.
-
-## Structure
-
-- design/ - Architecture and design documents
-- reference/ - Prompt packs, API contracts, context summaries
-- playbooks/ - Command sequences and test procedures
-- scripts/ - Temporary code and tooling
-- various/ - Working notes and research
-- archive/ - Deprecated or reference-only artifacts

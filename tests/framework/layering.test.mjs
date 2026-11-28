@@ -38,7 +38,7 @@ test('strategy, contracts and ir use only core/data, core/types and core/steps f
         );
 });
 
-test('the core runtime imports no higher framework layer', () => {
+test('core primitives import no higher framework layer', () => {
   for (const f of files(join(src, 'framework', 'core')))
     for (const i of imports(f))
       assert.ok(i.startsWith('framework/core/'), `${relative(src, f)} imports ${i}`);

@@ -8,7 +8,7 @@ import type {
   IREdge,
   Metric,
   Task,
-} from './types.js';
+} from '../framework/core/types.js';
 
 export interface InputDependency {
   type: 'input';
