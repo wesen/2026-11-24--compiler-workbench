@@ -21,7 +21,7 @@ target=$(node --test --test-name-pattern="$RE" "${files[@]}" 2>&1 | grep -E '^â„
 base=$(ROOT="$W" timeout 1800 node $T/scripts/02-baselines.mjs check $T/various/baselines/main.json 2>&1 | grep -v '^timing' )
 ndiff=$(echo "$base" | grep -c -v '^no differences')
 suites=""
-for d in typed framework workbench tensor stdlib; do
+for d in typed framework workbench tensor stdlib labs; do
   [ -d tests/$d ] || continue
   fs=$(ls tests/$d/*.test.mjs | grep -v -- '-gpu.test.mjs')
   r=$(node --test $fs 2>&1 | grep -E '^â„¹ (pass|fail|todo)' | awk '{printf "%s=%s ", $2, $3}')
