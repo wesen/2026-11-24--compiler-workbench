@@ -21,7 +21,7 @@ RelatedFiles:
       Note: the lowering check that reported accepted false
     - Path: repo://src/tensor/cuda-runtime.ts
       Note: one job per forced mode, three ssh steps each
-Summary: 'F39 is not a race in the tiled contraction: sshd drops connections past MaxStartups and the runner turned the dropped job into accepted:false. Fixed in tools/cuda-remote.mjs by repeating the job; 35/72 checks failed before, 0/2152 after.'
+Summary: 'F39 is not a race in the tiled contraction: sshd drops connections past MaxStartups and the runner turned the dropped job into accepted:false. Fixed in tools/cuda-remote.mjs by repeating the job; 35/72 checks failed before, 0/2952 after.'
 LastUpdated: 2026-11-27T23:08:00.000000000-05:00
 WhatFor: ""
 WhenToUse: ""
@@ -43,7 +43,7 @@ and `checkCudaLowering` reports any failure of the evidence as `accepted: false`
 
 The fix is in `tools/cuda-remote.mjs`: a step whose connection was dropped is repeated as a whole job in a fresh
 remote directory (six attempts, jittered doubling backoff), a step whose command failed is not. 35 of 72 checks failed
-under suite concurrency before, 0 of 2 152 after; 288 of 288 jobs failed before the fix and 0 of 288 after it, with
+under suite concurrency before, 0 of 2 952 after; 288 of 288 jobs failed before the fix and 0 of 288 after it, with
 339 dropped connections absorbed. Start with the report, then the design doc.
 
 ## Key Links
