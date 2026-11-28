@@ -17,6 +17,8 @@ const { SIMPLIFY_RULES } = await import('../../dist/typed/rules/simplify.js');
 const open = () => Program.fromProject(projectSource('regex-nfa', projectAllFiles('regex-nfa')));
 const input = { pattern: { string: '[a-c]*[b-d]*a*d' }, text: { string: 'abccabbd' } };
 const sum = (rows, k) => rows.reduce((n, r) => n + r[k], 0);
+/** The revision chain that produced the program's head, as the provenance query reads it. */
+const chain = p => p.revisions.slice(1).map(r => ({ pass: r.pass, correspondence: r.correspondence }));
 
 test('at r0 every executed instruction of a statement is untouched, and both tables sum to the run', () => {
   const p = open();
@@ -42,7 +44,7 @@ test('after speed the constant bounds checks that remain are the hottest untouch
   const run = await p.pipeline('speed', { count: 10 });
   assert.deepEqual(run.steps.filter(s => s.rejected), []);
   const call = benchCase(storeOf(p.origin.value), 'regexMatch', input);
-  const h = hotShapes(p.head, [call], { rules: SIMPLIFY_RULES.rules });
+  const h = hotShapes(p.head, [call], { chain: chain(p), rules: SIMPLIFY_RULES.rules });
   assert.equal(h.total, runImage(lowerToImage(p.head).image, call.fn, call.args, call.memory).steps);
   assert.equal(sum(h.statements, 'instructions') + h.frame, h.total);
   assert.equal(sum(h.nodes, 'instructions') + h.frame, h.total);
@@ -67,7 +69,7 @@ test('guards removes the checks the table showed: fewer instructions in the shap
   const measure = async list => {
     const p = open();
     for (const pass of list) await p.apply(pass, { count: 10 });
-    const h = hotShapes(p.head, [call]);
+    const h = hotShapes(p.head, [call], { chain: chain(p) });
     return { total: h.total, checks: h.statements.find(r => r.shape === 'if geu(x, #)').instructions };
   };
   const now = await measure(PIPELINES.speed);

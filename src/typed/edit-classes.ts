@@ -1,28 +1,41 @@
 /**
  * IRWB-035-G: a classifier for the edits of one pass application.
  *
- * Input: the revision before, the revision after and the application's edit records (a `Revision` of a `Program`
- * holds all three). Output: one class per edit record, decided from the records and the two revisions alone, never
- * from the pass's name, so a user pass or a new pass is classified by the same rules.
+ * Input: the revision before, the revision after, the application's edit records and its derivation (a `Revision`
+ * of a `Program` holds all four). Output: one class per edit record, decided from the records and the two revisions
+ * alone, never from the pass's name, so a user pass or a new pass is classified by the same rules.
  *
- *   local        a `replace` edit (a statement keeps its place and one of its value trees A becomes B) where B
- *                reads only locals the input revision already defines: B reads no local this application created
- *                and no local this application inserted a `set` for. The claim "A = B at this statement" is then
- *                a statement about the input revision alone.
- *                  local/rule      B is A normalized by one verified rule table (re-derived here from the rule
- *                                  data, bottom-up, first matching rule, as `Tx.rewrite` applies a table)
- *                  local/fact      not re-derived; the made value's origin names what it holds by (`because`)
- *                  local/uncited   not re-derived and no `because`
+ * IRWB-065-A: the class is a query over the records the producer wrote (R3 K2: no class field, no second account
+ * re-derived from the trees). A `replace` edit is classified by the chain of replaces of one statement field, and
+ * the chain's class is read off the derivation steps its edits cite (`Edit.steps`, the same records
+ * `locality` in `src/framework/ir/derivation.ts` answers its two policies from):
+ *
+ *   local        every step the chain cites is local under the *in-place* policy (G's reading, IRWB-056-B's query:
+ *                the step needs nothing this application placed into the program — a local it created, a statement
+ *                it inserted, a value it made outside a rule chain; the intermediates of the application's own
+ *                rewrite chains count as part of the chain's net change, `inPlaceInput`).
+ *                  local/rule      a cited step is a rule step: the table and rules that actually fired, in firing
+ *                                  order, with the weakest recorded evidence among them
+ *                  local/fact      no rule step, and a step cites a premise (a fact or an entity of the input)
+ *                  local/uncited   no rule step and no premise
  *   structural   an edit of the control-flow graph or of where a computation is placed: `block`, `retarget`,
  *                `replaceStmt`, `merge`, `move`, `unreachable`, `insert`, `local`, `inline`, the removal of a
- *                terminator or of an inlined call's statement, and a `replace` whose B reads a local this
- *                application created or inserted a `set` for (the value now comes from a statement placed elsewhere).
+ *                terminator or of an inlined call's statement, and a `replace` some cited step of which is not
+ *                local under the in-place policy (the value now comes from a statement placed elsewhere).
  *                Every such edit in a function that has an `inline` edit has the reason `inline`.
  *   other        the removal of a statement that is not a terminator (dead code), `note`, kinds not listed here,
- *                and a `replace` whose trees are in neither revision.
+ *                a `replace` whose trees are in neither revision, and a `replace` of an application that records
+ *                no derivation (its edits cite no steps, so no query over records can classify them).
  *
  * Several `replace` edits of one statement field in one application form a chain (the intermediate trees are in
  * neither revision); every member gets the class of the chain's net change, first `from` to last `to`.
+ *
+ * What still walks the trees is not classification: `parts`/`shapeOf` describe *what* changed (the entities an edit
+ * removed and added, the shape of a rewrite no rule licensed) for `instructionWeights` and the shape label. The
+ * rule tables themselves are re-run only by `rederive`, kept below as an *audit*: a check that the derivation's
+ * rule names agree with what the tables do to the trees. Since IRWB-060-A the matcher is the standard library's
+ * (`src/stdlib/term`); since IRWB-065-A the template instantiation is too (`instantiate` with a `Build` over
+ * plain trees), so this file holds no rule semantics of its own.
  *
  * `instructionWeights` gives each edit the RV32 instructions it affects: the instructions of the image lowered from
  * the revision before that implement entities the edit removed, plus those of the image after that implement
@@ -34,14 +47,18 @@ import { IMPURE } from './analyses.js';
 import type { Rv32Image } from './backend/image.js';
 import { F32_RESULT } from './f32.js';
 import { COMPARE } from './listing.js';
+import { entityIdSet } from './ir.js';
 import type { StmtRec, TypedBlocks, ValueOp, ValueRec } from './model.js';
-import { firstMatch, indexRules, numOf, type Bindings } from './rules/compile.js';
+import { firstMatch, indexRules, numOf } from './rules/compile.js';
 import { IDENTITY_RULES } from './rules/identities.js';
 import { ALL_EVIDENCE } from './rules/listing.js';
 import { FOLD_RULES } from './rules/fold.js';
-import type { Rule, RuleSet, Tpl } from './rules/form.js';
+import type { Num, Rule, RuleSet } from './rules/form.js';
 import { SIMPLIFY_RULES } from './rules/simplify.js';
 import type { Edit, ValueHandle } from './tx.js';
+import { inPlaceInput, locality } from '../framework/ir/derivation.js';
+import type { Derivation, DerivationStep } from '../framework/ir/derivation.js';
+import { instantiate, type Build } from '../stdlib/term/terms.js';
 
 export type EditClass = 'local' | 'structural' | 'other';
 
@@ -50,6 +67,8 @@ export interface Application {
   readonly before: TypedBlocks;
   readonly after: TypedBlocks;
   readonly edits: readonly Edit[];
+  /** The application's own record of why (`Revision.derivation`); the class of an edit is a query over it. */
+  readonly derivation?: Derivation;
 }
 
 export interface RuleMatch {
@@ -128,25 +147,24 @@ const handle = (t: Tree): TreeHandle => ({
   isBoolean: COMPARE.has(t.op),
   same: other => sameTree(t, other.tree),
 });
-const treeBound = (b: Bindings, x: string): Tree => (b.get(x) as unknown as TreeHandle).tree;
 
-/** A rule's right-hand side as a tree, with the types `Tx.const` and `Tx.make` give. */
-function instantiate(t: Tpl, b: Bindings): Tree {
-  if ('var' in t) return treeBound(b, t.var);
-  if ('const' in t)
-    return {
-      op: 'const',
-      imm: numOf(t.const, x => treeBound(b, x).imm as number) | 0,
-      type: t.type,
-      args: [],
-    };
-  return {
-    op: t.op,
+/** A rule's right-hand side as a tree, built through the standard library's `instantiate` (IRWB-060-B's move). */
+const treeBuild: Build<ValueHandle, Num, Tree> = {
+  ref: h => (h as unknown as TreeHandle).tree,
+  value: (n, b) => numOf(n, x => (b.get(x) as unknown as TreeHandle).tree.imm as number),
+  constant: (value, _root, type) => ({
+    op: 'const',
+    imm: value | 0,
+    type: (type as Tree['type']) ?? undefined,
+    args: [],
+  }),
+  make: (op, args) => ({
+    op: op as ValueOp,
     imm: undefined,
-    type: F32_RESULT.has(t.op) ? 'f32' : undefined,
-    args: t.args.map(a => instantiate(a, b)),
-  };
-}
+    type: F32_RESULT.has(op as ValueOp) ? 'f32' : undefined,
+    args,
+  }),
+};
 
 /** `t` rewritten bottom-up by a table: operands first, then the first matching rule at the root, not revisited. */
 export function normalize(t: Tree, index: ReadonlyMap<string, readonly Rule[]>, fired: string[]): Tree {
@@ -155,15 +173,24 @@ export function normalize(t: Tree, index: ReadonlyMap<string, readonly Rule[]>, 
   const m = firstMatch(index, handle(n) as unknown as ValueHandle);
   if (!m) return n;
   fired.push(m.rule.name);
-  return instantiate(m.rule.rhs, m.bindings);
+  return instantiate(m.rule.rhs, m.bindings, treeBuild);
 }
 
 /** The verified tables an edit may be an instance of. */
 export const VERIFIED_TABLES: readonly RuleSet[] = [SIMPLIFY_RULES, FOLD_RULES, IDENTITY_RULES];
 const STRENGTHS = ['proof', 'exhaustive', 'by-construction', 'reduced-width+argument', 'sampled', 'none'];
 const INDEXES = new Map<RuleSet, Map<string, Rule[]>>();
+/** The weakest recorded evidence strength among the rules a rewrite fired. */
+export const weakestEvidence = (fired: readonly string[]): string =>
+  fired
+    .map(n => ALL_EVIDENCE[n]?.strength ?? 'none')
+    .reduce((w, s) => (STRENGTHS.indexOf(s) > STRENGTHS.indexOf(w) ? s : w), 'proof');
 
-/** The first table that rewrites `a` into `b`, with the rules it fired; undefined when none does. */
+/**
+ * The audit: the first table that rewrites `a` into `b`, with the rules it fired; undefined when none does. The
+ * classifier does not use this — the derivation names the rules that fired. This is kept as the check that the
+ * derivation's rule names agree with what the rule tables do to the trees (tests run it over the corpus).
+ */
 export function rederive(
   a: Tree,
   b: Tree,
@@ -174,10 +201,7 @@ export function rederive(
     if (!index) INDEXES.set(table, (index = indexRules(table.rules)));
     const fired: string[] = [];
     if (!sameTree(normalize(a, index, fired), b) || !fired.length) continue;
-    const weakest = fired
-      .map(n => ALL_EVIDENCE[n]?.strength ?? 'none')
-      .reduce((w, s) => (STRENGTHS.indexOf(s) > STRENGTHS.indexOf(w) ? s : w), 'proof');
-    return { table: table.name, fired, weakest };
+    return { table: table.name, fired, weakest: weakestEvidence(fired) };
   }
   return undefined;
 }
@@ -229,11 +253,6 @@ const stmtNodes = (v: TypedBlocks, sid: string): string[] => {
   if (!s) return [];
   return [sid, ...nodes(v.values, s.value), ...nodes(v.values, s.cond), ...nodes(v.values, s.addr)];
 };
-const reads = (t: Tree, out = new Set<number>()): Set<number> => {
-  if (t.op === 'get') out.add(t.imm as number);
-  t.args.forEach(a => reads(a, out));
-  return out;
-};
 /**
  * Where the trees rooted at `a` (before) and `b` (after) part: the roots of the differing subtrees on each side,
  * and the values above them that were made again with the same operator, immediate and type.
@@ -280,6 +299,31 @@ function branchShape(a: StmtRec | undefined, b: StmtRec | undefined, v: TypedBlo
   return 'cfg';
 }
 
+/** The derivation steps an edit cites (`Edit.steps` index the application's derivation). */
+const cited = (derivation: Derivation | undefined, e: Edit): readonly DerivationStep[] =>
+  derivation ? (e.steps ?? []).map(i => derivation.steps[i]).filter(s => s !== undefined) : [];
+
+/**
+ * The rules a chain's cited steps fired, one name per firing, in firing order. One firing makes every entity its
+ * right-hand side builds — the computed constants and the node over them — so it is a run of steps under the same
+ * rule at the same site (`consumes`, the matched tree): a later firing, even of the same rule at another node,
+ * reads another site. This is the record-side spelling of what `normalize`'s `fired` list re-derives.
+ */
+export function firedRules(steps: readonly DerivationStep[]): readonly string[] {
+  const fired: string[] = [];
+  let prev = '';
+  for (const s of steps) {
+    if (!('rule' in s.by)) {
+      prev = '';
+      continue;
+    }
+    const run = `${s.by.table ?? ''}/${s.by.rule}|${s.consumes.join(',')}`;
+    if (run !== prev) fired.push(s.by.rule);
+    prev = run;
+  }
+  return fired;
+}
+
 /** One class per edit record of an application, in the order of `app.edits`. */
 export function classifyApplication(app: Application): ClassifiedEdit[] {
   const { before, after, edits } = app;
@@ -288,23 +332,14 @@ export function classifyApplication(app: Application): ClassifiedEdit[] {
   const claimed = new Set<string>();
   const claim = (ids: readonly string[], keep: (id: string) => boolean) =>
     ids.filter(id => keep(id) && !claimed.has(id) && (claimed.add(id), true));
-  // per function: the locals this application created or inserted a `set` for, and the inlined statements
-  const placed = new Map<string, Set<number>>(),
-    inlined = new Set<string>(),
+  // per function: the statements of an inlined call, and the functions that have one
+  const inlined = new Set<string>(),
     inlining = new Set<string>();
-  const placedIn = (fn: string) => placed.get(fn) ?? placed.set(fn, new Set()).get(fn)!;
-  for (const e of edits) {
-    if (e.kind === 'local') {
-      const i = after.fns[e.fn]?.locals.findIndex(l => l.name === e.name) ?? -1;
-      if (i >= 0) placedIn(e.fn).add(i);
-    } else if (e.kind === 'insert') {
-      const s = after.stmts[e.stmt as string];
-      if (s?.op === 'set') placedIn(e.fn).add(s.local!);
-    } else if (e.kind === 'inline') {
+  for (const e of edits)
+    if (e.kind === 'inline') {
       inlined.add(`${e.fn} ${e.stmt}`);
       inlining.add(e.fn);
     }
-  }
   // chains of `replace` edits of one statement field: first `from`, last `to`
   const chains = new Map<string, Edit[]>();
   for (const e of edits)
@@ -312,6 +347,8 @@ export function classifyApplication(app: Application): ClassifiedEdit[] {
       const k = `${e.stmt}.${e.field}`;
       (chains.get(k) ?? chains.set(k, []).get(k)!).push(e);
     }
+  // the class query's input: the entities an in-place claim may rest on (IRWB-065-A's settled reading)
+  const input = app.derivation ? inPlaceInput(app.derivation, [...entityIdSet(before)]) : undefined;
   const base = (e: Edit) => ({ id: e.id, pass: e.pass, fn: e.fn, kind: e.kind });
   const none = { removed: [], added: [], touched: [] };
   return edits.map((e): ClassifiedEdit => {
@@ -339,20 +376,30 @@ export function classifyApplication(app: Application): ClassifiedEdit[] {
           touched: [],
           rebuilt: d.rebuilt.filter(id => (id in before.values ? isGone(id) : isNew(id))),
         };
-        const p = placed.get(e.fn);
-        if (p && [...reads(b)].some(l => p.has(l)))
+        // the chain's class, read off the derivation steps its edits cite — or off the trees, for its shape
+        const steps = chain.flatMap(x => cited(app.derivation, x));
+        if (!steps.length)
+          return {
+            ...base(e),
+            class: 'other',
+            sub: 'unrecorded',
+            ...io,
+          };
+        if (!input || steps.some(s => locality(s, input, 'in-place') !== 'local'))
           return { ...base(e), class: 'structural', sub: inlining.has(e.fn) ? 'inline' : 'motion', ...io };
-        // the table named after the pass first, so an edit two tables re-derive is counted for its own
-        const rule = rederive(
-          a,
-          b,
-          [...VERIFIED_TABLES].sort((s, t) => +(t.name === e.pass) - +(s.name === e.pass)),
-        );
-        if (rule) return { ...base(e), class: 'local', sub: 'rule', rule, ...io };
-        // what the made values say they hold by: the `because` of the new values of B
-        const because = nodes(after.values, to)
-          .filter(isNew)
-          .flatMap(id => after.values[id].origin[0]?.because ?? []);
+        const by = steps.flatMap(s => ('rule' in s.by ? [s.by] : []));
+        if (by.length) {
+          const fired = firedRules(steps);
+          return {
+            ...base(e),
+            class: 'local',
+            sub: 'rule',
+            rule: { table: by[0].table ?? e.pass, fired, weakest: weakestEvidence(fired) },
+            ...io,
+          };
+        }
+        // what the cited steps say they hold by: a premise that is not one of the rule guards
+        const because = steps.flatMap(s => s.premises.filter(p => !p.startsWith('guard:')));
         return {
           ...base(e),
           class: 'local',

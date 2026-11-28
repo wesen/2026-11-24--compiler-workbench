@@ -9,14 +9,16 @@
  *   - its statement, abstracted to a shape: locals are `x`, constants `#` (0, 1 and -1 stay), block names go;
  *   - its value node, as the pattern a rewrite rule would have to match: the operator over its operands' operators
  *     (`eq(load, #)`); an instruction that only builds a leaf (a constant, a read) is credited to the leaf's user.
- * Each site carries its provenance: the passes named by the origins of the statement and of every value under it
- * (`ingest` alone: the front end's code, as it was at r0). A shape's `untouched` count is the instructions at sites
- * whose provenance is `ingest` alone. Node patterns also say how many rules of the given tables have that root
- * operator, so "hot, untouched, and no rule looks at this operator" can be read off one row.
+ * Each site carries its provenance: the passes that made the code it runs (IRWB-065-A: a query over the revision
+ * chain's recorded correspondences, `provenanceLabels` — a statement or value no link changed is the front end's
+ * code, as it was at r0). A shape's `untouched` count is the instructions at sites whose provenance is `ingest`
+ * alone. Node patterns also say how many rules of the given tables have that root operator, so "hot, untouched, and
+ * no rule looks at this operator" can be read off one row.
  *
  * The counts are the emulator's: the rows of each table sum to the executed instructions of the calls.
  */
 import type { Artifact } from '../framework/core/types.js';
+import { provenanceLabels, type ProvenanceLink } from '../framework/ir/attribution.js';
 import type { AttributedCall } from './attribute.js';
 import { lowerToImage, runImage, type BackendOptionsInput } from './backend/index.js';
 import { storeOf } from './ir.js';
@@ -111,6 +113,8 @@ export function hotShapes(
     readonly backend?: BackendOptionsInput;
     readonly rules?: readonly Rule[];
     readonly limit?: number;
+    /** The revision chain that produced `head`, newest last (`Program.revisions`): where each site's code came from. */
+    readonly chain?: readonly ProvenanceLink[];
   } = {},
 ): HotShapes {
   const st = storeOf(head.value);
@@ -126,17 +130,18 @@ export function hotShapes(
   // per statement: its provenance label, and each value's parent (a value has one user)
   const parent = new Map<string, string>(),
     label = new Map<string, string>();
+  const of = provenanceLabels(options.chain ?? []);
   const provenanceOf = (sid: string): string => {
     let l = label.get(sid);
     if (l !== undefined) return l;
     const s = st.get(sid) as StmtRec,
       vias = new Set<string>();
-    for (const o of s.origin) vias.add(o.via);
+    vias.add(of(sid) ?? 'ingest');
     const walk = (id: string | undefined, up: string) => {
       if (!id) return;
       const v = st.get(id) as ValueRec;
       parent.set(id, up);
-      for (const o of v.origin) vias.add(o.via);
+      vias.add(of(id) ?? 'ingest');
       for (const a of v.args) walk(a, id);
     };
     walk(s.value, sid);
