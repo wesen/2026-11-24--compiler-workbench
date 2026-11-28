@@ -33,6 +33,10 @@ topics:
       description: A producer's record of why a revision changed
     - slug: correspondence
       description: The entity correspondence between two revisions
+    - slug: stdlib
+      description: The standard library of compiler algorithms (src/stdlib)
+    - slug: typed
+      description: The Typed language and its compiler (src/typed)
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes
@@ -46,6 +50,8 @@ docTypes:
       description: Skill documentation (what it's for and when to use it)
     - slug: analysis
       description: Code analysis, research, deep dives
+    - slug: report
+      description: 'A ticket''s final report: what was built and the acceptance results'
 intent:
     - slug: long-term
       description: Likely to persist
