@@ -21,12 +21,14 @@
  *             distance vectors over them (a read's index per position against the consumer's axis)
  *             directions — direction vectors, strip-mining, and the legality of a loop order with parallel loops
  *   num/      binary32 arithmetic on bit patterns, and min/max under a named IEEE 754-2019 profile
+ *   term/     terms — first-order rewriting over a signature: structural hash and equality, pattern
+ *             matching and template instantiation, a rule index and first match; verify — rule
+ *             validation by evaluation on generated cases (campaigns over a domain-supplied semantics)
  *
  * Later modules, one line each (each enters under the admission rule, with its two clients):
  *   graph/    dominance frontiers
  *   num/      exact small-number helpers (saturating and wrapping arithmetic)
  *   ssa/      SSA construction — from a graph and dominators to phi placement
- *   term/     terms over a signature, matching and substitution
  *   pe/       partial evaluation — specialization over a term and an affine form
  *   check/    executable laws over library results (a checker per admitted algorithm)
  *   measure/  cost measures over library results (sizes, depths)
@@ -73,3 +75,35 @@ export type { Direction, OrderViolation, ScheduledLoop } from './affine/directio
 
 export { solveFor } from './flow/solve-for.js';
 export type { Budget, Equations, Solution as LocalSolution } from './flow/solve-for.js';
+
+export {
+  firstMatch,
+  indexRules,
+  instantiate,
+  match,
+  patternVars,
+  structuralEqual,
+  structuralHash,
+  templateVars,
+} from './term/terms.js';
+export type {
+  Bindings,
+  Build,
+  Pattern,
+  RuleIndex,
+  RuleMatch,
+  Signature,
+  Template,
+  TermRule,
+} from './term/terms.js';
+export { enumerateCases, exhaustiveCases, Rng, sampleCases, verifyRule } from './term/verify.js';
+export type {
+  CaseResult,
+  CaseSemantics,
+  CaseSet,
+  CaseVar,
+  Counterexample,
+  Interpretation,
+  RuleSemantics,
+  RuleVerdict,
+} from './term/verify.js';

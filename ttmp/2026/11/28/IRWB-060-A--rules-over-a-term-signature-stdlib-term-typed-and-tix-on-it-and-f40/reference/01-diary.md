@@ -64,3 +64,54 @@ change in the framework, not only an addition.
 `src/framework/ir/derivation.ts` (`stepEntries`) and `src/framework/passes/define-pass.ts`
 (`prepareNative`); run `node scripts/01-inline-correspondence-today.mjs` on the base commit to see the
 pinned `removed` entry.
+
+## Step 2: the library (`src/stdlib/term/`), with its tests
+
+**What I did.** Wrote `src/stdlib/term/types.ts` (the rule shapes: `Pattern`, `Template<C>`, `TermRule<G, C>`),
+`terms.ts` (`Signature<T>` with `op`/`args`/`constant?`/`attr?`/`equal?`; `match`; `indexRules`/`firstMatch`
+(guards receive the bindings **and the matched term** — Tix's split-sum guard reads the matched reduce's
+axes); `instantiate` over a `Build` callback object, children first, left to right; `structuralHash`/
+`structuralEqual`; `patternVars`/`templateVars`) and `verify.ts` (`Rng` moved verbatim from Typed's
+verify.ts; the campaigns `enumerateCases`, `sampleCases`, `exhaustiveCases` over a domain-supplied
+`CaseSemantics`; and `verifyRule`, the Alive-style entry: a rule, an interpretation, a case generator,
+refusing an unbound template variable before any case). Exported both from `src/stdlib/index.ts` and
+moved `term/` from the "later modules" list to the existing ones. Wrote `tests/stdlib/term.test.mjs`
+(six tests: matching incl. `same` and arity, first-match order and guards, instantiation order and the
+root/child distinction, the hash/equality laws, verification of a sound rule and refusal of a wrong one
+with a counterexample, and the campaigns' guard and seed behaviour).
+
+**Why.** The shapes follow the intern guide's proposal and Typed's existing names so the move is
+recognisable; guards stay domain data because `pure` is a Typed fact and "used exactly once" is a fact
+about a statement list; `Template` is parameterised by the domain's computed-constant type because
+Typed's template constants are computed (`{log2 k}`, `{eval op, args}`).
+
+**What worked.** The tests pass (6/6), the layering test passes (`term/` imports nothing outside
+`src/stdlib/`), `npm run check` and Prettier are clean.
+
+**What didn't work.** Three test-time failures, all mine: (a) my `same` example wrapped the repeated
+operand in an `add`, so the two sides were *not* structurally equal — the library was right, the test
+term was wrong; (b) I forgot that `verifyRule` runs sampling on top of a full enumeration, so the
+methods list has both; (c) my sampleCases case count forgot that random draws can fail the side
+condition too (deterministically with a fixed seed: 24, not 25). Also three compile errors: `in`-union
+narrowing needs the op member as a positive check (I reordered `match` to test `'op' in p` first), and
+`TermRule.lhs` had to be typed as the op variant (`OpPattern`) — a rule's left side is never a bare
+variable, which Typed's `checkRule` already enforces for its tables.
+
+**What I learned.** The stdlib layering test is a source-level import check, so `types.ts` must not
+even type-import from `src/typed/` (my first draft documented the structural correspondence with an
+import; deleted).
+
+**What was tricky.** Keeping the campaigns *verbatim* in structure (the `product` order, the guard
+before the count, the crossing cap of 200000, `cases + x` on a mid-sweep failure) so Typed's recorded
+evidence can reproduce; and the `Rng` belongs to the interface for exactly that reason.
+
+**What warrants a second pair of eyes.** `verifyRule`'s default enumeration budget (2^16) and sampling
+default (1e5): the first is the size at which a crossing loop is still a complete check rather than a
+sampled one; both are only defaults a caller overrides. Also whether `exhaustiveCases`'s no-guard-check
+inner loop (copied from Typed, where the bounded domains fix every input a condition could read)
+should be a stated precondition instead.
+
+**Code review instructions.** Read `src/stdlib/term/terms.ts` against `src/typed/rules/compile.ts`'s
+`matchPat`/`firstMatch`/`instantiate` (they must agree case for case); read `src/stdlib/term/verify.ts`
+against `src/typed/rules/verify.ts`'s methods 4–7 (the loops must be the same); run
+`node --test tests/stdlib/term.test.mjs`.
