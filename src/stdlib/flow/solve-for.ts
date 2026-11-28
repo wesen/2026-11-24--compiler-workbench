@@ -9,7 +9,7 @@ export interface Equations<K, V> {
 }
 
 export interface Budget {
-  /** Maximum number of right-hand-side evaluations. Infinity means unbounded. */
+  /** Non-negative integer limit on right-hand-side evaluations, or Infinity. */
   readonly evaluations: number;
 }
 
@@ -17,6 +17,7 @@ export interface Solution<K, V> {
   readonly status: 'stable' | 'exhausted';
   readonly values: ReadonlyMap<K, V>;
   readonly evaluations: number;
+  /** Batches started, including a partially evaluated final batch on exhaustion. */
   readonly rounds: number;
 }
 

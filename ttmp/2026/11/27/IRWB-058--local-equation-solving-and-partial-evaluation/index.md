@@ -1,15 +1,16 @@
 ---
 Title: Local equation solving and partial evaluation
 Ticket: IRWB-058
-Status: active
-Topics: []
+Status: complete
+Topics:
+    - compiler
 DocType: index
 Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-27T23:46:40.301413017-05:00
+LastUpdated: 2026-11-28T00:04:29.795252552-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -18,7 +19,10 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Phase 4 adds demand-driven equation solving and ports Typed SCCP. The B1 restatement exceeded the line-count limit, so the original specializer remains in Typed.
+
+- [Phase 4 report](./analysis/01-phase-4-report.md)
+- [Implementation diary](./log/01-implementation-diary.md)
 
 ## Key Links
 
@@ -27,7 +31,7 @@ WhenToUse: ""
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 

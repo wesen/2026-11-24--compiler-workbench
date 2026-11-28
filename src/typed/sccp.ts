@@ -25,7 +25,7 @@ import { typeClass, type StmtRec, type Store, type ValueRec, type WorkFn } from 
 import { PASSES, PIPELINES, typedPass, type TypedPass } from './passes.js';
 import { evalOp } from './rules/compile.js';
 import { FOLD_I32 } from './rules/fold.js';
-import { ssaOf, VIRTUAL_ENTRY, type SsaFn } from './ssa.js';
+import { VIRTUAL_ENTRY, type SsaFn } from './ssa.js';
 
 /** A constant's bits and the type it is read as; f32 values are carried as IEEE bit patterns, so both are integers. */
 export type Const = { readonly v: number; readonly t: 'i32' | 'f32' };
@@ -46,6 +46,7 @@ export interface SccpResult {
   /** Executable edges as `pred>block` ('^entry>entry' included). */
   readonly edges: ReadonlySet<string>;
   readonly blocks: ReadonlySet<string>;
+  /** Batches of scheduled equations evaluated by the solver. */
   readonly rounds: number;
 }
 
@@ -66,7 +67,7 @@ export function sccpOf(st: Store, f: WorkFn, ssa: SsaFn): SccpResult {
       const branch = st.get(sid) as StmtRec;
       const targets =
         branch.op === 'br' ? [branch.to!] : branch.op === 'br_if' ? [branch.then!, branch.else!] : [];
-      for (const to of targets) {
+      for (const to of new Set(targets)) {
         const id = `${b.id}>${to}`;
         const old = edgesById.get(id);
         if (old) {
@@ -89,7 +90,10 @@ export function sccpOf(st: Store, f: WorkFn, ssa: SsaFn): SccpResult {
   const evalTree = (vid: string, get: Get): Lat => {
     const v = st.get(vid) as ValueRec;
     if (v.op === 'const') return constant(v.imm as number, v.type === 'f32' ? 'f32' : 'i32');
-    if (v.op === 'get') return ssa.uses[vid] === undefined ? BOT : get(ssa.uses[vid]);
+    if (v.op === 'get') {
+      const name = ssa.uses[vid];
+      return name === undefined ? BOT : get(name);
+    }
     if (!FOLDS.has(v.op)) return TOP;
     const args = v.args.map(a => evalTree(a, get));
     if (args.some(a => a === TOP)) return TOP;
@@ -184,10 +188,11 @@ export const sccp: TypedPass = typedPass({
   name: 'sccp',
   about:
     'sparse conditional constant propagation: a read whose SSA name is constant on the executable edges becomes that constant',
+  needs: { ssa: 'ssa' },
   writes: ['values'],
   preserves: ['cfg', 'dominators', 'loops'],
-  body({ st, f, tx }) {
-    const ssa = ssaOf(st, f),
+  body({ st, f, tx, facts }) {
+    const ssa = facts.ssa!,
       res = sccpOf(st, f, ssa);
     for (const b of f.blocks) {
       if (!res.blocks.has(b.id)) continue;

@@ -118,3 +118,20 @@ test('A2: O2-sccp is O2 with sccp for constprop, accepted by the meaning contrac
     assert.equal((await p.verify()).ok, true, id);
   }
 });
+
+test('SCCP follows a second edge when a backedge makes a branch condition vary', () => {
+  const source = `function f(n: i32): i32 {
+    let x = 0;
+    while (x === 0) { x = n; }
+    return x;
+  }`;
+  const st = ingest('loop', source);
+  const f = st.fn('f');
+  const ssa = S.ssaOf(st, f);
+  const result = sccpOf(st, f, ssa);
+  const [head] = f.blocks.filter(b => b.stmts.some(id => st.get(id).op === 'br_if'));
+  const branch = head.stmts.map(id => st.get(id)).find(stmt => stmt.op === 'br_if');
+  assert.ok(result.edges.has(`${head.id}>${branch.then}`));
+  assert.ok(result.edges.has(`${head.id}>${branch.else}`));
+  assert.deepEqual(result.blocks, new Set(f.blocks.map(b => b.id).filter(id => !ssa.unreachable.includes(id))));
+});

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "8c25a93434fc6af8e1b42f75532fb77f5eb13501bcf246b0f64ddd3039a20aaf",
+  "request": {
+    "ticket": "IRWB-058",
+    "status": "complete",
+    "intent": "",
+    "entry": "Passed the CPU suites and baseline comparison with the original B1 specializer restored"
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-674869fe8d4aa27b5c1b2ab92b8e9ee9",
+    "state": "committed",
+    "created_at": "2026-11-28T05:04:29.795384471Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "dec56758d78848b12312ce78b92f9e619b3bac936b1e38f35a59491ac43d405c",
+      "index.md": "739fba65e8ee9dea181218a962e4da2b003554da100b0636f4e2bf36960e3c73"
+    },
+    "after": {
+      "changelog.md": "f62e5bb02df7e4e0723c5d00004425bb2e4cf2f04b68e931ec45bd98cad61f30",
+      "index.md": "21ca4b56c8e978661f621463d4a233592ed27c6c00fc60b38ab35a3158b86327"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "dec56758d78848b12312ce78b92f9e619b3bac936b1e38f35a59491ac43d405c",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjcKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNwoKUG9ydGVkIFNDQ1AgdG8gZGVtYW5kLWRyaXZlbiBlcXVhdGlvbnMgYW5kIHdpdGhkcmV3IHRoZSBCMSByZXN0YXRlbWVudCBhZnRlciB0aGUgbGluZS1jb3VudCBnYXRlCgojIyMgUmVsYXRlZCBGaWxlcwoKLSAvaG9tZS9tYW51ZWwvY29kZS93ZXNlbi8yMDI2LTExLTI0LS1jb21waWxlci13b3JrYmVuY2gvLmNsYXVkZS93b3JrdHJlZXMvdjctcGUtc2wtaXJ3Yi0wNTgvc3JjL3N0ZGxpYi9mbG93L3NvbHZlLWZvci50cyDigJQgTG9jYWwgZXF1YXRpb24gc29sdmVyCi0gL2hvbWUvbWFudWVsL2NvZGUvd2VzZW4vMjAyNi0xMS0yNC0tY29tcGlsZXItd29ya2JlbmNoLy5jbGF1ZGUvd29ya3RyZWVzL3Y3LXBlLXNsLWlyd2ItMDU4L3NyYy90eXBlZC9zY2NwLnRzIOKAlCBGaXJzdCBwcm9kdWN0aW9uIGNsaWVudAoKIyMgMjAyNi0xMS0yOAoKUGFzc2VkIHRoZSBDUFUgc3VpdGVzIGFuZCBiYXNlbGluZSBjb21wYXJpc29uIHdpdGggdGhlIG9yaWdpbmFsIEIxIHNwZWNpYWxpemVyIHJlc3RvcmVkCg=="
+    },
+    {
+      "path": "index.md",
+      "before": "739fba65e8ee9dea181218a962e4da2b003554da100b0636f4e2bf36960e3c73",
+      "after": "LS0tClRpdGxlOiBMb2NhbCBlcXVhdGlvbiBzb2x2aW5nIGFuZCBwYXJ0aWFsIGV2YWx1YXRpb24KVGlja2V0OiBJUldCLTA1OApTdGF0dXM6IGNvbXBsZXRlClRvcGljczoKICAgIC0gY29tcGlsZXIKRG9jVHlwZTogaW5kZXgKSW50ZW50OiBsb25nLXRlcm0KT3duZXJzOiBbXQpSZWxhdGVkRmlsZXM6IFtdCkV4dGVybmFsU291cmNlczogW10KU3VtbWFyeTogIiIKTGFzdFVwZGF0ZWQ6IDIwMjYtMTEtMjhUMDA6MDQ6MjkuNzk1MjUyNTUyLTA1OjAwCldoYXRGb3I6ICIiCldoZW5Ub1VzZTogIiIKLS0tCgojIExvY2FsIGVxdWF0aW9uIHNvbHZpbmcgYW5kIHBhcnRpYWwgZXZhbHVhdGlvbgoKIyMgT3ZlcnZpZXcKClBoYXNlIDQgYWRkcyBkZW1hbmQtZHJpdmVuIGVxdWF0aW9uIHNvbHZpbmcgYW5kIHBvcnRzIFR5cGVkIFNDQ1AuIFRoZSBCMSByZXN0YXRlbWVudCBleGNlZWRlZCB0aGUgbGluZS1jb3VudCBsaW1pdCwgc28gdGhlIG9yaWdpbmFsIHNwZWNpYWxpemVyIHJlbWFpbnMgaW4gVHlwZWQuCgotIFtQaGFzZSA0IHJlcG9ydF0oLi9hbmFseXNpcy8wMS1waGFzZS00LXJlcG9ydC5tZCkKLSBbSW1wbGVtZW50YXRpb24gZGlhcnldKC4vbG9nLzAxLWltcGxlbWVudGF0aW9uLWRpYXJ5Lm1kKQoKIyMgS2V5IExpbmtzCgotICoqUmVsYXRlZCBGaWxlcyoqOiBTZWUgZnJvbnRtYXR0ZXIgUmVsYXRlZEZpbGVzIGZpZWxkCi0gKipFeHRlcm5hbCBTb3VyY2VzKio6IFNlZSBmcm9udG1hdHRlciBFeHRlcm5hbFNvdXJjZXMgZmllbGQKCiMjIFN0YXR1cwoKQ3VycmVudCBzdGF0dXM6ICoqYWN0aXZlKioKCiMjIFRvcGljcwoKCgojIyBUYXNrcwoKU2VlIFt0YXNrcy5tZF0oLi90YXNrcy5tZCkgZm9yIHRoZSBjdXJyZW50IHRhc2sgbGlzdC4KCiMjIENoYW5nZWxvZwoKU2VlIFtjaGFuZ2Vsb2cubWRdKC4vY2hhbmdlbG9nLm1kKSBmb3IgcmVjZW50IGNoYW5nZXMgYW5kIGRlY2lzaW9ucy4KCiMjIFN0cnVjdHVyZQoKLSBkZXNpZ24vIC0gQXJjaGl0ZWN0dXJlIGFuZCBkZXNpZ24gZG9jdW1lbnRzCi0gcmVmZXJlbmNlLyAtIFByb21wdCBwYWNrcywgQVBJIGNvbnRyYWN0cywgY29udGV4dCBzdW1tYXJpZXMKLSBwbGF5Ym9va3MvIC0gQ29tbWFuZCBzZXF1ZW5jZXMgYW5kIHRlc3QgcHJvY2VkdXJlcwotIHNjcmlwdHMvIC0gVGVtcG9yYXJ5IGNvZGUgYW5kIHRvb2xpbmcKLSB2YXJpb3VzLyAtIFdvcmtpbmcgbm90ZXMgYW5kIHJlc2VhcmNoCi0gYXJjaGl2ZS8gLSBEZXByZWNhdGVkIG9yIHJlZmVyZW5jZS1vbmx5IGFydGlmYWN0cwo="
+    }
+  ]
+}
