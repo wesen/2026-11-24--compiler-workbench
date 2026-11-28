@@ -3,88 +3,51 @@
  * bits in a signed i32: in the evaluator's locals and memory, in constants (`imm`), and in results, so NaN payloads
  * and the sign of zero are exact and the native tables stay finite JSON.
  *
- * The rules are those of the reference compiler (vendor/ds-js-os/compiler/typed/typed-rv32.js, rv32/emit/floats.js)
- * and of tape.js, checked against the reference interpreter (bench/host/rv32-interp.js):
- *   - arithmetic (add sub mul div sqrt) and i32→f32 conversion round to nearest even; the compiler names RNE in every
- *     rounding instruction and never fuses a product and a sum, so one Math.fround of the exact double result is
- *     the target's result (double rounding is innocuous for + - * / sqrt: 53 ≥ 2·24 + 2);
- *   - a NaN result of arithmetic is the canonical NaN 0x7fc00000 (RISC-V);
- *   - neg, abs, copysign change only the sign bit (fsgnjn, fsgnjx, fsgnj), so NaN payloads are kept;
- *   - min and max (fmin.s, fmax.s): the other operand when one is a NaN, the canonical NaN when both are, -0 < +0;
- *   - comparisons are false when an operand is a NaN, except ne;
- *   - to_i32, to_u32 (fcvt.w.s, fcvt.wu.s rtz): toward zero, saturating; NaN gives 2^31 - 1 and 2^32 - 1;
- *   - floor, ceil, trunc: x itself when |x| ≥ 2^23, x is infinite or a NaN; otherwise the integer in that direction
- *     with x's sign (floats.js `round`: fcvt.w.s rm, fcvt.s.w rm, fsgnj.s), so ceil(-0.5) is -0.
+ * The operations themselves are the standard library's (`src/stdlib/num/binary32.ts`, IRWB-050-B); this file names
+ * them with this IR's opcodes, picks the RV32F min/max profile (IEEE 754-2019 `minimumNumber`/`maximumNumber`: a NaN
+ * loses to a number, `max(NaN, 7)` is 7), and keeps the tables of which operators are f32-valued, which fold at
+ * compile time and which are Typed's own business. The rules are those of the reference compiler
+ * (vendor/ds-js-os/compiler/typed/typed-rv32.js, rv32/emit/floats.js) and of tape.js, checked against the reference
+ * interpreter (bench/host/rv32-interp.js); the rules themselves are stated in `src/stdlib/num/binary32.ts`.
  */
+import { binary32, CANONICAL_NAN, fromBits, isNaNBits, toBits } from '../stdlib/num/binary32.js';
 
-const F = new Float32Array(1);
-const I = new Int32Array(F.buffer);
+export { CANONICAL_NAN, fromBits, isNaNBits, toBits };
 
-export const CANONICAL_NAN = 0x7fc00000;
-const SIGN = -0x80000000; // 0x80000000 as a signed i32
-
-/** The f32 with these bits, as a number. */
-export function fromBits(bits: number): number {
-  I[0] = bits;
-  return F[0];
-}
-/** The bits of x rounded to f32 (nearest even); a NaN gives the canonical NaN. */
-export function toBits(x: number): number {
-  if (x !== x) return CANONICAL_NAN;
-  F[0] = x;
-  return I[0];
-}
-export const isNaNBits = (b: number): boolean => (b & 0x7fffffff) > 0x7f800000;
-
-const order = (b: number) => (b < 0 ? -(b & 0x7fffffff) - 1 : b);
-function minmax(a: number, b: number, max: boolean): number {
-  if (isNaNBits(a)) return isNaNBits(b) ? CANONICAL_NAN : b;
-  if (isNaNBits(b)) return a;
-  return order(a) < order(b) === max ? b : a;
-}
-function round(a: number, f: (x: number) => number): number {
-  if ((a << 1) >>> 0 >= 0x96000000) return a; // |x| ≥ 2^23, an infinity or a NaN
-  return (toBits(f(fromBits(a))) & 0x7fffffff) | (a & SIGN);
-}
-function toInt(a: number, unsigned: boolean): number {
-  if (isNaNBits(a)) return unsigned ? -1 : 0x7fffffff;
-  const t = Math.trunc(fromBits(a));
-  if (unsigned) return t < 0 ? 0 : t >= 4294967296 ? -1 : t | 0;
-  return t >= 2147483648 ? 0x7fffffff : t < -2147483648 ? -0x80000000 : t | 0;
-}
+const RV32F = binary32('minimumNumber');
 
 /** f32 → f32 binary operators. */
 export const F32_BINARY: Readonly<Record<string, (a: number, b: number) => number>> = {
-  fadd: (a, b) => toBits(fromBits(a) + fromBits(b)),
-  fsub: (a, b) => toBits(fromBits(a) - fromBits(b)),
-  fmul: (a, b) => toBits(fromBits(a) * fromBits(b)),
-  fdiv: (a, b) => toBits(fromBits(a) / fromBits(b)),
-  fmin: (a, b) => minmax(a, b, false),
-  fmax: (a, b) => minmax(a, b, true),
-  fcopysign: (a, b) => (a & 0x7fffffff) | (b & SIGN),
+  fadd: RV32F.add,
+  fsub: RV32F.sub,
+  fmul: RV32F.mul,
+  fdiv: RV32F.div,
+  fmin: RV32F.min,
+  fmax: RV32F.max,
+  fcopysign: RV32F.copysign,
 };
 /** f32 × f32 → i32 (0 or 1). */
 export const F32_COMPARE: Readonly<Record<string, (a: number, b: number) => number>> = {
-  feq: (a, b) => +(fromBits(a) === fromBits(b)),
-  fne: (a, b) => +(fromBits(a) !== fromBits(b)),
-  flt: (a, b) => +(fromBits(a) < fromBits(b)),
-  fgt: (a, b) => +(fromBits(a) > fromBits(b)),
-  fle: (a, b) => +(fromBits(a) <= fromBits(b)),
-  fge: (a, b) => +(fromBits(a) >= fromBits(b)),
+  feq: RV32F.eq,
+  fne: RV32F.ne,
+  flt: RV32F.lt,
+  fgt: RV32F.gt,
+  fle: RV32F.le,
+  fge: RV32F.ge,
 };
 /** One-operand operators: f32 → f32, f32 → i32 and i32 → f32. */
 export const F32_UNARY: Readonly<Record<string, (a: number) => number>> = {
-  fneg: a => a ^ SIGN,
-  fabs: a => a & 0x7fffffff,
-  fsqrt: a => toBits(Math.sqrt(fromBits(a))),
-  ffloor: a => round(a, Math.floor),
-  fceil: a => round(a, Math.ceil),
-  ftrunc: a => round(a, Math.trunc),
-  f2i: a => toInt(a, false),
-  f2u: a => toInt(a, true),
+  fneg: RV32F.neg,
+  fabs: RV32F.abs,
+  fsqrt: RV32F.sqrt,
+  ffloor: RV32F.floor,
+  fceil: RV32F.ceil,
+  ftrunc: RV32F.trunc,
+  f2i: RV32F.toInt,
+  f2u: RV32F.toUnsigned,
   f2bits: a => a | 0,
-  i2f: a => toBits(a | 0),
-  u2f: a => toBits(a >>> 0),
+  i2f: RV32F.fromInt,
+  u2f: RV32F.fromUnsigned,
   bits2f: a => a | 0,
 };
 

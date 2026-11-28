@@ -1,4 +1,11 @@
 import { plain, value, width, type Axis, type Expr, type Fn, type Op } from './model.js';
+import { minmax, NUMBERS } from '../stdlib/num/minmax.js';
+
+// min and max over a pair of values: JavaScript's Math.min/Math.max rule (IEEE 754-2019 `minimum`/`maximum`, a NaN
+// propagates), named here because Typed's RV32F profile returns the other operand for a NaN instead
+// (`src/stdlib/num/minmax.ts`, IRWB-050-B). Tix's values here are numbers — f32-rounded or f64 — so the profile
+// applies to either precision.
+const MINMAX = minmax('minimum', NUMBERS);
 export interface BufferValue {
   shape: number[];
   data: Float32Array | Float64Array;
@@ -16,8 +23,8 @@ const operations: Record<Op, (a: number, b: number) => number> = {
   log: Math.log,
   sqrt: Math.sqrt,
   tanh: Math.tanh,
-  max: Math.max,
-  min: Math.min,
+  max: MINMAX.max,
+  min: MINMAX.min,
 };
 export class OutsideSample extends Error {}
 // Limits apply only when selecting the contract's cases.
@@ -82,7 +89,7 @@ export function evaluate(fn: Fn, inputs: Inputs, precision: Precision, sampling 
         let acc = e.op === 'sum' ? 0 : -Infinity;
         loop(e.axes, 0, () => {
           const x = scalar(e.body);
-          acc = round(e.op === 'sum' ? acc + x : Math.max(acc, x));
+          acc = round(e.op === 'sum' ? acc + x : MINMAX.max(acc, x));
         });
         return acc;
       }
