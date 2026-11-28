@@ -7,6 +7,11 @@
  * enforces the pass's declared write kinds (values, stmts, locals, cfg) with `undeclaredWrite`, removal needs a
  * `because`, and `commit` derives successors from terminators and drops unreachable blocks. The framework then
  * checks the coarser entity-kind declaration, the contract, and preservation claims on the resulting revision.
+ *
+ * IRWB-056-A: beside its edit records, a transaction records a derivation: one step per entity it makes from an
+ * entity of the input revision, and one per removed input entity — the rule or decision that licensed it (`rule`
+ * in the make options, `cite` inside a rewrite), the site, the premises. The pass's caller filters the steps to
+ * what survived the commit and hands them to the runner, which computes the correspondence from them.
  */
 import { prune } from './lift.js';
 import { describeText, show, showStmt, COMPARE } from './listing.js';

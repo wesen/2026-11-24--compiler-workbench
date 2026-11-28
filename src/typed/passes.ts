@@ -226,13 +226,27 @@ export function typedPass(spec: TypedPassSpec): TypedPass {
       );
       const report: RevisionReport = { pass: spec.name, rev, edits, fns: touched, kinds };
       const published = entityIdSet(native);
+      // the revision names a step's products the way its tables do (values, then statements, then blocks, each
+      // id-sorted; removals last, in the order the edit records name them), so the correspondence computed from
+      // the steps groups them exactly as the origins-and-removals rebuild does
+      const tableOf = (id: string) => (id.startsWith('v:') ? 0 : id.startsWith('s:') ? 1 : 2);
+      const derivation = steps
+        .filter(s => s.produces.every(p => published.has(p)))
+        .sort((a, b) => {
+          const ra = a.produces.length ? tableOf(a.produces[0]) : 3,
+            rb = b.produces.length ? tableOf(b.produces[0]) : 3;
+          if (ra !== rb) return ra - rb;
+          const pa = a.produces[0] ?? '',
+            pb = b.produces[0] ?? '';
+          return pa < pb ? -1 : pa > pb ? 1 : 0;
+        });
       return {
         native,
         // IRWB-056-A: the derivation is the producer's record; the runner computes the correspondence from it.
         // A step whose product did not survive the commit was superseded within the revision: the derivation
         // carries the published revision's boundary, so such a step is dropped here (the derivation's site must
         // name entities that exist).
-        derivation: steps.filter(s => s.produces.every(p => published.has(p))),
+        derivation,
         edits: edits.length,
         report,
       };

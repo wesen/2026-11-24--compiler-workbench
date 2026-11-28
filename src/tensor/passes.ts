@@ -73,7 +73,10 @@ function mergeSteps(fn: Fn, merges: readonly Merge[]): DerivationStep[] {
       by: 'inline',
       consumes: [`${fn.name}/${producer}`],
       produces: [`${fn.name}/${final}`],
-      premises: [`${fn.name}/${producer} is pointwise`, `${fn.name}/${producer} has one use, at ${fn.name}/${final}`],
+      premises: [
+        `${fn.name}/${producer} is pointwise`,
+        `${fn.name}/${producer} has one use, at ${fn.name}/${final}`,
+      ],
       relation: 'merged',
     };
   });

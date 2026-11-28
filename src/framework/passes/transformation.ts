@@ -26,7 +26,14 @@
 import type { Artifact } from '../core/types.js';
 import { canonical } from '../core/data.js';
 import { openIR } from '../ir/index.js';
-import type { ChangeSet, DerivationStep, EntityCorrespondence, IREdit, IRStore, IRView } from '../ir/index.js';
+import type {
+  ChangeSet,
+  DerivationStep,
+  EntityCorrespondence,
+  IREdit,
+  IRStore,
+  IRView,
+} from '../ir/index.js';
 import type { AnalysisManager } from '../contracts/analysis-manager.js';
 import { wait, driveAsync, driveSync, type Steps } from '../contracts/steps.js';
 import type {

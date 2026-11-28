@@ -62,19 +62,22 @@ export function stepsToCorrespondence(
     for (const id of s.consumes) {
       requireText(id, 'Step consumed entity');
       if (!source.has(id) && !target.has(id))
-        throw new IRError('ir.derivation', `Step by ${s.by} names the entity ${id}, which is in neither revision`);
+        throw new IRError(
+          'ir.derivation',
+          `Step by ${s.by} names the entity ${id}, which is in neither revision`,
+        );
       if (!source.has(id))
         throw new IRError('ir.derivation', `Step by ${s.by} consumes ${id}, which exists only in the output`);
     }
     for (const id of s.produces) {
       requireText(id, 'Step produced entity');
       if (!source.has(id) && !target.has(id))
-        throw new IRError('ir.derivation', `Step by ${s.by} names the entity ${id}, which is in neither revision`);
-      if (!target.has(id))
         throw new IRError(
           'ir.derivation',
-          `Step by ${s.by} produces ${id}, which the diff says was removed`,
+          `Step by ${s.by} names the entity ${id}, which is in neither revision`,
         );
+      if (!target.has(id))
+        throw new IRError('ir.derivation', `Step by ${s.by} produces ${id}, which the diff says was removed`);
     }
     const from = [...s.consumes].sort(compareText);
     // a step that produced nothing and consumed only surviving entities claims nothing about the published
