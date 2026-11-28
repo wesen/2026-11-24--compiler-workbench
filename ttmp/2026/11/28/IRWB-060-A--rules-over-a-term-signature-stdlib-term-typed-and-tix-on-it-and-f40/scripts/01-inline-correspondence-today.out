@@ -1,0 +1,21 @@
+changed true
+steps [
+ {
+  "by": {
+   "decision": "inline.merge"
+  },
+  "consumes": [
+   "f/a"
+  ],
+  "note": "f/a is substituted into f/b, which returns its result",
+  "premises": [],
+  "produces": [
+   "f/b"
+  ],
+  "relation": "merged"
+ }
+]
+{"from":["f"],"relation":"retained","to":["f"]}
+{"from":["f/a"],"note":"f/a is substituted into f/b, which returns its result","relation":"merged","to":["f/b"]}
+{"from":["f/b"],"relation":"retained","to":["f/b"]}
+{"from":["f/x"],"relation":"retained","to":["f/x"]}

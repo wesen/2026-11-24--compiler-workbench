@@ -1,0 +1,8 @@
+50 projects, O2 has 16 steps, 5 interleaved rounds
+revision differences: 0
+O2 compile time, whole corpus x 5: library 51594 ms, direct 50258 ms
+  whole-pipeline: the library path is +2.66% (slower) than today's matcher
+  (the per-pass ms include the meaning contract, which dominates and jitters; the whole-pipeline
+   ratio is the decision number, and both orderings were run alternately)
+fold+simplify only:     library 12309 ms, direct 12711 ms
+  fold+simplify only: the library path is -3.16% (faster) than today's matcher
