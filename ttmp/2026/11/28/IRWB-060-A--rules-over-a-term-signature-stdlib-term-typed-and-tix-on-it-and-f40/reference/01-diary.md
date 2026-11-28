@@ -115,3 +115,58 @@ should be a stated precondition instead.
 `matchPat`/`firstMatch`/`instantiate` (they must agree case for case); read `src/stdlib/term/verify.ts`
 against `src/typed/rules/verify.ts`'s methods 4–7 (the loops must be the same); run
 `node --test tests/stdlib/term.test.mjs`.
+
+## Step 3: Typed on the library (matcher, verifier, well-formedness queries)
+
+**What I did.** `src/typed/rules/compile.ts`: the pattern walk, the first-match strategy and the template
+walk now live in the library — `match`/`firstMatch`/`instantiate` over a `Signature<ValueHandle>`
+(`op`, `args`, `constant: isConst ? imm`, and `equal: handle.same`, because Typed's `sameTree` compares
+a type the handle does not expose); `indexRules` and `firstMatch` are thin wrappers keeping the exported
+signatures; `instantiate` calls the library walk with a `Build` that makes `tx.const`/`tx.make` with the
+rule's provenance on the outermost made value only. `Bindings` became the library's `Map`; the one other
+reader, `edit-classes.ts`'s `treeBound`, adapted (`b[x]` → `b.get(x)`). `matchPat` is deleted (nothing
+outside the module used it). `src/typed/rules/verify.ts`: the four evaluation campaigns (bitwise-w1,
+exhaustive-w8, random-32/f32-special, exhaustive-32) now call the library's `enumerateCases`/
+`sampleCases`/`exhaustiveCases` with a `campaign(L, R, of)` helper that supplies Typed's semantics (the
+variables' `domainAt`/boundary `values`/`draw`, the noTrap-only `holds`, the compiled sides, exact
+outcome equality, and `ofIndex: i => i|0` — the sign-extended value a full-range sweep assigns); the
+local `Rng` and the campaign loops are gone; the proofs (structural, by-construction, symbolic-linear)
+and the method/strength bookkeeping stay. `src/typed/rules/form.ts`: `patternVars`/`templateVars`
+delegate to the library's (the same queries over the structurally same shapes).
+
+**Why.** This is the brief's item 2: the tables match and instantiate through the library, and the
+verifier verifies through the library's interface with Typed's semantics — the case campaigns are the
+domain-independent part; the interpretation of operators, the value domains and the evidence's method
+names are Typed's.
+
+**What worked.** Everything that pins behaviour passes unchanged on the first run after the change:
+`tests/typed/rules.test.mjs` 10/10 (including "the fast methods, re-run, agree with the recorded
+evidence", and the deliberately unsound rules' pinned counterexamples — NaN payloads included),
+`tests/typed/guards.test.mjs` (14 with rules), `derivations` 12/12 (the 183 rule-citing O2 records),
+`edit-classes`/`missed`/`passes` 14/14, and **the baselines check prints `no differences`**.
+
+**What didn't work.** Three compile-time stumbles: the library's `Counterexample` name-collided with
+verify.ts's own evidence type (imported as `TermCounterexample`); the by-construction proof still
+wanted the old 5-argument failure recorder (kept as `counterWith`, with `failWith` wrapping the
+campaign's report); and the stdlib's layering test forbids even a *type* import of `Pat` from
+`src/typed/` in `types.ts` (caught at step 2 already).
+
+**What I learned.** The re-run evidence agreeing with the recorded evidence is a strong equality check:
+it pins the exact case sequences (the crossing cap, the seed, the draw order), so moving the loops
+verbatim was the only safe path — and it worked, which says the campaigns are genuinely
+domain-independent.
+
+**What was tricky.** `ofIndex`: the current exhaustive-32 sweep assigns `x | 0` (sign-extended), not
+the raw index — a detail the generic campaign could not know, so the variable interface carries it.
+Also the i32 `draw`'s two-rng-call bias (`(rng.next() & 3) === 0 ? rng.next() % 17 | 0 : rng.next()`)
+had to be reproduced operator-for-operator inside the domain's `draw`.
+
+**What warrants a second pair of eyes.** The bitwise-w1 campaign now checks `holds` (the noTrap-only
+`guardsHold`) where the old loop checked nothing; for every bitwise-eligible rule (and-or-xor roots,
+no constant variables) the guard sets are only `pure`, which `guardsHold` ignores, so the case sets are
+identical — worth a glance at `BITWISE`-eligible rules in `simplify.ts` if a new one ever carries a
+`noTrap` guard.
+
+**Code review instructions.** Read `src/typed/rules/compile.ts` against the library's
+`match`/`firstMatch`/`instantiate`, and `src/typed/rules/verify.ts`'s four campaign blocks against
+`src/stdlib/term/verify.ts`; then run `node --test tests/typed/rules.test.mjs tests/typed/guards.test.mjs tests/typed/derivations.test.mjs` and the baselines check.

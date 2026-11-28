@@ -128,7 +128,7 @@ const handle = (t: Tree): TreeHandle => ({
   isBoolean: COMPARE.has(t.op),
   same: other => sameTree(t, other.tree),
 });
-const treeBound = (b: Bindings, x: string): Tree => (b[x] as unknown as TreeHandle).tree;
+const treeBound = (b: Bindings, x: string): Tree => (b.get(x) as unknown as TreeHandle).tree;
 
 /** A rule's right-hand side as a tree, with the types `Tx.const` and `Tx.make` give. */
 function instantiate(t: Tpl, b: Bindings): Tree {
