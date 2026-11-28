@@ -57,8 +57,12 @@ for (const [label, f] of [
   ['add(constant(MAX_SAFE_INTEGER), constant(0))', () => add(constant(M), constant(0))],
   ['add(constant(0), term(x, 3), 3002399751580330)', () => add(constant(0), term(3), 3002399751580330)],
   ['add(term(x, -1), term(x, 1)) → the zero form', () => add(term(-1), term(1))],
-  ['add(term(x, 4503599627370497), term(x, -4503599627370497))', () => add(term(4503599627370497), term(-4503599627370497))],
-]) console.log(`  ${label}: ${JSON.stringify(f())}`);
+  [
+    'add(term(x, 4503599627370497), term(x, -4503599627370497))',
+    () => add(term(4503599627370497), term(-4503599627370497)),
+  ],
+])
+  console.log(`  ${label}: ${JSON.stringify(f())}`);
 
 console.log('agreement of the two implementations on the corpus-relevant domain:');
 let agree = 0,
@@ -83,7 +87,9 @@ for (const a of values)
       if (same(r, s)) agree++;
       else {
         differ++;
-        console.log(`  differs: a=${a} b=${b} scale=${scale}: old ${JSON.stringify(s)} now ${JSON.stringify(r)}`);
+        console.log(
+          `  differs: a=${a} b=${b} scale=${scale}: old ${JSON.stringify(s)} now ${JSON.stringify(r)}`,
+        );
       }
     }
 console.log(`  ${agree} agree, ${differ} differ`);
