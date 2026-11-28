@@ -154,7 +154,7 @@ export async function runCudaBatch(
       await readFile(join(dir, 'out', 'results.bin')),
       cases.length,
       fn.shape.length,
-      kernels.filter(k => k.gated).map(k => k.name),
+      kernels.filter(k => k.select?.some(arm => 'gate' in arm)).map(k => k.name),
     );
   } finally {
     await rm(dir, { recursive: true, force: true });

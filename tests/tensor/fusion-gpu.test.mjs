@@ -11,6 +11,8 @@ import {
   runTixCuda,
 } from '../../dist/tensor/index.js';
 import { checkCudaLowering, cudaArtifact } from '../../dist/tensor/cuda-contract.js';
+import { emitScheduleProgram } from '../../dist/tensor/cuda-source.js';
+import { lowerSchedule } from '../../dist/tensor/strategy.js';
 import { planFusion } from '../../dist/tensor/fusion.js';
 
 const words = ({ data }) => new Uint32Array(data.buffer, data.byteOffset, data.length);
@@ -124,9 +126,7 @@ test('GB10: the exact check rejects a fused kernel that reverses a serial sum or
   const p = compileTix(
     'fn f(x:f32[N,C]):f32[N,C] { s[i] = sum(j) x[i,j]; y[i,j] = x[i,j] - s[i]; return y; }',
   );
-  const source = cudaSource(p, 'f');
-  // IRWB-057: the candidate's manifest names its gate (the runtime no longer reads it from the source)
-  const kernels = [{ name: 'k0', mapping: 'block', statements: ['s', 'y'], gated: true }];
+  const { source, kernels } = emitScheduleProgram(lowerSchedule(p.current.value.functions[0], true).value);
   const reversed = source.replace(
     /__fadd_rn\((v\d+), r0\[\((i\d+)\)\]\)/,
     '__fadd_rn($1, r0[(end_$2 - 1 - $2)])',

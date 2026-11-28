@@ -24,6 +24,7 @@ import { distanceVector } from '../stdlib/affine/distances.js';
 import { direction, orderViolation, stripMine, type Direction } from '../stdlib/affine/directions.js';
 import {
   fusionEligible,
+  gate,
   fusionPlan,
   outerReductions,
   unfusedPlan,
@@ -88,20 +89,35 @@ export interface ContractionKernel {
   /** The tensors of the body `X * Y`: X varies with m, Y with n. */
   operands: { m: string; n: string };
   variants: Variant[];
-  /**
-   * At launch, the first entry whose grid has at least minBlocks per SM, and whose reduction has at least minTerms
-   * terms, wins; the last entry has neither bound.
-   */
-  select: Selection[];
+  select: LaunchSelect<VariantArm>;
 }
-export interface Selection {
+
+/** First accepting arm wins. Variant zero is the unconditional plain kernel. */
+export type LaunchSelect<Arm = GateArm | VariantArm> = readonly Arm[];
+
+export interface VariantArm {
   variant: number;
+  /** For a tiled variant, require that its grid fits and has at least this many blocks per SM. */
   minBlocks: number;
   minTerms?: number;
 }
+
+export interface GateGuard {
+  fullRow: number;
+  smallGrid: number;
+  heavyLanes: readonly [number, number];
+  heavy: readonly string[];
+}
+
+export type GateArm = { gate: 'fused'; guard: GateGuard } | { gate: 'unfused' };
+export type GateSelect = readonly [
+  Extract<GateArm, { gate: 'fused' }>,
+  Extract<GateArm, { gate: 'unfused' }>,
+];
+
 export type ScheduleKernel =
   | { name: string; kind: 'pointwise'; group: FusionGroup }
-  | { name: string; kind: 'rows'; group: FusionGroup }
+  | { name: string; kind: 'rows'; group: FusionGroup; select?: GateSelect }
   | ContractionKernel;
 export interface Schedule {
   fn: Fn;
@@ -180,6 +196,19 @@ function validateVariant(v: Variant) {
       s.scope === 'shared' &&
       dimsInOrder.includes(s.fast), 'Invalid stage');
 }
+/** The gate's statistics have longest >= 1 and each heavy member uses at most all slots. */
+function validateGate(kernel: string, select: GateSelect | undefined) {
+  require(select?.[0]?.gate === 'fused' &&
+    select?.[1]?.gate ===
+      'unfused', `${kernel}: uncovered launch; expected a fused guard and an unconditional unfused arm`);
+  const {
+    fullRow,
+    heavyLanes: [numerator, denominator],
+    heavy,
+  } = select[0].guard;
+  require(!heavy.length || numerator <= denominator, `${kernel}: unreachable fused launch arm`);
+  require(fullRow > 1 || (heavy.length > 0 && numerator > 0), `${kernel}: unreachable unfused launch arm`);
+}
 function validate(value: unknown) {
   const s = value as Schedule;
   require(s && typeof s.fn?.name === 'string' && Array.isArray(s.kernels), 'Invalid schedule');
@@ -190,28 +219,25 @@ function validate(value: unknown) {
     covered.every(n => statements.has(n)), 'Kernels must cover every statement once');
   for (const k of s.kernels) {
     require(['pointwise', 'rows', 'contraction'].includes(k.kind), 'Invalid kernel kind');
+    if (k.kind === 'rows' && k.group.statements.length > 1) validateGate(k.name, k.select);
     if (k.kind !== 'contraction') continue;
     require(k.group.statements.includes(k.contraction), 'Contraction outside its kernel');
     require(k.variants.length > 0, 'A contraction kernel needs a variant');
     k.variants.forEach(validateVariant);
-    require(k.select.length > 0 &&
-      k.select.every(
-        e => Number.isSafeInteger(e.variant) && e.variant >= 0 && e.variant < k.variants.length,
-      ) &&
-      k.select.at(-1)!.minBlocks === 0 &&
-      !k.select.at(-1)!.minTerms, 'Invalid variant selection');
+    const violation = selectionViolation(k.name, k.variants, k.select);
+    require(violation === undefined, violation ?? 'Invalid variant selection');
   }
 }
 function* entities(s: Schedule): Generator<IREntity> {
   for (const k of s.kernels) {
     const { name, kind, group } = k;
     const attributes: Record<string, unknown> = { kind, group };
+    if ('select' in k && k.select) attributes.select = k.select;
     if (k.kind === 'contraction')
       Object.assign(attributes, {
         contraction: k.contraction,
         dims: k.dims,
         operands: k.operands,
-        select: k.select,
       });
     yield { id: name, kind: 'kernel', attributes };
     if (k.kind !== 'contraction') continue;
@@ -319,11 +345,21 @@ function planPass<P>(spec: {
 
 /** Schedule kernels for a fusion plan: block-mode groups are rows kernels, the others pointwise. */
 export function scheduleKernels(plan: FusionPlan): ScheduleKernel[] {
-  return plan.groups.map(group => ({
-    name: group.kernel,
-    kind: group.mapping === 'block' ? 'rows' : 'pointwise',
-    group,
-  }));
+  return plan.groups.map(group => {
+    const name = group.kernel;
+    if (group.mapping !== 'block') return { name, kind: 'pointwise', group };
+    if (group.statements.length === 1) return { name, kind: 'rows', group };
+    const [numerator, denominator] = gate.heavyLanes;
+    return {
+      name,
+      kind: 'rows',
+      group,
+      select: [
+        { gate: 'fused', guard: { ...gate, heavyLanes: [numerator, denominator], heavy: group.heavy } },
+        { gate: 'unfused' },
+      ],
+    };
+  });
 }
 /** The unscheduled function: stage 2's one pointwise kernel per statement. */
 export function initialSchedule(fn: Fn): Artifact<Schedule> {
@@ -385,7 +421,7 @@ export const fusePass = planPass<FusionChoice>({
 export interface KernelLoops {
   kernel: string;
   variants: Variant[];
-  select: Selection[];
+  select: LaunchSelect<VariantArm>;
 }
 /** The loop-scheduling plan: for each kernel it names, the order, tiling and bindings of every variant. */
 export interface LoopPlan {
@@ -490,6 +526,46 @@ function variantViolation(v: Variant): string | undefined {
 }
 
 /**
+ * In the launch-statistics domain each tiled arm has a least accepting point: its own fit flag is true,
+ * its bounds are met exactly, and every other variant fails to fit. An earlier arm that accepts this
+ * point shadows the arm everywhere. With every fit flag false, only the plain arm can accept a launch.
+ */
+function selectionViolation(
+  kernel: string,
+  variants: readonly Variant[],
+  select: LaunchSelect<VariantArm>,
+): string | undefined {
+  if (!Array.isArray(select) || select.length === 0)
+    return `${kernel}: uncovered launch with no tiled variant fitting; the last entry must be the plain fallback`;
+  const earlier: VariantArm[] = [];
+  const reached = new Set<number>();
+  for (const [index, arm] of select.entries()) {
+    if (!Number.isSafeInteger(arm.variant) || !variants[arm.variant])
+      return `${kernel}: the launch rule names a missing variant`;
+    if (![arm.minBlocks, arm.minTerms ?? 0].every(n => Number.isSafeInteger(n) && n >= 0))
+      return `${kernel}: variant ${arm.variant} has invalid launch bounds`;
+    if (arm.variant === 0 && (arm.minBlocks !== 0 || arm.minTerms))
+      return `${kernel}: the plain variant must be unconditional`;
+    if (
+      earlier.some(
+        e =>
+          e.variant === 0 ||
+          (e.variant === arm.variant &&
+            e.minBlocks <= arm.minBlocks &&
+            (e.minTerms ?? 0) <= (arm.minTerms ?? 0)),
+      )
+    )
+      return `${kernel}: unreachable launch arm ${index} (variant ${arm.variant})`;
+    earlier.push(arm);
+    reached.add(arm.variant);
+  }
+  if (!reached.has(0))
+    return `${kernel}: uncovered launch with no tiled variant fitting; the last entry must be the plain fallback`;
+  const missing = variants.findIndex((_, index) => !reached.has(index));
+  if (missing !== -1) return `${kernel}: variant ${missing} has no launch arm`;
+}
+
+/**
  * Whether a loop plan is legal on a schedule (the trusted part of loop scheduling): each named kernel is a
  * pointwise kernel with a tileable contraction, every variant covers its dims, keeps the accumulation order and
  * fits its bindings and tiles, and the launch rule ends with an entry that accepts every grid.
@@ -508,11 +584,8 @@ export function loopsEligible(s: Schedule, plan: LoopPlan): CheckResult {
       const why = variantViolation(v);
       if (why) return no(`${entry.kernel} variant ${i}: ${why}`);
     }
-    const rule = entry.select;
-    if (!Array.isArray(rule) || !rule.length || rule.at(-1)!.minBlocks !== 0 || rule.at(-1)!.minTerms)
-      return no(`${entry.kernel}: the last entry of the launch rule must accept every grid`);
-    if (rule.some(e => !entry.variants[e.variant] || !(e.minBlocks >= 0) || !((e.minTerms ?? 0) >= 0)))
-      return no(`${entry.kernel}: the launch rule names a missing variant`);
+    const violation = selectionViolation(entry.kernel, entry.variants, entry.select);
+    if (violation) return no(violation);
   }
   return ok;
 }
@@ -541,7 +614,7 @@ export const loopsPass = planPass<LoopPlan>({
           dims: form.dims,
           operands: form.operands,
           variants: structuredClone(entry.variants) as Variant[],
-          select: structuredClone(entry.select) as Selection[],
+          select: structuredClone(entry.select),
         };
       }),
     },

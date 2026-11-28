@@ -272,11 +272,23 @@ test('fusion: eligible refuses a grouping that is not legal on the function', ()
 
 test('the manifest is printed with the source and names the gates and variants the runtime uses', async () => {
   const kernelsOf = name => emitScheduleProgram(lowerSchedule(corpus(name), true).value).kernels;
-  assert.deepEqual(kernelsOf('attention'), [
-    { name: 'k0', mapping: 'tiled', statements: ['score'], variants: 4 },
-    { name: 'k1', mapping: 'block', statements: ['shift', 'e', 'z', 'weight'], gated: true },
-    { name: 'k2', mapping: 'tiled', statements: ['out'], variants: 4 },
-  ]);
+  const attention = kernelsOf('attention');
+  assert.deepEqual(
+    attention.map(({ select, ...summary }) => summary),
+    [
+      { name: 'k0', mapping: 'tiled', statements: ['score'], variants: 4 },
+      { name: 'k1', mapping: 'block', statements: ['shift', 'e', 'z', 'weight'], gated: true },
+      { name: 'k2', mapping: 'tiled', statements: ['out'], variants: 4 },
+    ],
+  );
+  assert.deepEqual(
+    attention.map(k => k.select.map(arm => arm.gate ?? arm.variant)),
+    [
+      [1, 2, 3, 0],
+      ['fused', 'unfused'],
+      [1, 2, 3, 0],
+    ],
+  );
   for (const name of corpusNames) {
     const program = compileTix(read(`../../corpus/tensor/${name}/main.tix`));
     const fn = program.current.value.functions[0];
