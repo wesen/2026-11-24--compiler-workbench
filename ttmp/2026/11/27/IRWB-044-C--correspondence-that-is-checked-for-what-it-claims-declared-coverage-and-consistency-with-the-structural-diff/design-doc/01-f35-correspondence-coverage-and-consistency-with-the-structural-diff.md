@@ -86,7 +86,7 @@ any check, and it forces every existing declaration to be touched to keep its ol
 
 | Requirement | Ports | Declares |
 | --- | --- | --- |
-| `tensor.lower-cuda` `kernels` (`src/tensor/cuda-contract.ts`) | `baseline` TixIR → `subject` CudaIR | `bothTotal`, written out: every Tix statement is computed by exactly one kernel and every kernel names the statements it computes. Measured on the whole tensor corpus, fused and unfused (`scripts/02-existing-correspondences-coverage.mjs`): no unmapped source or target. Cross-kind, so no diff audit. |
+| `tensor.lower-cuda` `kernels` (`src/tensor/cuda-contract.ts`) | `baseline` TixIR → `subject` CudaIR | `partial`, written out. The mapping is a lowering between two entity kinds, so the diff audit does not apply to it; and a *candidate* CUDA unit may carry no kernel inventory (the source is what is verified), so a total source-side claim would reject such a candidate before the differential check can speak. The kernel inventory that does exist is pinned against `CudaIR.entities` by the entity-list check. The real lowering is total on both sides — measured on the whole tensor corpus, fused and unfused (`scripts/02-existing-correspondences-coverage.mjs`) — but that is a property of the domain, not a claim the contract can hold a candidate to. |
 | `ir-lab.expression.transform` `entities` (`src/labs/contracts.ts`) | `input`/`output` ExpressionIR | `bothTotal` by default (the mapping is a `makeCorrespondence`, total by construction) |
 | `ir-lab.scene.transform` `entities` | `input`/`output` SceneIR | `bothTotal` by default |
 | `ir-lab.mesh.transform` `entities` | `input`/`output` MeshIR | `bothTotal` by default |

@@ -10,6 +10,22 @@ import type {
   RevisionRef,
 } from './types.js';
 import { compareText, refKey, revisionRef } from './common.js';
+/**
+ * How a structural diff classifies every entity ID of two revisions. `kept` is `diffGraphs`' unchanged *and*
+ * updated case: for a correspondence audit only presence matters, not whether the content changed.
+ */
+export type EntityPresence = 'inserted' | 'removed' | 'kept';
+export function entityPresence(
+  before: Iterable<string>,
+  after: Iterable<string>,
+): ReadonlyMap<string, EntityPresence> {
+  const old = new Set(before),
+    current = new Set(after),
+    presence = new Map<string, EntityPresence>();
+  for (const id of [...new Set([...old, ...current])].sort(compareText))
+    presence.set(id, old.has(id) ? (current.has(id) ? 'kept' : 'removed') : 'inserted');
+  return presence;
+}
 export function diffGraphs(
   before: IRGraph,
   after: IRGraph,
@@ -23,16 +39,17 @@ export function diffGraphs(
     newEntities = new Map(after.entities.map(e => [e.id, e]));
   const oldRelations = new Map(before.relations.map(r => [r.id, r])),
     newRelations = new Map(after.relations.map(r => [r.id, r]));
-  for (const id of [...new Set([...oldEntities.keys(), ...newEntities.keys()])].sort(compareText)) {
+  // sorted by entity ID, the order the entity changes are reported in (IRWB-004)
+  for (const [id, presence] of entityPresence(oldEntities.keys(), newEntities.keys())) {
     const old = oldEntities.get(id),
       current = newEntities.get(id);
-    if (!old)
+    if (presence === 'inserted')
       entities.push({
         entity: id,
         kind: 'inserted',
         after: current!,
       });
-    else if (!current)
+    else if (presence === 'removed')
       entities.push({
         entity: id,
         kind: 'removed',

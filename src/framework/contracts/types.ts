@@ -120,11 +120,18 @@ export interface Preservation {
   readonly mode: 'check' | 'transfer';
   readonly correspondence?: string;
 }
+/**
+ * What a correspondence requirement's mapping must cover: `partial` only the per-entry checks, `sourceTotal`
+ * every source entity, `targetTotal` every target entity, `bothTotal` both. Filled in by
+ * `defineTransformation`, defaulting to `bothTotal`.
+ */
+export type CorrespondenceCoverage = 'partial' | 'sourceTotal' | 'targetTotal' | 'bothTotal';
 export interface CorrespondenceRequirement {
   readonly id: string;
   readonly from: string;
   readonly to: string;
   readonly relation?: string;
+  readonly coverage?: CorrespondenceCoverage;
 }
 export type CachePolicy = 'pure' | 'tracked' | 'never';
 export interface TransformationDefinition<I extends Ports = Ports, O extends Ports = Ports>

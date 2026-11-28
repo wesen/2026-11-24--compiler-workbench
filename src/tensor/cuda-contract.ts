@@ -218,7 +218,19 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     inputs,
     outputs,
     cache: 'never',
-    correspondence: [{ id: 'kernels', from: 'baseline', to: 'subject', relation: 'statements-to-kernels' }],
+    // IRWB-044-C: `partial`. A lowering maps two different entity kinds, so the mapping is not a diff of one IR
+    // and the content audit does not apply. A candidate CUDA unit may carry no kernel inventory (the source is
+    // what is verified); requiring the inventory to name every statement would reject that candidate before the
+    // numbers do. The kernel inventory itself is pinned against `CudaIR.entities` by the entity-list check.
+    correspondence: [
+      {
+        id: 'kernels',
+        from: 'baseline',
+        to: 'subject',
+        relation: 'statements-to-kernels',
+        coverage: 'partial',
+      },
+    ],
     ensures: [
       {
         invariant,

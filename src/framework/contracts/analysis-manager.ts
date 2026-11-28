@@ -1,6 +1,14 @@
 import { canonical, fingerprint, immutable } from '../core/data.js';
 import type { Artifact, EntityRef } from '../core/types.js';
-import { Check, JsonValue, definitionRef, describeDefinition, validateArtifact } from './definitions.js';
+import { entityPresence } from '../ir/diff.js';
+import {
+  Check,
+  DEFAULT_CORRESPONDENCE_COVERAGE,
+  JsonValue,
+  definitionRef,
+  describeDefinition,
+  validateArtifact,
+} from './definitions.js';
 import { MemoryResources } from './effects.js';
 import { ContractRegistry } from './registry.js';
 import type {
@@ -15,6 +23,7 @@ import type {
   ContractExecution,
   ContractSnapshot,
   Correspondence,
+  CorrespondenceRequirement,
   Dependency,
   EffectAccess,
   EffectDefinition,
@@ -1084,12 +1093,23 @@ export class AnalysisManager {
       }
     }
   }
+  /** The entity universe of one correspondence endpoint: what the IR type enumerates or, when it does not
+   * enumerate, what the record itself declares. Undefined when neither states anything (IRWB-044-C). */
+  private entityUniverse(
+    type: IRType<any>,
+    artifact: Artifact,
+    declared: readonly string[] | undefined,
+  ): ReadonlySet<string> | undefined {
+    if (type.entities) return new Set(type.entities(artifact.value));
+    return declared ? new Set(declared) : undefined;
+  }
   private validateCorrespondence(
     c: Correspondence,
     from: Artifact,
     to: Artifact,
     sourceType: IRType<any>,
     targetType: IRType<any>,
+    requirement?: CorrespondenceRequirement,
   ) {
     canonical(c);
     if (!c.id || !c.relation || !sameRef(c.from, from) || !sameRef(c.to, to))
@@ -1107,16 +1127,18 @@ export class AnalysisManager {
       )
     )
       throw new ContractError('correspondence', 'Correspondence entities must be string lists');
+    const universes = new Map<'source' | 'target', ReadonlySet<string> | undefined>();
     for (const [label, type, artifact, declared] of [
       ['source', sourceType, from, c.sourceEntities],
       ['target', targetType, to, c.targetEntities],
     ] as const) {
-      if (!type.entities) continue;
-      const actual = new Set(type.entities(artifact.value));
+      const universe = this.entityUniverse(type, artifact, declared);
+      universes.set(label, universe);
+      if (!universe) continue;
       const listed = new Set(declared ?? []);
-      const mismatch = [...actual]
+      const mismatch = [...universe]
         .filter(id => !listed.has(id))
-        .concat([...listed].filter(id => !actual.has(id)));
+        .concat([...listed].filter(id => !universe.has(id)));
       if (mismatch.length)
         throw new ContractError(
           'correspondence',
@@ -1124,7 +1146,63 @@ export class AnalysisManager {
         );
       for (const entry of c.entities ?? [])
         for (const id of label === 'source' ? entry.from : entry.to)
-          if (!actual.has(id)) throw new ContractError('correspondence', `Unknown ${label} entity ${id}`);
+          if (!universe.has(id)) throw new ContractError('correspondence', `Unknown ${label} entity ${id}`);
+    }
+    if (requirement)
+      this.auditCorrespondenceContent(
+        c,
+        universes,
+        requirement,
+        sourceType.id === targetType.id && sourceType.version === targetType.version,
+      );
+  }
+  /**
+   * IRWB-044-C: a required correspondence is checked for what it claims. Coverage: the requirement says which
+   * entity universes the mapping must name, and it is checked against each universe the record or its IR type
+   * states (a type that enumerates nothing leaves nothing to check, as the entity-list check always has).
+   * Consistency: a group with an empty target claims its source entities have no counterpart after the change;
+   * the structural diff's presence classification refuses that for an entity it keeps. Only one IR kind is one
+   * universe in two revisions, so a cross-kind correspondence (a lowering) is not audited against a diff.
+   */
+  private auditCorrespondenceContent(
+    c: Correspondence,
+    universes: ReadonlyMap<'source' | 'target', ReadonlySet<string> | undefined>,
+    requirement: CorrespondenceRequirement,
+    sameKind: boolean,
+  ) {
+    const coverage = requirement.coverage ?? DEFAULT_CORRESPONDENCE_COVERAGE,
+      entries = c.entities ?? [],
+      required = {
+        source: coverage === 'sourceTotal' || coverage === 'bothTotal',
+        target: coverage === 'targetTotal' || coverage === 'bothTotal',
+      };
+    for (const label of ['source', 'target'] as const) {
+      const universe = universes.get(label);
+      if (!required[label] || !universe) continue;
+      const named = new Set(
+        entries.flatMap(entry => (label === 'source' ? entry.from : entry.to) as readonly string[]),
+      );
+      const missing = [...universe].filter(id => !named.has(id));
+      if (missing.length)
+        throw new ContractError(
+          'correspondence',
+          `Correspondence does not cover ${label} entities: ${missing.join(', ')}`,
+        );
+    }
+    const before = universes.get('source'),
+      after = universes.get('target');
+    if (!sameKind || !before || !after) return;
+    const presence = entityPresence(before, after);
+    for (const entry of entries) {
+      if (entry.to.length) continue;
+      const kept = entry.from.filter(id => presence.get(id) === 'kept');
+      if (kept.length)
+        throw new ContractError(
+          'correspondence',
+          `Correspondence maps ${kept.join(', ')} to nothing; the structural diff keeps ${
+            kept.length === 1 ? 'it' : 'them'
+          }`,
+        );
     }
   }
   async checkInvariant<P extends Ports>(
@@ -1447,6 +1525,7 @@ export class AnalysisManager {
               after[requirement.to] as Artifact,
               definition.inputs[requirement.from] as IRType<any>,
               definition.outputs[requirement.to] as IRType<any>,
+              requirement,
             );
             if (requirement.relation && c.relation !== requirement.relation)
               throw new ContractError(

@@ -12,6 +12,8 @@ import type {
   AnalysisDefinition,
   AnyDefinition,
   CheckResult,
+  CorrespondenceCoverage,
+  CorrespondenceRequirement,
   DefinitionDescriptor,
   EffectDefinition,
   IRType,
@@ -147,6 +149,25 @@ export const defineObjective = <S>(d: Omit<ObjectiveDefinition<S>, 'category'>):
     category: 'objective',
   });
 };
+const COVERAGE: readonly CorrespondenceCoverage[] = ['partial', 'sourceTotal', 'targetTotal', 'bothTotal'];
+/** Every mapping a requirement asks for must account for both entity universes unless it says otherwise. */
+export const DEFAULT_CORRESPONDENCE_COVERAGE: CorrespondenceCoverage = 'bothTotal';
+/** An explicit coverage on every requirement, so a definition states what it demands (IRWB-044-C). */
+function requirement(
+  c: CorrespondenceRequirement,
+  inputs: Ports,
+  outputs: Ports,
+): CorrespondenceRequirement {
+  if (inputs[c.from]?.category !== 'ir' || outputs[c.to]?.category !== 'ir')
+    throw new Error('Correspondence requirements need IR input/output ports');
+  const coverage = c.coverage ?? DEFAULT_CORRESPONDENCE_COVERAGE;
+  if (!COVERAGE.includes(coverage))
+    throw new Error(`Correspondence ${c.id} has unknown coverage ${String(c.coverage)}`);
+  return {
+    ...c,
+    coverage,
+  };
+}
 export function defineTransformation<I extends Ports, O extends Ports>(
   d: Omit<
     TransformationDefinition<I, O>,
@@ -237,11 +258,10 @@ export function defineTransformation<I extends Ports, O extends Ports>(
     if (p.mode === 'transfer' && (!p.correspondence || !p.property.check.transfer))
       throw new Error('Transfer preservation needs a correspondence and registered transfer checker');
   }
-  for (const c of result.correspondence) {
-    if (result.inputs[c.from]?.category !== 'ir' || result.outputs[c.to]?.category !== 'ir')
-      throw new Error('Correspondence requirements need IR input/output ports');
-  }
-  return result;
+  return base({
+    ...result,
+    correspondence: result.correspondence.map(c => requirement(c, result.inputs, result.outputs)),
+  });
 }
 export const definitionRef = (d: VersionRef): VersionRef => ({
   id: d.id,
