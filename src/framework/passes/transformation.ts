@@ -386,7 +386,6 @@ export function* runTransformation<S, N extends Needs, P>(
   // prepare: a native result, or operations on the edit (opened on its first read: IRWB-019 F13); across IRs,
   // the output's value (no edit: an edit is an operation on one IR)
   let edit: IREdit<S> | undefined;
-  let produced: void | NativeResult<S> = undefined;
   let after: Artifact<any>, changes: ChangeSet | undefined, correspondence: EntityCorrespondence;
   let edits: number, report: unknown, derivation: Derivation | undefined;
   // the head the accepted revision replaces (see `publishAccepted`)
@@ -407,6 +406,7 @@ export function* runTransformation<S, N extends Needs, P>(
       generation = store.generation(after.id);
     }
   } else {
+    let produced: void | NativeResult<S>;
     let ran = false;
     try {
       produced = yield* wait(
@@ -422,32 +422,32 @@ export function* runTransformation<S, N extends Needs, P>(
     } finally {
       if (!ran && edit?.state === 'open') edit.rollback('pass threw');
     }
-  }
-  if (cross) {
-    // the candidate is complete: no change set, nothing to compare for "unchanged", no declared writes
-  } else if (produced && typeof produced === 'object' && 'native' in produced) {
-    if (edit?.state === 'open') edit.rollback('native result');
-    ({ after, changes, correspondence, edits, derivation } = prepareNative(
-      same!,
-      view,
-      produced,
-      options.outputId ?? before.id,
-    ));
-    report = produced.report;
-  } else {
-    if (edit && edit.state !== 'open')
-      throw new PassError('badResult', `Pass ${t.id} closed its edit itself`);
-    if (!edit || edit.operationCount === 0) {
-      edit?.rollback('no operations');
-      return unchanged();
+    if (produced && typeof produced === 'object' && 'native' in produced) {
+      if (edit?.state === 'open') edit.rollback('native result');
+      ({ after, changes, correspondence, edits, derivation } = prepareNative(
+        same!,
+        view,
+        produced,
+        options.outputId ?? before.id,
+      ));
+      report = produced.report;
+    } else {
+      if (edit && edit.state !== 'open')
+        throw new PassError('badResult', `Pass ${t.id} closed its edit itself`);
+      if (!edit || edit.operationCount === 0) {
+        edit?.rollback('no operations');
+        return unchanged();
+      }
+      const prepared = edit.prepare();
+      after = prepared.artifact;
+      changes = prepared.changes;
+      correspondence = prepared.correspondence;
+      edits = changes.operations.filter(o => o.kind !== 'correspond').length;
+      edit.rollback('the runner publishes revisions itself');
     }
-    const prepared = edit.prepare();
-    after = prepared.artifact;
-    changes = prepared.changes;
-    correspondence = prepared.correspondence;
-    edits = changes.operations.filter(o => o.kind !== 'correspond').length;
-    edit.rollback('the runner publishes revisions itself');
   }
+  // one IR: an unchanged candidate ends here, and a change outside the declared kinds is refused. Across IRs the
+  // output is another kind: there is no change set, nothing to call unchanged and no declared writes.
   if (same && changes) {
     if (after!.revision === before.revision && !changes.entities.length && !changes.relations.length)
       return unchanged();
