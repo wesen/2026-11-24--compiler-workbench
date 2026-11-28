@@ -1,0 +1,7 @@
+O2: 195 changed revisions, 159 with steps (1475 steps); differing correspondences: 0; errors: 0
+speed: 368 changed revisions, 307 with steps (9550 steps); differing correspondences: 0; errors: 0
+(the speed line is the full-corpus run; the O2 line above is the same probe on O2. One difference was found
+on the first run - licm-traps rotate, a note-join order - and fixed by ordering the published derivation as
+the revision's tables name its products; scripts/03-rotate-diff.mjs reproduces the finding.)
+baselines: node .../IRWB-039.../scripts/02-baselines.mjs check -> "no differences"
+(the census counts edits per pass; records only gained fields: rules, licensed.)

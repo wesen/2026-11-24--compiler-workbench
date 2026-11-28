@@ -1,0 +1,23 @@
+# The decision point: what does recording derivations cost? (scripts/01-correspondence-cost.mjs)
+
+The meaning gate is off (it never changes what a pass edits); the probe applies every pass of O2 to every
+corpus project and separately re-runs today's correspondence computation (entityIdSet before and after,
+revisionCorrespondence, makeCorrespondence) on every changed revision. Recording the derivation happens
+inside the pass applications, so its cost is inside `pipeline ms`. This machine is shared with other agents;
+run-to-run spread is a few seconds, so each side was measured three times, interleaved.
+
+before (ab23152, revisionCorrespondence in production):
+  O2: 195 changed revisions | pipeline 8720 ms  | today's correspondence 3838 ms (re-run)
+  O2: 195 changed revisions | pipeline 9494 ms  | today's correspondence 3763 ms (re-run)
+  O2: 195 changed revisions | pipeline 10009 ms | today's correspondence 4581 ms (re-run)
+after (this ticket, stepsToCorrespondence in production):
+  O2: 195 changed revisions | pipeline 8177 ms  | today's correspondence 3361 ms (re-run)
+  O2: 195 changed revisions | pipeline 12570 ms | today's correspondence 4807 ms (re-run)
+  O2: 195 changed revisions | pipeline 9528 ms  | today's correspondence 3965 ms (re-run)
+
+Recording derivations is indistinguishable from noise at corpus scale (medians 9.5 s on both sides), far
+below the 2x threshold, so the fallback (store local terms only on demand) is not needed. No local terms
+(before/after JSON) are stored at all: a step is one small object per made or removed entity, O(changes),
+and the runner's strict site validation is O(steps).
+
+(An earlier single run printed 20458 ms for the pre-change pipeline; that was machine load, not the change.)
