@@ -27,7 +27,7 @@
 import { immutable, canonical } from '../core/data.js';
 import type { EntityCorrespondence, RevisionRef } from './types.js';
 import { compareText, IRError, requireText } from './common.js';
-import { makeCorrespondence } from './correspondence.js';
+import { checkCoverage, makeCorrespondence } from './correspondence.js';
 
 /** How a step relates its site in the input revision to its site in the output revision. */
 export type DerivationRelation = 'modified' | 'merged' | 'split' | 'inserted' | 'removed' | 'retained';
@@ -56,7 +56,7 @@ export interface Derivation {
   readonly steps: readonly DerivationStep[];
 }
 
-/** F35's coverage vocabulary (`contracts/types.ts`: `CorrespondenceCoverage`), applied to what the steps map. */
+/** Coverage policy accepted by derivation producers. */
 export type DerivationCoverage = 'partial' | 'nonempty' | 'source' | 'target' | 'both';
 
 const RELATIONS = new Set<string>(['modified', 'merged', 'split', 'inserted', 'removed', 'retained']);
@@ -221,16 +221,15 @@ export function correspondenceFromDerivation(
     throw new IRError('ir.derivation', `Unknown coverage policy ${coverage}`);
   const entries = stepEntries(derivation, new Set(sourceEntities), new Set(targetEntities));
   const c = makeCorrespondence(from, to, sourceEntities, targetEntities, entries);
-  if (coverage === 'nonempty' && c.sourceEntities.length + c.targetEntities.length > 0 && !entries.length)
+  const failure = checkCoverage(coverage === 'nonempty' ? { ...c, entries } : c, coverage);
+  if (failure === 'empty')
     throw new IRError(
       'ir.derivation',
       `The derivation maps nothing${derivation.steps.length ? ` (${derivation.steps.length} steps, none of them a mapping)` : ' (no steps)'}: coverage 'nonempty' is not met`,
     );
-  const mappedSource = new Set(c.entries.flatMap(e => [...e.from])),
-    mappedTarget = new Set(c.entries.flatMap(e => [...e.to]));
-  if ((coverage === 'source' || coverage === 'both') && c.sourceEntities.some(id => !mappedSource.has(id)))
+  if (failure === 'source')
     throw new IRError('ir.derivation', 'The derivation does not cover every source entity');
-  if ((coverage === 'target' || coverage === 'both') && c.targetEntities.some(id => !mappedTarget.has(id)))
+  if (failure === 'target')
     throw new IRError('ir.derivation', 'The derivation does not cover every target entity');
   return c;
 }
