@@ -41,11 +41,7 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
     const definition = pass === 'inline' ? inlinePass : pass === 'split-sum' ? splitPass : undefined;
     if (!definition) throw Error('Unknown pass ' + pass);
     try {
-      const result = applyNativePassSync(
-        definition,
-        current,
-        meaningGate(origin, definition.relation),
-      );
+      const result = applyNativePassSync(definition, current, meaningGate(origin, definition.relation));
       current = result.artifact;
       return { pass, accepted: true, changed: result.changed };
     } catch (error) {
@@ -94,7 +90,11 @@ export function tixAlgorithm(pass: TixPass, { origin }: { origin: Artifact<Modul
       },
     ],
   });
-  return passAlgorithm(pass, { manager: new AnalysisManager(), contract, contractInputs: () => ({ origin }) });
+  return passAlgorithm(pass, {
+    manager: new AnalysisManager(),
+    contract,
+    contractInputs: () => ({ origin }),
+  });
 }
 
 export interface LoweringOptions {

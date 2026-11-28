@@ -1,0 +1,10 @@
+Implemented F27 and committed it as `51e30df`. The [ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/index.md) contains the [short report](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference/02-short-report.md) and diary.
+
+- [passes.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/src/tensor/passes.ts): Declares exact or tolerance meaning relations on Tix passes.
+- [contract.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/src/tensor/contract.ts): Exports the relation type.
+- [index.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/src/tensor/index.ts): Uses the declared relation in `optimizeTix` and exports the contract-backed `tixAlgorithm`.
+- [r3-tix-in-plans.test.mjs](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/tests/tensor/r3-tix-in-plans.test.mjs): Removes the F27 todo without changing its assertions.
+
+The F27 test passed, `npm run check` passed, and the baseline check printed **`no differences`**. The non-GPU suite reported 66 passing and 4 failing files out of 70 in the sandbox. All four failing files passed on escalated rerun: 15 tests passed, 1 skipped, and 0 failed. The aggregate sandbox reporter did not expose the original failure details, so their precise causes remain unconfirmed.
+
+The test file’s introductory comment says `optimizeTix` should run a plan; the task explicitly keeps it synchronous, so that comment is stale. GPU tests were excluded as requested.

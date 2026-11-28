@@ -1,0 +1,1620 @@
+Reading additional input from stdin...
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+model: gpt-6.1-terra
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git]
+reasoning effort: low
+reasoning summaries: none
+session id: 01a21f1e-ca82-70d0-92bc-5f7f0dc3fa19
+--------
+user
+You are working in a git worktree of the IR Workbench repository (TypeScript, Node 24). It compiles two languages on one IR framework (`src/framework/`: `core`, `ir`, `contracts`, `passes`, `dataflow`, `strategy`):
+- **Typed,** a small statically typed language compiled to 32-bit RISC-V (`src/typed/`; the corpus in `corpus/projects/`);
+- **Tix,** an index-notation tensor language compiled to CUDA (`src/tensor/`; its corpus in `corpus/tensor/`).
+
+Every optimization is a checked pass: a meaning contract compares a pass's output with its input on generated cases, and every edit carries a correspondence back to the IR before it. The framework is being refactored in small steps (ticket `ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/`, design doc `design-doc/01-...md`). Your step is one of them.
+
+Your ticket is IRWB-041-A. This is a **small specified change**, in one session of up to 90 minutes. Create your ticket with docmgr under `ttmp/2026/11/27/`, keep a short diary, and end with a short report in the ticket.
+
+## Your task (F27): Tix passes keep their meaning gate inside strategy plans
+Tix passes already run in strategy plans through the framework's bridge (`passAlgorithm` in `src/framework/passes/bridge.ts`), but they lose their meaning check there. `optimizeTix` (`src/tensor/index.ts`, around lines 32-45) hands the gate to `applyNativePassSync` as a closure, `meaningGate(origin, pass === 'inline' ? 'exact' : 'tolerance')`, and the Tix passes (`src/tensor/passes.ts`) declare no contract, so the bridge checks nothing: a wrong pass is accepted.
+
+Do two things:
+1. **Declare each pass's relation on the pass** (`inline` is exact, `split-sum` is within tolerance) and have `optimizeTix` use the declared relation instead of choosing it by name.
+2. **Export `tixAlgorithm(pass, { origin })` from `src/tensor/index.ts`:** a strategy algorithm for the pass whose meaning gate is a contract, passed through the bridge's existing `contract` and `contractInputs` options. R3's probe `ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/various/r3-synthesis/scripts/02-tix-passes-in-strategy-plans.mjs`, part 3 (lines 48-66), shows a working way to wrap `meaningGate` as an `ensures` invariant, including the one adaptation it needed.
+
+`optimizeTix` stays synchronous: making it run a plan needs a synchronous plan driver, which is a later step.
+
+## Acceptance (all of these, checked on your last commit)
+- **The test:** `F27: a wrong Tix pass is rejected inside a strategy plan; correct passes are accepted` in `tests/tensor/r3-tix-in-plans.test.mjs` passes without its `todo`.
+- **The baselines:** `node ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/scripts/02-baselines.mjs check` (after `npm run build`) prints `no differences`. It compares RV32 image hashes, instruction counts and edit records for every corpus project under r0, O2 and `speed`, and the CUDA source and `optimizeTix` revisions for every Tix program. This step must not change them.
+- **The suites:** `tests/typed/*.test.mjs`, `tests/framework/*.test.mjs`, `tests/workbench/*.test.mjs`, and `tests/tensor/*.test.mjs` except the `*-gpu.test.mjs` files, all pass, apart from the `todo` tests of other steps.
+- `npm run check` (tsc) is clean, and `node tools/build-site.mjs` builds if you changed `src/framework/` or `src/workbench/`.
+
+## Repository facts
+- **Build and test:** build with `npm run build` (`tsc`, into `dist/`). Tests are `node --test tests/<dir>/<name>.test.mjs` and import from `../../dist/...`; on Node 24, pass files, not a bare directory. Do not run the full suite (`npm test`) and do not run the `*-gpu.test.mjs` files (there is no GPU here): other agents share this machine. Prettier: 110 columns, single quotes; `npm run format:check` covers `src/**/*.ts`; run Prettier only on files that were formatted before you changed them.
+- **Tests of the correct behaviour already exist.** `tests/framework/r3-defects.test.mjs`, `tests/tensor/r3-tix-in-plans.test.mjs` and `tests/typed/d2-defects.test.mjs` hold one `todo` test per refactor step. Your step's test is named in the acceptance above: make it pass and remove its `todo` option in the same commit. Do not weaken a test's assertions; if you believe one is wrong, say so in your report and leave it.
+- **Scope:** `src/tensor/` and tests. Not `src/framework/`: this step needs no framework change.
+- **Scripts:** put every probe and temporary program you write in your ticket's `scripts/` directory, numbered (`01-name.mjs`), and commit them.
+- **Sandboxed sessions:** a test that spawns `node` can fail with EPERM. Request escalation for that command.
+- **Commits:** commit on your current branch with messages starting `IRWB-041-A:`, as you go, so that your last commit always holds working code. Do not push.
+- **Never use `git stash`:** every worktree of this repository shares one stash stack with other agents' worktrees. To set work aside, make a temporary commit.
+- **Outside your worktree,** use nothing.
+
+## Final message
+- the ticket and report paths;
+- what you changed, file by file, in one line each;
+- the acceptance results: the test, the baselines check output, the suites' pass/fail counts;
+- anything you left out or believe is wrong in the brief or the test;
+- the last commit hash.
+codex
+I’ll inspect the existing Tix pass and contract APIs, create the ticket and diary, then make the scoped change and run the requested acceptance checks. I’ll use the docmgr and diary workflows for the ticket records.
+exec
+/usr/bin/zsh -lc 'cat /home/manuel/.codex/skills/docmgr/SKILL.md /home/manuel/.codex/skills/diary/SKILL.md' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 367ms:
+---
+description: 'Documentation management with the `docmgr` CLI: create and work in ticket workspaces (`ttmp/...`), add documents, relate code/files to docs, manage tasks/changelogs/metadata/vocabulary, and search/validate docs. Use when a user mentions `docmgr`, ticket docs, `docmgr doc relate`, `docmgr doc search`, YAML frontmatter validation, or asks to turn ad-hoc markdown into a structured, searchable knowledge base.'
+metadata:
+    title: Docmgr
+    topics:
+        - imported-skill
+    what_for: 'Documentation management with the `docmgr` CLI: create and work in ticket workspaces (`ttmp/...`), add documents, relate code/files to docs, manage tasks/changelogs/metadata/vocabulary, and search/validate docs. Use when a user mentions `docmgr`, ticket docs, `docmgr doc relate`, `docmgr doc search`, YAML frontmatter validation, or asks to turn ad-hoc markdown into a structured, searchable knowledge base.'
+    when_to_use: Use when working with Docmgr.
+name: docmgr
+---
+
+# Docmgr
+
+## Overview
+
+Use `docmgr` to keep documentation organized into ticket workspaces, with consistent metadata and bidirectional links between code/files and docs.
+
+## Quick Start
+
+### Shell safety: never paste unquoted backticks
+
+Bash/zsh treat backticks as command substitution. If you see a path rendered as `` `ttmp/.../doc.md` ``:
+- Prefer removing the backticks: `ttmp/.../doc.md`
+- Or quote the whole argument: ``'`ttmp/.../doc.md`'``
+
+### First-time setup (one-time)
+
+```bash
+docmgr status --summary-only
+docmgr init --seed-vocabulary
+docmgr vocab list
+```
+
+### Create a ticket
+
+```bash
+docmgr ticket create-ticket \
+  --ticket TICKET-ID \
+  --title "Descriptive Title" \
+  --topics topic1,topic2
+```
+
+### Add a document + relate files immediately
+
+```bash
+docmgr doc add --ticket TICKET-ID --doc-type analysis --title "Document Title"
+docmgr doc relate --ticket TICKET-ID \
+  --file-note "/abs/path/to/file.go:Why this file matters"
+```
+
+## Core Conventions (strict)
+
+- Use `docmgr doc relate` (not `docmgr relate`).
+- Do not pass `--doc-type` to `doc relate`; target either `--ticket TICKET-ID` (ticket index) or `--doc PATH` (specific doc).
+- Always format related files as `--file-note "path:reason"` (colon separator, not dash).
+- Prefer absolute paths in `--file-note` for clarity and copy/paste safety.
+- Prefer "subdocument-first" linking: relate most files to the focused subdoc, keep `index.md` as the overview.
+- Keep "RelatedFiles" tight (roughly 3-7 per ticket, not 20+).
+- Store any ad-hoc scripts you create for a ticket in that ticket's `scripts/` directory under `ttmp/.../scripts` so they are tracked. Name scripts with a numerical prefix (`01-...`, `02-...`) to preserve execution order and trace investigation steps.
+- Every active ticket should have a **diary**. On resume, read its latest relevant checkpoint and current files; expand earlier steps when needed rather than automatically rereading the entire history. An explicit detailed-diary request uses investigation mode from the diary skill.
+- Keep one authoritative current-state source per fact. A milestone receipt can own task/history effects while the diary owns reasoning; do not duplicate the same progress paragraph across every projection.
+
+## Milestones and compact resume
+
+A verified binary with `milestone record` can consolidate task/history bookkeeping and `ticket resume` can derive the current checkpoint. Check command availability once for an unfamiliar binary; this repository's implemented contract uses Glazed v1.3.6, including `--with-glaze-output --output json`. Follow installed help if that output API changes. Older binaries require the existing task/changelog workflow; never invoke a proposed API from a design sketch as though installed.
+
+Read [milestone commands and safety](references/milestones.md) when using these operations. A receipt is not proof of the underlying claim and does not replace a requested diary. Retry interrupted operations using the same ID/request; do not bypass conflicts or overwrite human edits.
+
+## Common Workflows
+
+### Get oriented on an existing ticket
+
+```bash
+docmgr ticket list --ticket TICKET-ID
+docmgr doc list --ticket TICKET-ID
+docmgr task list --ticket TICKET-ID
+docmgr vocab list
+```
+
+### Task bookkeeping
+
+```bash
+docmgr task add --ticket TICKET-ID --text "New task"
+docmgr task check --ticket TICKET-ID --id 1,2
+```
+
+### Changelog update (what + why + related files)
+
+```bash
+docmgr changelog update --ticket TICKET-ID \
+  --entry "What changed and why" \
+  --file-note "/abs/path/to/file.go:Reason"
+```
+
+### Search
+
+```bash
+docmgr doc search --query "search term"
+docmgr doc search --query "term" --topics backend --doc-type design-doc
+docmgr doc search --file path/to/file.go
+docmgr doc search --dir path/to/dir/
+```
+
+### Validate / hygiene
+
+```bash
+docmgr doctor --ticket TICKET-ID --stale-after 30
+docmgr validate frontmatter --doc path/to/doc.md --suggest-fixes
+```
+
+## Vocabulary
+
+If a `doctor` warning indicates an unknown topic/doc-type/category, add it to the vocabulary (or ignore if it's intentionally out-of-vocab):
+
+```bash
+docmgr vocab add --category topics --slug my-topic --description "Description"
+```
+
+## Reference
+
+Load `references/docmgr.md` for the full (long-form) docmgr workflow, command reference, and best practices.
+---
+name: diary
+description: Write and maintain chronological implementation diaries with evidence, failures, decisions, commits and review instructions. Use when asked to keep a diary, dev log, ticket work history or debugging record; detailed diary requests use the full investigation format.
+---
+
+# Diary
+
+## Select the entry mode
+
+- **Investigation:** substantive implementation, debugging, design decisions, or an explicit detailed diary request. Use the full [investigation format](references/investigation-entry.md).
+- **Milestone:** routine successful validation, publication or bookkeeping without substantive debugging. Use the compact [milestone format](references/milestone-entry.md).
+- When uncertain, preserve the meaningful failure/decision context rather than compressing it away. Higher-priority instructions and an explicit user format override these defaults.
+
+Each numbered step begins with 1–2 short prose paragraphs explaining intent and outcome. Record failures promptly, including the exact command and relevant diagnostic. Keep historical entries intact; change future entry conventions prospectively.
+
+## Prompt and evidence discipline
+
+Record the actual authored user request verbatim the first time it appears; later steps link to that entry. Do not fabricate a verbatim quote from a summary. Distinguish user-authored instructions from automatically injected runtime metadata; avoid repeating counters or budget notices. If only a summary survives, label it as a summary and link the original source when available.
+
+Use [evidence levels](references/evidence-levels.md): routine success needs command/result/revision, experiments need configuration and measurements, and failures need exact relevant diagnostics. Preserve raw bytes when identity matters, not just to archive decorative successful CLI output.
+
+## Working loop
+
+Implement toward a major feature or integration milestone, then validate its affected behavior at that boundary. Commit boundaries and validation boundaries are not the same: smaller focused commits are useful checkpoints and do not warrant extensive checks, full builds or broad test suites merely because a commit is being made. Prioritize visible feature progress over repeated validation and bookkeeping loops.
+
+At a major boundary, run the relevant validation gate. If it fails, collect the diagnostics, fix the issues together where practical, and rerun the narrow checks needed to verify those fixes rather than restarting the entire validation pipeline after each edit. Run an earlier targeted check only when it resolves a concrete uncertainty or material risk; honor explicit project-required checks. Record which checks passed, failed or were deferred, and never describe an unvalidated checkpoint as qualified.
+
+Update the detailed diary, tasks and changelog at meaningful milestones, preserving failure evidence as it occurs without requiring a full bookkeeping cycle for every small edit. Code and documentation may share a focused commit when that is clearer; two separate commits per small edit are not mandatory. Record the code hash in the subsequent checkpoint when available.
+
+Use `docmgr` for ticket creation, task updates and relations. If a verified local binary provides `milestone record`, it can consolidate task/history updates; it does not author the diary or judge evidence. Follow the docmgr skill's actual API and capability check, not a proposed command from a design sketch.
+
+Keep RelatedFiles focused on primary implementation and evidence files, with absolute `--file-note "path:reason"` arguments. A commit or bounded receipt supplies the full changed-path inventory; do not duplicate every path in metadata. Never hide review-critical files merely to hit an arbitrary count.
+
+## Resume and review
+
+Resume from the latest relevant checkpoint, current request and current files, then expand the necessary earlier investigation. Do not reread an entire long diary automatically. Unchanged instruction hashes are change signals, not proof the model still remembers the text; reload absent instructions and obey higher-priority full-read rules.
+
+The [workflow reference](references/diary.md) points to the canonical formats and evidence rules. No runtime phase loader or automatic policy enforcement is implied by this prose.
+
+exec
+/usr/bin/zsh -lc "sed -n '1,220p' src/tensor/index.ts && cat src/tensor/passes.ts && cat src/framework/passes/bridge.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+exec
+/usr/bin/zsh -lc "git status --short && rg --files -g 'AGENTS.md' -g 'package.json' -g '*r3-tix-in-plans*' -g 'src/tensor/*.ts'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+exec
+/usr/bin/zsh -lc 'docmgr ticket create-ticket --help' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+exec
+/usr/bin/zsh -lc "cat tests/tensor/r3-tix-in-plans.test.mjs && sed -n '40,85p' ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/various/r3-synthesis/scripts/02-tix-passes-in-strategy-plans.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 770ms:
+import type { DifferentialEvidence } from '../framework/contracts/index.js';
+import type { Artifact } from '../framework/core/types.js';
+import { createIRArtifact } from '../framework/ir/index.js';
+import { applyNativePassSync, PassError } from '../framework/passes/index.js';
+import { meaningGate } from './contract.js';
+import { evaluate, type Inputs, type Precision, type BufferValue } from './evaluate.js';
+import { adapter } from './ir.js';
+import { selectFunction, type Module } from './model.js';
+import { checkCudaLowering } from './cuda-contract.js';
+import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
+import { emitSchedule } from './cuda-source.js';
+import { lowerSchedule } from './strategy.js';
+import { parse } from './parser.js';
+import { inlinePass, splitPass } from './passes.js';
+
+export interface TixProgram {
+  readonly origin: Artifact<Module>;
+  readonly current: Artifact<Module>;
+}
+export function compileTix(source: string): TixProgram {
+  const origin = createIRArtifact(adapter, 'tix', parse(source));
+  return { origin, current: origin };
+}
+export function runTix(
+  program: TixProgram,
+  fn: string,
+  inputs: Inputs,
+  options?: { precision?: Precision },
+): BufferValue {
+  return evaluate(selectFunction(program.current.value, fn), inputs, options?.precision ?? 'f32');
+}
+export function optimizeTix(program: TixProgram, passes: string[]) {
+  const { origin } = program;
+  let { current } = program;
+  const steps = passes.map(pass => {
+    const definition = pass === 'inline' ? inlinePass : pass === 'split-sum' ? splitPass : undefined;
+    if (!definition) throw Error('Unknown pass ' + pass);
+    try {
+      const result = applyNativePassSync(
+        definition,
+        current,
+        meaningGate(origin, pass === 'inline' ? 'exact' : 'tolerance'),
+      );
+      current = result.artifact;
+      return { pass, accepted: true, changed: result.changed };
+    } catch (error) {
+      if (error instanceof PassError && error.code === 'contractRejected') {
+        const evidence = error.evidence as DifferentialEvidence | undefined;
+        return {
+          pass,
+          accepted: false,
+          changed: false,
+          reason: evidence?.counterexamples[0]?.reason ?? error.message,
+        };
+      }
+      throw error;
+    }
+  });
+  return { program: { origin, current }, steps };
+}
+
+export interface LoweringOptions {
+  /** Fuse statements into fewer kernels (stage 3, the default); `false` is stage 2's one kernel per statement. */
+  fuse?: boolean;
+}
+// IRWB-033-D: Tix -> schedule IR (fusion plan, then the checked scheduling passes) -> CUDA source.
+function lower(program: TixProgram, fn: string, options?: LoweringOptions) {
+  const f = selectFunction(program.current.value, fn);
+  return { f, source: emitSchedule(lowerSchedule(f, options?.fuse !== false).value) };
+}
+
+export function cudaSource(program: TixProgram, fn: string, options?: LoweringOptions): string {
+  return lower(program, fn, options).source;
+}
+
+export async function runTixCuda(
+  program: TixProgram,
+  fn: string,
+  inputs: CudaInputs,
+  options?: LoweringOptions & { host?: string; benchmark?: boolean },
+): Promise<CudaResult> {
+  const { f, source } = lower(program, fn, options);
+  const [result] = await runCudaBatch(source, f, [inputs], {
+    host: options?.host,
+    benchmark: options?.benchmark,
+  });
+  return result;
+}
+
+export function checkLowering(
+  program: TixProgram,
+  fn: string,
+  options?: LoweringOptions,
+): Promise<{ accepted: boolean; relation: 'exact' | 'tolerance'; reason?: string }> {
+  return checkCudaLowering(program.current, fn, undefined, { fuse: options?.fuse !== false });
+}
+import { definePass } from '../framework/passes/index.js';
+import { adapter, TixIR } from './ir.js';
+import {
+  add,
+  mapExpr,
+  substitute,
+  variable,
+  visit,
+  width,
+  type Affine,
+  type Expr,
+  type Fn,
+  type Module,
+} from './model.js';
+
+function replaceIndices(expr: Expr, bindings: Map<string, Affine>): Expr {
+  return mapExpr(expr, e =>
+    e.kind === 'load' ? { ...e, indices: e.indices.map(a => substitute(a, bindings)) } : e,
+  );
+}
+function inline(fn: Fn): Fn {
+  const statements = [...fn.statements];
+  for (let i = 0; i < statements.length; i++) {
+    const p = statements[i];
+    if (p.name === fn.result) continue;
+    let pointwise = true;
+    visit(p.expr, e => {
+      if (e.kind === 'reduce') pointwise = false;
+    });
+    if (!pointwise) continue;
+    let uses = 0,
+      consumer = -1;
+    for (let j = i + 1; j < statements.length; j++)
+      visit(statements[j].expr, e => {
+        if (e.kind === 'load' && e.name === p.name) {
+          uses++;
+          consumer = j;
+        }
+      });
+    if (uses !== 1) continue;
+    const s = statements[consumer];
+    statements[consumer] = {
+      ...s,
+      expr: mapExpr(s.expr, e => {
+        if (e.kind !== 'load' || e.name !== p.name) return e;
+        return replaceIndices(p.expr, new Map(p.axes.map((a, k) => [a.id, e.indices[k]])));
+      }),
+    };
+    statements.splice(i--, 1);
+  }
+  return { ...fn, statements };
+}
+function split(fn: Fn): Fn {
+  return {
+    ...fn,
+    statements: fn.statements.map(s => ({
+      ...s,
+      expr: mapExpr(s.expr, e => {
+        if (e.kind !== 'reduce' || e.op !== 'sum' || e.axes.length !== 1) return e;
+        const [{ id, extent }] = e.axes;
+        if (extent.kind !== 'dim') return e;
+        const { dim } = extent,
+          block = id + '/block',
+          lane = id + '/lane';
+        const address = add(variable(lane), variable(block), width);
+        const body = replaceIndices(e.body, new Map([[id, address]]));
+        return {
+          kind: 'reduce',
+          op: 'sum',
+          axes: [{ id: block, extent: { kind: 'blocks', dim, rounding: 'ceil' } }],
+          body: {
+            kind: 'reduce',
+            op: 'sum',
+            axes: [{ id: lane, extent: { kind: 'tail', dim, block } }],
+            body,
+          },
+        };
+      }),
+    })),
+  };
+}
+function pass(name: string, transform: (fn: Fn) => Fn) {
+  return definePass<Module>({
+    id: 'tensor.' + name,
+    version: '1',
+    description: name,
+    ir: TixIR,
+    adapter,
+    writes: { entities: ['tensor'], relations: ['reads', 'contains'] },
+    run: ({ before }) => ({ native: { functions: before.value.functions.map(transform) } }),
+  });
+}
+export const inlinePass = pass('inline', inline),
+  splitPass = pass('split-sum', split);
+/**
+ * IRWB-001 E6: passes and analyses as Strategy IR algorithms.
+ *
+ * A strategy plan refers to algorithms by id and exact version. `passAlgorithm` registers a pass as a `transform`
+ * whose current value is an artifact: applying it returns the next revision (or the same artifact when nothing
+ * changed). `analysisAlgorithm` registers an analysis as an `analysis` algorithm, and `metricsAlgorithm` exposes a
+ * numeric summary for `chooseBest`. The strategy interpreter records the plan, branches and selections; the pass
+ * results themselves are reported through `onResult` so a host (the workbench's revision timeline) can keep them.
+ */
+import type { Artifact } from '../core/types.js';
+import type { AnalysisManager } from '../contracts/analysis-manager.js';
+import type { AnalysisDefinition } from '../contracts/types.js';
+import type { IRStore } from '../ir/index.js';
+import type { StrategyAlgorithm } from '../strategy/ir.js';
+import { applyPass, PassError, type Needs, type Pass, type PassResult } from './define-pass.js';
+
+export interface BridgeOptions {
+  readonly manager: AnalysisManager;
+  readonly store?: IRStore;
+  readonly contractInputs?: (input: Artifact<any>) => Readonly<Record<string, unknown>>;
+  /** A contract for every application, overriding the passes' own (see ApplyOptions.contract). */
+  readonly contract?: import('../contracts/types.js').TransformationDefinition<any, any>;
+  readonly onResult?: (result: PassResult<any>) => void;
+}
+
+const isArtifact = (x: unknown): x is Artifact<any> =>
+  !!x && typeof x === 'object' && typeof (x as Artifact).revision === 'string' && 'value' in (x as object);
+
+export function passAlgorithm<S>(pass: Pass<S, Needs, any>, options: BridgeOptions): StrategyAlgorithm {
+  return {
+    id: pass.id,
+    version: pass.version,
+    kind: 'transform',
+    description: pass.description,
+    async run(ctx, input, args) {
+      if (!isArtifact(input))
+        ctx.reject('not-an-artifact', `${pass.id} needs an artifact as its current value`);
+      try {
+        const result = await applyPass(pass, input as Artifact<S>, {
+          manager: options.manager,
+          store: options.store,
+          params: args,
+          contractInputs: options.contractInputs?.(input as Artifact<S>),
+          contract: options.contract,
+        });
+        options.onResult?.(result);
+        ctx.record('pass', {
+          pass: pass.id,
+          changed: result.changed,
+          edits: result.edits,
+          revision: result.artifact.revision,
+        });
+        return result.artifact;
+      } catch (e) {
+        // a rejected contract is an expected, recoverable outcome a strategy can handle (attempt, fork)
+        if (e instanceof PassError && e.code === 'contractRejected')
+          ctx.reject('contract-rejected', e.message, e.evidence);
+        throw e;
+      }
+    },
+  };
+}
+
+export function analysisAlgorithm<S, R>(
+  def: AnalysisDefinition<S, R>,
+  options: { manager: AnalysisManager },
+): StrategyAlgorithm {
+  return {
+    id: def.id,
+    version: def.version,
+    kind: 'analysis',
+    description: def.description,
+    async run(ctx, input) {
+      if (!isArtifact(input)) ctx.reject('not-an-artifact', `${def.id} needs an artifact`);
+      return (await options.manager.analyse(def, input as Artifact<S>)).value;
+    },
+  };
+}
+
+export function metricsAlgorithm(
+  id: string,
+  version: string,
+  description: string,
+  measure: (value: unknown) => Readonly<Record<string, number>> | Promise<Readonly<Record<string, number>>>,
+): StrategyAlgorithm {
+  return { id, version, kind: 'metrics', description, run: (_ctx, input) => measure(input) };
+}
+
+ succeeded in 783ms:
+// IRWB-039 phase 1a: R3 synthesis probe 02 as a test of the CORRECT behaviour (BACKLOG F27, restated).
+// Tix passes run in strategy plans through the bridge, but today their meaning gate is a closure handed to
+// applyNativePassSync, so a plan drops it. The fix exports `tixAlgorithm(pass, { origin })` from src/tensor: a
+// strategy algorithm that carries the pass's meaning gate as a contract (relation declared by the pass, not chosen
+// by its name), and `optimizeTix` runs its sequence as a plan of these. Remove `todo` in the fixing commit.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+const S = await import('../../dist/framework/strategy/index.js');
+const { definePass } = await import('../../dist/framework/passes/index.js');
+const T = await import('../../dist/tensor/index.js');
+const { inlinePass, splitPass } = await import('../../dist/tensor/passes.js');
+const { parse } = await import('../../dist/tensor/parser.js');
+
+const src = 'fn f(x:f32[N,K]):f32[N] { a[i,k] = x[i,k] * 2; y[i] = sum(k) a[i,k]; return y; }';
+const wrong = definePass({
+  ...inlinePass,
+  id: 'r3.wrong',
+  description: 'inline, but multiplies by 3',
+  run: () => ({ native: parse('fn f(x:f32[N,K]):f32[N] { y[i] = sum(k) x[i,k] * 3; return y; }') }),
+});
+
+test(
+  'F27: a wrong Tix pass is rejected inside a strategy plan; correct passes are accepted',
+  { todo: 'F27' },
+  async () => {
+    assert.equal(typeof T.tixAlgorithm, 'function', 'src/tensor exports tixAlgorithm(pass, { origin })');
+    const p = T.compileTix(src);
+    const keep = { id: 'keep', version: '1', kind: 'transform', description: 'identity', run: (_c, a) => a };
+    const reg = new S.AlgorithmRegistry()
+      .register(T.tixAlgorithm(wrong, { origin: p.origin }))
+      .register(T.tixAlgorithm(inlinePass, { origin: p.origin }))
+      .register(T.tixAlgorithm(splitPass, { origin: p.origin }))
+      .register(keep);
+    // the wrong pass alone: the plan must not succeed with its output
+    const bad = await S.execute(S.plan('w', S.apply('wrong', S.algorithm('r3.wrong'))), reg, p.current);
+    assert.ok(
+      bad.status !== 'succeeded' || bad.value.revision === p.current.revision,
+      'the wrong pass was accepted in a plan',
+    );
+    // inside attempt/fallback: the fallback runs and the result is the input
+    const tried = await S.execute(
+      S.plan(
+        't',
+        S.attempt('try', S.apply('wrong', S.algorithm('r3.wrong')), S.apply('keep', S.algorithm('keep'))),
+      ),
+      reg,
+      p.current,
+    );
+    assert.equal(tried.status, 'succeeded');
+    assert.equal(tried.value.revision, p.current.revision);
+    // a correct sequence through plans gives the same revision as optimizeTix
+    const seq = await S.execute(
+      S.plan(
+        's',
+        S.sequence(
+          'main',
+          S.apply('inline', S.algorithm(inlinePass.id)),
+          S.apply('split', S.algorithm(splitPass.id)),
+        ),
+      ),
+      reg,
+      p.current,
+    );
+    assert.equal(seq.status, 'succeeded');
+    assert.equal(seq.value.revision, T.optimizeTix(p, ['inline', 'split-sum']).program.current.revision);
+  },
+);
+{
+  let captured;
+  const reg = new S.AlgorithmRegistry().register(passAlgorithm(wrong, { manager: new C.AnalysisManager(), onResult: r => (captured = r) }));
+  const run = await S.execute(S.plan('w', S.apply('wrong', S.algorithm('probe.wrong'))), reg, p.current);
+  const inputs = { x: { shape: [1, 2], data: new Float32Array([1, 1]) } };
+  console.log('2b. same pass through the stock bridge:', run.status, '| contract recorded:', captured?.contract !== undefined,
+    '| y(origin)', runTix(p, 'f', inputs).data[0], 'y(result)', runTix({ ...p, current: run.value }, 'f', inputs).data[0]);
+}
+
+// 3. the gate as a contract, through the bridge's existing options
+const gateContract = relation => {
+  const invariant = C.defineInvariant({
+    id: 'tix.meaning-gate.' + relation, version: '1', description: 'the Tix meaning gate as an invariant',
+    inputs: { before: TixIR, origin: TixIR, after: TixIR },
+    // the gate's evidence carries an `undefined` field, which the manager refuses ("IR data cannot contain
+    // undefined"), so it is passed through a JSON round trip: the only adaptation the gate needed
+    check: (_ctx, { before, origin, after }) => {
+      const r = meaningGate(origin, relation)(before, after);
+      return r.ok ? { ok: true, evidence: JSON.parse(JSON.stringify(r.evidence ?? null)) } : { ok: false, reason: r.reason };
+    },
+  });
+  return C.defineTransformation({
+    id: 'tix.gated.' + relation, version: '1', description: 'a Tix pass under its meaning gate',
+    inputs: { input: TixIR, origin: TixIR }, outputs: { output: TixIR },
+    ensures: [{ invariant, bindings: { before: { from: 'inputs', port: 'input' }, origin: { from: 'inputs', port: 'origin' }, after: { from: 'outputs', port: 'output' } } }],
+  });
+};
+const gated = (q, relation, sink) => passAlgorithm(q, { manager: new C.AnalysisManager(), contract: gateContract(relation), contractInputs: () => ({ origin: p.origin }), onResult: sink });
+{
+  const reg = new S.AlgorithmRegistry().register(metrics).register(gated(inlinePass, 'exact')).register(gated(splitPass, 'tolerance'));
+  const run = await S.execute(f27, reg, p.current);
+  const chosen = run.value?.value.functions[0].statements.length;
+  console.log('3a. F27 test with the gate as a bridge contract:', run.status, '| chosen statements', chosen, '|', String(run.error?.message ?? JSON.stringify(run.error ?? '')).slice(0, 300));
+  let captured;
+  const reg2 = new S.AlgorithmRegistry().register(gated(wrong, 'exact', r => (captured = r)));
+  const run2 = await S.execute(S.plan('w', S.attempt('try', S.apply('wrong', S.algorithm('probe.wrong')), S.apply('keep', S.algorithm('keep')))),
+    reg2.register({ id: 'keep', version: '1', kind: 'transform', description: 'identity', run: (_c, a) => a }), p.current);
+  console.log('3b. wrong pass with the gate as a bridge contract, inside attempt/fallback:', run2.status,
+    '| result is the input:', run2.value?.revision === p.current.revision, '(the fallback ran)');
+}
+
+ succeeded in 848ms:
+
+  # create - Create a new ticket workspace under the docs root                
+                                                                              
+  Creates a new ticket workspace directory with the standard structure.       
+                                                                              
+  Examples:                                                                   
+                                                                              
+  # Create a ticket (default root + default date-based path template)         
+                                                                              
+  docmgr ticket create --ticket MEN-3475 --title "Chat API cleanup" --topics  
+  chat,llm-                                                                   
+  workflow                                                                    
+                                                                              
+  # Create with multiple topics                                               
+                                                                              
+  docmgr ticket create --ticket MEN-8888 --title "WebSocket reconnection plan" --
+  topics chat,backend,websocket                                               
+                                                                              
+  # Create under a custom path template (relative to --root)                  
+                                                                              
+  docmgr ticket create --ticket MEN-9999 --title "Scratch ticket for          
+  experiments"  --                                                            
+  root ttmp --path-template "examples/{{TICKET}}--{{SLUG}}"                   
+                                                                              
+  For more help, run: docmgr help create                                      
+                                                                              
+  Run docmgr help --ui to open the interactive help TUI.                      
+                                                                              
+  ## Usage:                                                                   
+                                                                              
+  docmgr ticket create [flags]                                                
+                                                                              
+  ## Aliases:                                                                 
+                                                                              
+  create, create-ticket                                                       
+                                                                              
+  ## Flags:                                                                   
+                                                                              
+                   --force    Force overwrite of existing files - <bool>      
+                -h, --help    help for create                                 
+           --path-template    Template for ticket directory relative to root  
+  (placeholders: {{YYYY}}, {{MM}}, {{DD}}, {{DATE}}, {{TICKET}}, {{SLUG}},    
+  {{TITLE}}) - <string> (default "{{YYYY}}/{{MM}}/{{DD}}/{{TICKET}}--         
+  {{SLUG}}")                                                                  
+                    --root    Root directory for docs (defaults to 'ttmp' or .
+  ttmp.yaml root) - <string> (default "ttmp")                                 
+                  --ticket    Ticket identifier (e.g., MEN-3475) - <string>   
+                   --title    Ticket title - <string>                         
+                  --topics    Comma-separated list of topics - <stringList>   
+       --with-glaze-output    Switch this run to Glaze structured output      
+               --long-help    Show long help                                  
+                                                                              
+  Use docmgr ticket create --help --long-help for information about all flags.
+
+
+ succeeded in 1279ms:
+tests/tensor/r3-tix-in-plans.test.mjs
+ttmp/2026/11/24/IRWB-001--ir-workbench/sources/ir-source-workbench-v6/package.json
+src/tensor/cuda-contraction.ts
+src/tensor/fusion.ts
+src/tensor/cuda-contract.ts
+src/tensor/contract.ts
+src/tensor/ir.ts
+src/tensor/index.ts
+src/tensor/parser.ts
+src/tensor/schedule.ts
+src/tensor/cuda-source.ts
+src/tensor/strategy.ts
+src/tensor/model.ts
+src/tensor/cuda-runtime.ts
+src/tensor/passes.ts
+src/tensor/evaluate.ts
+package.json
+
+exec
+/usr/bin/zsh -lc "docmgr ticket create-ticket --ticket IRWB-041-A --title 'Tix meaning gates in strategy plans' --topics tensor,framework --path-template '2026/11/27/{{TICKET}}--{{SLUG}}' && docmgr doc add --ticket IRWB-041-A --doc-type reference --title 'Implementation diary' && docmgr doc add --ticket IRWB-041-A --doc-type reference --title 'Short report'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 1828ms:
+created IRWB-041-A at ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans (9 dirs, 4 files)
+created ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference/01-implementation-diary.md
+created ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference/02-short-report.md
+
+exec
+/usr/bin/zsh -lc 'cat src/framework/passes/define-pass.ts | head -160 && cat src/tensor/contract.ts | head -90 && cat src/framework/contracts/index.ts && cat tsconfig.json' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 1078ms:
+/**
+ * IRWB-001 E3: passes with declared needs, writes and preservation, applied through v6's machinery.
+ *
+ * A pass is versioned code that turns one artifact revision into the next. It declares:
+ *   - `needs`: analyses whose results it reads (v6 analyses, e.g. dataflow facts), computed for the exact input;
+ *   - `writes`: the entity and relation kinds it may change; any other change is `undeclaredWrite`;
+ *   - `preserves`: analyses whose results it claims survive. Each claim is checked: first by the analysis's own
+ *     transfer verifier (E4: unchanged reads), otherwise by recomputing on the output and comparing. A claim that
+ *     neither confirms is `preserveViolated`, and the pass is not published;
+ *   - `contract`: an optional v6 transformation contract the output must satisfy before it is accepted.
+ *
+ * A pass edits either through a v6 `IREdit` on the logical projection (generic, pattern-friendly), or by returning
+ * a new native value with explicit correspondence entries (efficient for domain code). Either way the framework
+ * derives the v6 change set by diffing the two projections, validates the native value through the adapter, builds
+ * the correspondence, enforces `writes`, runs the contract, and checks the preservation claims. Nothing is
+ * published unless all of that succeeds.
+ */
+import type { Artifact } from '../core/types.js';
+import { canonical } from '../core/data.js';
+import { createIRArtifact, openIR } from '../ir/index.js';
+import { diff } from '../ir/diff.js';
+import { makeCorrespondence } from '../ir/correspondence.js';
+import type {
+  ChangeSet,
+  CorrespondenceEntry,
+  EntityCorrespondence,
+  IRAdapter,
+  IREdit,
+  IRStore,
+  IRView,
+} from '../ir/index.js';
+import type {
+  AnalysisDefinition,
+  AnalysisRecord,
+  CheckResult,
+  Correspondence,
+  IRType,
+  Ports,
+  TransformationDefinition,
+} from '../contracts/types.js';
+import type { AnalysisManager } from '../contracts/analysis-manager.js';
+
+export class PassError extends Error {
+  constructor(
+    readonly code:
+      | 'undeclaredWrite'
+      | 'preserveViolated'
+      | 'contractRejected'
+      | 'badResult'
+      | 'passFailed'
+      | 'illegal',
+    message: string,
+    readonly evidence?: unknown,
+  ) {
+    super(`[${code}] ${message}`);
+    this.name = 'PassError';
+  }
+}
+
+export type Needs = Readonly<Record<string, AnalysisDefinition<any, any>>>;
+export type FactValues<N extends Needs> = {
+  readonly [K in keyof N]: N[K] extends AnalysisDefinition<any, infer R> ? R : never;
+};
+
+export interface PassRunContext<S, N extends Needs, P> {
+  readonly before: Artifact<S>;
+  readonly view: IRView<S>;
+  readonly facts: FactValues<N>;
+  readonly records: { readonly [K in keyof N]: AnalysisRecord<unknown> };
+  readonly params: P;
+  /** A v6 edit on the logical projection; used when `run` returns nothing. */
+  readonly edit: IREdit<S>;
+}
+
+/** A native result: the new value, and how its entities relate to the input's (merge, split, replace…). */
+export interface NativeResult<S> {
+  readonly native: S;
+  readonly correspondence?: readonly CorrespondenceEntry[];
+  /** How many edits the pass made, for reporting (Compiler Workbench shows edits per pass). */
+  readonly edits?: number;
+  /** Domain report (e.g. the edit records of a Compiler Workbench revision), passed through to the result. */
+  readonly report?: unknown;
+}
+
+export interface PassSpec<S, N extends Needs, P = unknown> {
+  readonly id: string;
+  readonly version: string;
+  readonly description: string;
+  readonly ir: IRType<S>;
+  readonly adapter: IRAdapter<S>;
+  readonly needs?: N;
+  /** Entity kinds (glob `prefix*`) and relation kinds the pass may change. */
+  readonly writes: { readonly entities: readonly string[]; readonly relations: readonly string[] };
+  readonly preserves?: readonly AnalysisDefinition<any, any>[];
+  readonly contract?: TransformationDefinition<Ports, Ports>;
+  /**
+   * IRWB-033-D: whether the pass may be applied to this revision with these parameters, decided from the IR before
+   * `run`. A refusal is `PassError('illegal', reason)` and nothing runs, so a caller can tell a step that does not
+   * apply from a pass that failed or a candidate that a contract rejected.
+   */
+  legal?(ctx: { readonly before: Artifact<S>; readonly view: IRView<S>; readonly params: P }): CheckResult;
+  /** Extra contract inputs beyond `input` (e.g. `origin`: r0), supplied by the caller per application. */
+  run(ctx: PassRunContext<S, N, P>): void | NativeResult<S> | Promise<void | NativeResult<S>>;
+}
+
+export type Pass<S, N extends Needs = Needs, P = unknown> = Readonly<PassSpec<S, N, P>> & {
+  readonly category: 'pass';
+};
+
+export function definePass<S, N extends Needs = {}, P = unknown>(spec: PassSpec<S, N, P>): Pass<S, N, P> {
+  if (!spec.id || !spec.version) throw new Error('A pass needs an id and a version');
+  if (typeof spec.run !== 'function') throw new Error(`Pass ${spec.id} needs run`);
+  if (spec.legal !== undefined && typeof spec.legal !== 'function')
+    throw new Error(`Pass ${spec.id}: legal must be a function`);
+  if (!spec.writes || !Array.isArray(spec.writes.entities) || !Array.isArray(spec.writes.relations))
+    throw new Error(`Pass ${spec.id} must declare writes { entities, relations }`);
+  return Object.freeze({
+    ...spec,
+    needs: spec.needs ?? ({} as N),
+    preserves: spec.preserves ?? [],
+    category: 'pass' as const,
+  });
+}
+
+export interface ApplyOptions<P> {
+  readonly manager: AnalysisManager;
+  readonly store?: IRStore;
+  readonly params?: P;
+  /** Additional contract inputs, e.g. `{ origin: r0 }` for a check against the original program. */
+  readonly contractInputs?: Readonly<Record<string, unknown>>;
+  /** Artifact id of the output (default: the input's). */
+  readonly outputId?: string;
+  /** A contract for this application, overriding the pass's own (e.g. one carrying a project's case inputs). */
+  readonly contract?: TransformationDefinition<Ports, Ports>;
+  /**
+   * Check every preservation claim, computing the fact on the input first when the manager does not hold it.
+   * By default a claim is checked only when the fact exists (there is otherwise nothing to keep); auditing
+   * makes every application a test of the pass's declarations.
+   */
+  readonly auditPreservation?: boolean;
+}
+
+export interface PreservationOutcome {
+  readonly analysis: string;
+  readonly how: 'transferred' | 'confirmed-by-recompute';
+  readonly evidence: unknown;
+}
+
+export interface PassResult<S> {
+  readonly pass: { readonly id: string; readonly version: string };
+  readonly changed: boolean;
+  readonly before: Artifact<S>;
+  readonly artifact: Artifact<S>;
+  readonly changes?: ChangeSet;
+  readonly correspondence?: EntityCorrespondence;
+  readonly edits: number;
+  readonly preserved: readonly PreservationOutcome[];
+  readonly contract?: unknown;
+  readonly report?: unknown;
+}
+import {
+  differential,
+  differentialSpec,
+  runDifferential,
+  seededRandom,
+  type CheckResult,
+} from '../framework/contracts/index.js';
+import type { Artifact } from '../framework/core/types.js';
+import { evaluate, OutsideSample, size, type BufferValue } from './evaluate.js';
+import type { CudaInputs } from './cuda-runtime.js';
+import { TixIR } from './ir.js';
+import { plain, value, type Fn, type Module } from './model.js';
+
+type Relation = 'exact' | 'tolerance';
+interface Sample {
+  fn: string;
+  shapeValues: number[];
+  stream: string;
+  inputs: CudaInputs;
+  reference: BufferValue;
+}
+export const seed = 20;
+const half = [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24];
+function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number, cuda = false): Sample[] {
+  const symbols = [
+    ...new Set(fn.params.flatMap(p => p.shape.map(plain).filter((n): n is string => !!n))),
+  ].sort();
+  const seen = new Set<string>(),
+    out: Sample[] = [];
+  // 'mixed' gives every shape symbol a different size, so a pass that confuses two symbols changes some case
+  // (a cycle of three sizes made symbols three apart equal in every case: IRWB-019 F21). The zero cases cover
+  // empty extents.
+  const distinct = [3, 5, 7, 2, 6, 4, 9, 8, 10, 11];
+  const assignments = [1, 3, 4, 7, 'mixed'].map(n =>
+    symbols.map((_, i) => (typeof n === 'number' ? n : (distinct[i] ?? i + 3))),
+  );
+  assignments.push(symbols.map(() => 0));
+  for (const [zero] of symbols.entries()) assignments.push(symbols.map((_, i) => (i === zero ? 0 : 3)));
+  for (const shapeValues of assignments) {
+    const key = JSON.stringify(shapeValues);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const dims = new Map(symbols.map((s, i) => [s, shapeValues[i]]));
+    const shapes = fn.params.map(p => p.shape.map(d => value(d, dims)));
+    if (shapes.some(s => s.some(x => x < 0) || size(s) > 4096)) continue;
+    for (const stream of [
+      'signed',
+      'positive',
+      'half-ulp',
+      ...(relation === 'exact' || cuda ? ['zero'] : []),
+    ]) {
+      const inputs: CudaInputs = Object.create(null);
+      fn.params.forEach((p, j) => {
+        const shape = shapes[j];
+        const data = Float32Array.from({ length: size(shape) }, (_, i) => {
+          switch (stream) {
+            case 'signed':
+              return 2 * random() - 1;
+            case 'positive':
+              return 0.25 + 0.75 * random();
+            case 'zero':
+              return i % 2 ? -0 : 0;
+            default:
+              return half[i % half.length];
+          }
+        });
+        inputs[p.name] = { shape, data };
+      });
+      try {
+        const ref = evaluate(fn, inputs, relation === 'exact' ? 'f32' : 'f64', true);
+        if (relation === 'tolerance' && !cuda && !ref.data.every(Number.isFinite)) continue;
+        out.push({
+          fn: fn.name,
+          shapeValues,
+          stream,
+          inputs,
+          reference: fn === baseline ? ref : evaluate(baseline, inputs, 'f32'),
+        });
+      } catch (error) {
+        if (!(error instanceof OutsideSample)) throw error;
+      }
+    }
+  }
+  return out;
+}
+// The lowering's cases: references are the current revision's f32 meaning (IRWB-019 F17).
+export function cudaCases(fn: Fn, random: () => number): Sample[] {
+  return cases(fn, fn, 'exact', random, true);
+}
+
+export * from './types.js';
+export * from './definitions.js';
+export * from './registry.js';
+export * from './effects.js';
+export * from './analysis-manager.js';
+export * from './differential.js';
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"]
+}
+
+codex
+The existing bridge supports the required contract directly. The pass definitions need a Tix-specific relation field, and the contract wrapper needs the probe’s evidence normalization so the analysis manager can store it.
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+p='src/tensor/passes.ts'
+s=open(p).read().replace(\"import { definePass } from '../framework/passes/index.js';\", \"import { definePass, type Pass } from '../framework/passes/index.js';\\nimport type { Relation } from './contract.js';\")
+s=s.replace('function pass(name: string, transform: (fn: Fn) => Fn) {\\n  return definePass<Module>({', \"export type TixPass = Pass<Module> & { readonly relation: Relation };\\n\\nfunction pass(name: string, relation: Relation, transform: (fn: Fn) => Fn): TixPass {\\n  return Object.freeze({ ...definePass<Module>({\")
+s=s.replace('  });\\n}\\nexport const inlinePass = pass(\\'inline\\', inline),\\n  splitPass = pass(\\'split-sum\\', split);', \"  }), relation });\\n}\\nexport const inlinePass = pass('inline', 'exact', inline),\\n  splitPass = pass('split-sum', 'tolerance', split);\")
+open(p,'w').write(s)
+p='src/tensor/contract.ts';s=open(p).read().replace(\"type Relation = 'exact' | 'tolerance';\", \"export type Relation = 'exact' | 'tolerance';\");open(p,'w').write(s)
+p='src/tensor/index.ts';s=open(p).read().replace(\"import type { DifferentialEvidence } from '../framework/contracts/index.js';\", \"import { AnalysisManager, defineInvariant, defineTransformation, type DifferentialEvidence } from '../framework/contracts/index.js';\") .replace(\"import { applyNativePassSync, PassError } from '../framework/passes/index.js';\", \"import { applyNativePassSync, passAlgorithm, PassError } from '../framework/passes/index.js';\").replace(\"import { adapter } from './ir.js';\", \"import { adapter, TixIR } from './ir.js';\").replace(\"import { inlinePass, splitPass } from './passes.js';\", \"import { inlinePass, splitPass, type TixPass } from './passes.js';\")
+s=s.replace(\"meaningGate(origin, pass === 'inline' ? 'exact' : 'tolerance'),\", \"meaningGate(origin, definition.relation),\")
+pos=s.index('export interface LoweringOptions')
+s=s[:pos]+'''export function tixAlgorithm(pass: TixPass, { origin }: { origin: Artifact<Module> }) {
+  const invariant = defineInvariant({
+    id: 'tix.meaning-gate.' + pass.relation,
+    version: '1',
+    description: 'Check the Tix meaning gate',
+    inputs: { before: TixIR, origin: TixIR, after: TixIR },
+    check: (_ctx, { before, origin, after }) => {
+      const result = meaningGate(origin, pass.relation)(before, after);
+      return result.ok
+        ? { ok: true, evidence: JSON.parse(JSON.stringify(result.evidence ?? null)) }
+        : { ok: false, reason: result.reason };
+    },
+  });
+  const contract = defineTransformation({
+    id: 'tix.gated.' + pass.relation,
+    version: '1',
+    description: 'A Tix pass checked against its origin',
+    inputs: { input: TixIR, origin: TixIR },
+    outputs: { output: TixIR },
+    ensures: [{
+      invariant,
+      bindings: {
+        before: { from: 'inputs', port: 'input' },
+        origin: { from: 'inputs', port: 'origin' },
+        after: { from: 'outputs', port: 'output' },
+      },
+    }],
+  });
+  return passAlgorithm(pass, { manager: new AnalysisManager(), contract, contractInputs: () => ({ origin }) });
+}
+
+'''+s[pos:];open(p,'w').write(s)
+p='tests/tensor/r3-tix-in-plans.test.mjs';s=open(p).read().replace(\"  { todo: 'F27' },\\n\",'');open(p,'w').write(s)
+PY
+npm run check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 8862ms:
+
+> compiler-workbench@0.1.0 check
+> tsc -p tsconfig.json --noEmit
+
+
+exec
+/usr/bin/zsh -lc 'npm run build && node --test tests/tensor/r3-tix-in-plans.test.mjs && node ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/scripts/02-baselines.mjs check' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+codex
+The targeted F27 test now passes, including rejection and fallback for the wrong pass. The baseline comparison is running; I’m starting the requested non-GPU suites and checking formatting and ticket records.
+exec
+/usr/bin/zsh -lc 'git show HEAD:src/tensor/index.ts | npx prettier --stdin-filepath src/tensor/index.ts --check && git show HEAD:src/tensor/passes.ts | npx prettier --stdin-filepath src/tensor/passes.ts --check && git show HEAD:src/tensor/contract.ts | npx prettier --stdin-filepath src/tensor/contract.ts --check' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/*.test.mjs tests/framework/*.test.mjs tests/workbench/*.test.mjs $(rg --files tests/tensor -g '"'*.test.mjs' -g '"'!*-gpu.test.mjs'"') > /tmp/irwb-041-a-tests.log 2>&1; tail -20 /tmp/irwb-041-a-tests.log" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ exited 130 in 20911ms:
+exec
+/usr/bin/zsh -lc 'ls node_modules/.bin/prettier && git diff --stat && git status --short' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ exited 2 in 15726ms:
+ls: cannot access 'node_modules/.bin/prettier': No such file or directory
+
+exec
+/usr/bin/zsh -lc 'git status --short' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+exec
+/usr/bin/zsh -lc "cat >> ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference/01-implementation-diary.md <<'EOF'
+
+## 1. F27 implementation
+
+The requested change declares the Tix meaning relation on each pass and carries its gate into strategy execution using the existing bridge contract. The user requested a synchronous "'`optimizeTix`, unchanged baselines, the F27 regression test, and the non-GPU suites.
+
+Inspected the bridge and the R3 probe. The probe'"'s JSON round trip is necessary because successful evidence can contain undefined fields rejected by the analysis manager. Implemented that adaptation in the invariant. "'`npm run check` passed; `npm run build` and the F27 test passed. Baselines and broader suites were started afterward.
+EOF' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 13912ms:
+ M src/tensor/contract.ts
+ M src/tensor/index.ts
+ M src/tensor/passes.ts
+ M tests/tensor/r3-tix-in-plans.test.mjs
+?? ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/
+
+ succeeded in 8311ms:
+codex
+The type check and targeted test are clean. The larger checks are still running under substantial machine load; I’ll record their actual results and any limitations in the ticket before committing.
+exec
+/usr/bin/zsh -lc 'tail -20 /tmp/irwb-041-a-tests.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 11915ms:
+✔ tests/framework/ir-examples.test.mjs (5186.617175ms)
+✔ tests/framework/ir-foundation.test.mjs (2216.077365ms)
+✔ tests/framework/ir-review.test.mjs (1521.262289ms)
+✔ tests/framework/ir-rewriting.test.mjs (2770.682365ms)
+✔ tests/framework/layering.test.mjs (760.379644ms)
+✔ tests/framework/native-pass-sync.test.mjs (418.172143ms)
+✔ tests/framework/pass-policy.test.mjs (954.614613ms)
+✔ tests/framework/r3-defects.test.mjs (1816.249642ms)
+✔ tests/framework/run-extensions.test.mjs (566.861025ms)
+✔ tests/framework/scoped.test.mjs (1019.77366ms)
+✔ tests/framework/strategy.test.mjs (1078.192799ms)
+✔ tests/tensor/corpus.test.mjs (3000.095923ms)
+✔ tests/tensor/cuda.test.mjs (69148.168049ms)
+✔ tests/tensor/fusion.test.mjs (33738.224783ms)
+✔ tests/tensor/language.test.mjs (1107.288647ms)
+✔ tests/tensor/passes.test.mjs (1871.088475ms)
+✔ tests/tensor/r3-tix-in-plans.test.mjs (1209.805557ms)
+✔ tests/tensor/schedule.test.mjs (23074.897141ms)
+✔ tests/typed/attribute.test.mjs (42508.007745ms)
+✔ tests/typed/audit.test.mjs (4309.33746ms)
+
+ exited 130 in 93007ms:
+exec
+/usr/bin/zsh -lc 'node --test --test-concurrency=2 tests/typed/*.test.mjs tests/framework/*.test.mjs tests/workbench/*.test.mjs $(rg --files tests/tensor -g '"'*.test.mjs' -g '"'!*-gpu.test.mjs'"') > /tmp/irwb-041-a-tests.log 2>&1; tail -20 /tmp/irwb-041-a-tests.log" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+exec
+/usr/bin/zsh -lc 'ls node_modules/.bin/prettier; git diff --check; git diff --stat' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+exec
+/usr/bin/zsh -lc "ps -eo pid,ppid,stat,comm,args | rg 'node|prettier' | head -35" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 29193ms:
+ls: cannot access 'node_modules/.bin/prettier': No such file or directory
+ src/tensor/contract.ts                |  2 +-
+ src/tensor/index.ts                   | 41 ++++++++++++++++++++++++++++++-----
+ src/tensor/passes.ts                  | 15 ++++++++-----
+ tests/tensor/r3-tix-in-plans.test.mjs |  1 -
+ 4 files changed, 46 insertions(+), 13 deletions(-)
+
+ succeeded in 8659ms:
+      1       0 Ss   codex           codex-linux-sandbox --sandbox-policy-cwd /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a --command-cwd /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a --permission-profile {"type":"managed","file_system":{"type":"restricted","entries":[{"path":{"type":"special","value":{"kind":"root"}},"access":"read"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a"},"access":"write"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git"},"access":"write"},{"path":{"type":"special","value":{"kind":"slash_tmp"}},"access":"write"},{"path":{"type":"special","value":{"kind":"tmpdir"}},"access":"write"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/.git"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/.git"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/.agents"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/.agents"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/.codex"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/.codex"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/.aws"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/.aws"},"access":"read","missing_path_behavior":"skip"}]},"network":"restricted"} --apply-seccomp-then-exec -- /usr/bin/zsh -c __CODEX_SNAPSHOT_OVERRIDE_SET_0="${CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS+x}" __CODEX_SNAPSHOT_OVERRIDE_0="${CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS-}" __CODEX_SNAPSHOT_OVERRIDE_SET_1="${CODEX_PERMISSION_PROFILE+x}" __CODEX_SNAPSHOT_OVERRIDE_1="${CODEX_PERMISSION_PROFILE-}" __CODEX_SNAPSHOT_OVERRIDE_SET_2="${CODEX_PLUGIN_METRICS_OUTPUT+x}" __CODEX_SNAPSHOT_OVERRIDE_2="${CODEX_PLUGIN_METRICS_OUTPUT-}" __CODEX_SNAPSHOT_OVERRIDE_SET_3="${CODEX_SESSION_ID+x}" __CODEX_SNAPSHOT_OVERRIDE_3="${CODEX_SESSION_ID-}" __CODEX_SNAPSHOT_OVERRIDE_SET_4="${CODEX_THREAD_ID+x}" __CODEX_SNAPSHOT_OVERRIDE_4="${CODEX_THREAD_ID-}" __CODEX_SNAPSHOT_OVERRIDE_SET_5="${CODEX_TOOL_CALL_ID+x}" __CODEX_SNAPSHOT_OVERRIDE_5="${CODEX_TOOL_CALL_ID-}" __CODEX_SNAPSHOT_OVERRIDE_SET_6="${CODEX_VERSION+x}" __CODEX_SNAPSHOT_OVERRIDE_6="${CODEX_VERSION-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_0="${ALL_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_0="${ALL_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_1="${BUNDLE_HTTPS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_1="${BUNDLE_HTTPS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_2="${BUNDLE_HTTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_2="${BUNDLE_HTTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_3="${BUNDLE_NO_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_3="${BUNDLE_NO_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_4="${BUNDLE_SSL_CA_CERT+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_4="${BUNDLE_SSL_CA_CERT-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_5="${CARGO_HTTP_CAINFO+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_5="${CARGO_HTTP_CAINFO-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_6="${CODEX_CA_CERTIFICATE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_6="${CODEX_CA_CERTIFICATE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_7="${CODEX_NETWORK_ALLOW_LOCAL_BINDING+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_7="${CODEX_NETWORK_ALLOW_LOCAL_BINDING-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_8="${CODEX_NETWORK_PROXY_ACTIVE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_8="${CODEX_NETWORK_PROXY_ACTIVE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_9="${CODEX_NETWORK_PROXY_ATTRIBUTION+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_9="${CODEX_NETWORK_PROXY_ATTRIBUTION-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_10="${CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_10="${CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_11="${CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_11="${CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_12="${CURL_CA_BUNDLE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_12="${CURL_CA_BUNDLE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_13="${DOCKER_HTTPS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_13="${DOCKER_HTTPS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_14="${DOCKER_HTTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_14="${DOCKER_HTTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_15="${ELECTRON_GET_USE_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_15="${ELECTRON_GET_USE_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_16="${FTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_16="${FTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_17="${GIT_SSL_CAINFO+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_17="${GIT_SSL_CAINFO-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_18="${HTTPS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_18="${HTTPS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_19="${HTTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_19="${HTTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_20="${NODE_EXTRA_CA_CERTS+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_20="${NODE_EXTRA_CA_CERTS-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_21="${NODE_USE_ENV_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_21="${NODE_USE_ENV_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_22="${NO_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_22="${NO_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_23="${NPM_CONFIG_CAFILE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_23="${NPM_CONFIG_CAFILE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_24="${NPM_CONFIG_HTTPS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_24="${NPM_CONFIG_HTTPS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_25="${NPM_CONFIG_HTTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_25="${NPM_CONFIG_HTTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_26="${NPM_CONFIG_NOPROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_26="${NPM_CONFIG_NOPROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_27="${NPM_CONFIG_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_27="${NPM_CONFIG_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_28="${PIP_CERT+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_28="${PIP_CERT-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_29="${PIP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_29="${PIP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_30="${REQUESTS_CA_BUNDLE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_30="${REQUESTS_CA_BUNDLE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_31="${SSL_CERT_FILE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_31="${SSL_CERT_FILE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_32="${WSS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_32="${WSS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_33="${WS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_33="${WS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_34="${YARN_HTTPS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_34="${YARN_HTTPS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_35="${YARN_HTTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_35="${YARN_HTTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_36="${YARN_NO_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_36="${YARN_NO_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_37="${all_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_37="${all_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_38="${ftp_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_38="${ftp_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_39="${http_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_39="${http_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_40="${https_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_40="${https_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_41="${no_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_41="${no_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_42="${npm_config_cafile+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_42="${npm_config_cafile-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_43="${npm_config_http_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_43="${npm_config_http_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_44="${npm_config_https_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_44="${npm_config_https_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_45="${npm_config_noproxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_45="${npm_config_noproxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_46="${npm_config_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_46="${npm_config_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_47="${ws_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_47="${ws_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_48="${wss_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_48="${wss_proxy-}" __CODEX_SNAPSHOT_PROXY_ENV_SET="${CODEX_NETWORK_PROXY_ACTIVE+x}"  if . '/home/manuel/.codex/shell_snapshots/01a21f1e-ca82-70d0-92bc-5f7f0dc3fa19.1795818441439665909.sh' >/dev/null 2>&1; then :; fi  if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_0}" ]; then   if [ -z "${CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS+x}" ] || [ "${CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS-}" != "${__CODEX_SNAPSHOT_OVERRIDE_0}" ]; then export CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS="${__CODEX_SNAPSHOT_OVERRIDE_0}"; else export CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS; fi else builtin unset CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS 2>/dev/null || command unset CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_0 __CODEX_SNAPSHOT_OVERRIDE_0 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_0 __CODEX_SNAPSHOT_OVERRIDE_0 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_1}" ]; then   if [ -z "${CODEX_PERMISSION_PROFILE+x}" ] || [ "${CODEX_PERMISSION_PROFILE-}" != "${__CODEX_SNAPSHOT_OVERRIDE_1}" ]; then export CODEX_PERMISSION_PROFILE="${__CODEX_SNAPSHOT_OVERRIDE_1}"; else export CODEX_PERMISSION_PROFILE; fi else builtin unset CODEX_PERMISSION_PROFILE 2>/dev/null || command unset CODEX_PERMISSION_PROFILE; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_1 __CODEX_SNAPSHOT_OVERRIDE_1 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_1 __CODEX_SNAPSHOT_OVERRIDE_1 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_2}" ]; then   if [ -z "${CODEX_PLUGIN_METRICS_OUTPUT+x}" ] || [ "${CODEX_PLUGIN_METRICS_OUTPUT-}" != "${__CODEX_SNAPSHOT_OVERRIDE_2}" ]; then export CODEX_PLUGIN_METRICS_OUTPUT="${__CODEX_SNAPSHOT_OVERRIDE_2}"; else export CODEX_PLUGIN_METRICS_OUTPUT; fi else builtin unset CODEX_PLUGIN_METRICS_OUTPUT 2>/dev/null || command unset CODEX_PLUGIN_METRICS_OUTPUT; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_2 __CODEX_SNAPSHOT_OVERRIDE_2 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_2 __CODEX_SNAPSHOT_OVERRIDE_2 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_3}" ]; then   if [ -z "${CODEX_SESSION_ID+x}" ] || [ "${CODEX_SESSION_ID-}" != "${__CODEX_SNAPSHOT_OVERRIDE_3}" ]; then export CODEX_SESSION_ID="${__CODEX_SNAPSHOT_OVERRIDE_3}"; else export CODEX_SESSION_ID; fi else builtin unset CODEX_SESSION_ID 2>/dev/null || command unset CODEX_SESSION_ID; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_3 __CODEX_SNAPSHOT_OVERRIDE_3 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_3 __CODEX_SNAPSHOT_OVERRIDE_3 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_4}" ]; then   if [ -z "${CODEX_THREAD_ID+x}" ] || [ "${CODEX_THREAD_ID-}" != "${__CODEX_SNAPSHOT_OVERRIDE_4}" ]; then export CODEX_THREAD_ID="${__CODEX_SNAPSHOT_OVERRIDE_4}"; else export CODEX_THREAD_ID; fi else builtin unset CODEX_THREAD_ID 2>/dev/null || command unset CODEX_THREAD_ID; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_4 __CODEX_SNAPSHOT_OVERRIDE_4 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_4 __CODEX_SNAPSHOT_OVERRIDE_4 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_5}" ]; then   if [ -z "${CODEX_TOOL_CALL_ID+x}" ] || [ "${CODEX_TOOL_CALL_ID-}" != "${__CODEX_SNAPSHOT_OVERRIDE_5}" ]; then export CODEX_TOOL_CALL_ID="${__CODEX_SNAPSHOT_OVERRIDE_5}"; else export CODEX_TOOL_CALL_ID; fi else builtin unset CODEX_TOOL_CALL_ID 2>/dev/null || command unset CODEX_TOOL_CALL_ID; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_5 __CODEX_SNAPSHOT_OVERRIDE_5 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_5 __CODEX_SNAPSHOT_OVERRIDE_5 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_6}" ]; then   if [ -z "${CODEX_VERSION+x}" ] || [ "${CODEX_VERSION-}" != "${__CODEX_SNAPSHOT_OVERRIDE_6}" ]; then export CODEX_VERSION="${__CODEX_SNAPSHOT_OVERRIDE_6}"; else export CODEX_VERSION; fi else builtin unset CODEX_VERSION 2>/dev/null || command unset CODEX_VERSION; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_6 __CODEX_SNAPSHOT_OVERRIDE_6 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_6 __CODEX_SNAPSHOT_OVERRIDE_6 if [ -n "$__CODEX_SNAPSHOT_PROXY_ENV_SET" ] || [ -n "${CODEX_NETWORK_PROXY_ACTIVE+x}" ]; then if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_0}" ]; then   if [ -z "${ALL_PROXY+x}" ] || [ "${ALL_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_0}" ]; then export ALL_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_0}"; else export ALL_PROXY; fi else builtin unset ALL_PROXY 2>/dev/null || command unset ALL_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_0 __CODEX_SNAPSHOT_PROXY_OVERRIDE_0 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_0 __CODEX_SNAPSHOT_PROXY_OVERRIDE_0 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_1}" ]; then   if [ -z "${BUNDLE_HTTPS_PROXY+x}" ] || [ "${BUNDLE_HTTPS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_1}" ]; then export BUNDLE_HTTPS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_1}"; else export BUNDLE_HTTPS_PROXY; fi else builtin unset BUNDLE_HTTPS_PROXY 2>/dev/null || command unset BUNDLE_HTTPS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_1 __CODEX_SNAPSHOT_PROXY_OVERRIDE_1 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_1 __CODEX_SNAPSHOT_PROXY_OVERRIDE_1 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_2}" ]; then   if [ -z "${BUNDLE_HTTP_PROXY+x}" ] || [ "${BUNDLE_HTTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_2}" ]; then export BUNDLE_HTTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_2}"; else export BUNDLE_HTTP_PROXY; fi else builtin unset BUNDLE_HTTP_PROXY 2>/dev/null || command unset BUNDLE_HTTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_2 __CODEX_SNAPSHOT_PROXY_OVERRIDE_2 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_2 __CODEX_SNAPSHOT_PROXY_OVERRIDE_2 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_3}" ]; then   if [ -z "${BUNDLE_NO_PROXY+x}" ] || [ "${BUNDLE_NO_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_3}" ]; then export BUNDLE_NO_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_3}"; else export BUNDLE_NO_PROXY; fi else builtin unset BUNDLE_NO_PROXY 2>/dev/null || command unset BUNDLE_NO_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_3 __CODEX_SNAPSHOT_PROXY_OVERRIDE_3 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_3 __CODEX_SNAPSHOT_PROXY_OVERRIDE_3 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_4}" ]; then   if [ -z "${BUNDLE_SSL_CA_CERT+x}" ] || [ "${BUNDLE_SSL_CA_CERT-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_4}" ]; then export BUNDLE_SSL_CA_CERT="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_4}"; else export BUNDLE_SSL_CA_CERT; fi else builtin unset BUNDLE_SSL_CA_CERT 2>/dev/null || command unset BUNDLE_SSL_CA_CERT; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_4 __CODEX_SNAPSHOT_PROXY_OVERRIDE_4 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_4 __CODEX_SNAPSHOT_PROXY_OVERRIDE_4 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_5}" ]; then   if [ -z "${CARGO_HTTP_CAINFO+x}" ] || [ "${CARGO_HTTP_CAINFO-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_5}" ]; then export CARGO_HTTP_CAINFO="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_5}"; else export CARGO_HTTP_CAINFO; fi else builtin unset CARGO_HTTP_CAINFO 2>/dev/null || command unset CARGO_HTTP_CAINFO; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_5 __CODEX_SNAPSHOT_PROXY_OVERRIDE_5 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_5 __CODEX_SNAPSHOT_PROXY_OVERRIDE_5 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_6}" ]; then   if [ -z "${CODEX_CA_CERTIFICATE+x}" ] || [ "${CODEX_CA_CERTIFICATE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_6}" ]; then export CODEX_CA_CERTIFICATE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_6}"; else export CODEX_CA_CERTIFICATE; fi else builtin unset CODEX_CA_CERTIFICATE 2>/dev/null || command unset CODEX_CA_CERTIFICATE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_6 __CODEX_SNAPSHOT_PROXY_OVERRIDE_6 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_6 __CODEX_SNAPSHOT_PROXY_OVERRIDE_6 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_7}" ]; then   if [ -z "${CODEX_NETWORK_ALLOW_LOCAL_BINDING+x}" ] || [ "${CODEX_NETWORK_ALLOW_LOCAL_BINDING-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_7}" ]; then export CODEX_NETWORK_ALLOW_LOCAL_BINDING="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_7}"; else export CODEX_NETWORK_ALLOW_LOCAL_BINDING; fi else builtin unset CODEX_NETWORK_ALLOW_LOCAL_BINDING 2>/dev/null || command unset CODEX_NETWORK_ALLOW_LOCAL_BINDING; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_7 __CODEX_SNAPSHOT_PROXY_OVERRIDE_7 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_7 __CODEX_SNAPSHOT_PROXY_OVERRIDE_7 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_8}" ]; then   if [ -z "${CODEX_NETWORK_PROXY_ACTIVE+x}" ] || [ "${CODEX_NETWORK_PROXY_ACTIVE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_8}" ]; then export CODEX_NETWORK_PROXY_ACTIVE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_8}"; else export CODEX_NETWORK_PROXY_ACTIVE; fi else builtin unset CODEX_NETWORK_PROXY_ACTIVE 2>/dev/null || command unset CODEX_NETWORK_PROXY_ACTIVE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_8 __CODEX_SNAPSHOT_PROXY_OVERRIDE_8 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_8 __CODEX_SNAPSHOT_PROXY_OVERRIDE_8 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_9}" ]; then   if [ -z "${CODEX_NETWORK_PROXY_ATTRIBUTION+x}" ] || [ "${CODEX_NETWORK_PROXY_ATTRIBUTION-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_9}" ]; then export CODEX_NETWORK_PROXY_ATTRIBUTION="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_9}"; else export CODEX_NETWORK_PROXY_ATTRIBUTION; fi else builtin unset CODEX_NETWORK_PROXY_ATTRIBUTION 2>/dev/null || command unset CODEX_NETWORK_PROXY_ATTRIBUTION; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_9 __CODEX_SNAPSHOT_PROXY_OVERRIDE_9 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_9 __CODEX_SNAPSHOT_PROXY_OVERRIDE_9 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_10}" ]; then   if [ -z "${CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS+x}" ] || [ "${CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_10}" ]; then export CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_10}"; else export CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS; fi else builtin unset CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS 2>/dev/null || command unset CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_10 __CODEX_SNAPSHOT_PROXY_OVERRIDE_10 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_10 __CODEX_SNAPSHOT_PROXY_OVERRIDE_10 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_11}" ]; then   if [ -z "${CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE+x}" ] || [ "${CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_11}" ]; then export CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_11}"; else export CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE; fi else builtin unset CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE 2>/dev/null || command unset CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_11 __CODEX_SNAPSHOT_PROXY_OVERRIDE_11 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_11 __CODEX_SNAPSHOT_PROXY_OVERRIDE_11 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_12}" ]; then   if [ -z "${CURL_CA_BUNDLE+x}" ] || [ "${CURL_CA_BUNDLE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_12}" ]; then export CURL_CA_BUNDLE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_12}"; else export CURL_CA_BUNDLE; fi else builtin unset CURL_CA_BUNDLE 2>/dev/null || command unset CURL_CA_BUNDLE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_12 __CODEX_SNAPSHOT_PROXY_OVERRIDE_12 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_12 __CODEX_SNAPSHOT_PROXY_OVERRIDE_12 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_13}" ]; then   if [ -z "${DOCKER_HTTPS_PROXY+x}" ] || [ "${DOCKER_HTTPS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_13}" ]; then export DOCKER_HTTPS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_13}"; else export DOCKER_HTTPS_PROXY; fi else builtin unset DOCKER_HTTPS_PROXY 2>/dev/null || command unset DOCKER_HTTPS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_13 __CODEX_SNAPSHOT_PROXY_OVERRIDE_13 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_13 __CODEX_SNAPSHOT_PROXY_OVERRIDE_13 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_14}" ]; then   if [ -z "${DOCKER_HTTP_PROXY+x}" ] || [ "${DOCKER_HTTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_14}" ]; then export DOCKER_HTTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_14}"; else export DOCKER_HTTP_PROXY; fi else builtin unset DOCKER_HTTP_PROXY 2>/dev/null || command unset DOCKER_HTTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_14 __CODEX_SNAPSHOT_PROXY_OVERRIDE_14 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_14 __CODEX_SNAPSHOT_PROXY_OVERRIDE_14 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_15}" ]; then   if [ -z "${ELECTRON_GET_USE_PROXY+x}" ] || [ "${ELECTRON_GET_USE_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_15}" ]; then export ELECTRON_GET_USE_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_15}"; else export ELECTRON_GET_USE_PROXY; fi else builtin unset ELECTRON_GET_USE_PROXY 2>/dev/null || command unset ELECTRON_GET_USE_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_15 __CODEX_SNAPSHOT_PROXY_OVERRIDE_15 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_15 __CODEX_SNAPSHOT_PROXY_OVERRIDE_15 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_16}" ]; then   if [ -z "${FTP_PROXY+x}" ] || [ "${FTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_16}" ]; then export FTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_16}"; else export FTP_PROXY; fi else builtin unset FTP_PROXY 2>/dev/null || command unset FTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_16 __CODEX_SNAPSHOT_PROXY_OVERRIDE_16 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_16 __CODEX_SNAPSHOT_PROXY_OVERRIDE_16 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_17}" ]; then   if [ -z "${GIT_SSL_CAINFO+x}" ] || [ "${GIT_SSL_CAINFO-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_17}" ]; then export GIT_SSL_CAINFO="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_17}"; else export GIT_SSL_CAINFO; fi else builtin unset GIT_SSL_CAINFO 2>/dev/null || command unset GIT_SSL_CAINFO; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_17 __CODEX_SNAPSHOT_PROXY_OVERRIDE_17 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_17 __CODEX_SNAPSHOT_PROXY_OVERRIDE_17 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_18}" ]; then   if [ -z "${HTTPS_PROXY+x}" ] || [ "${HTTPS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_18}" ]; then export HTTPS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_18}"; else export HTTPS_PROXY; fi else builtin unset HTTPS_PROXY 2>/dev/null || command unset HTTPS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_18 __CODEX_SNAPSHOT_PROXY_OVERRIDE_18 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_18 __CODEX_SNAPSHOT_PROXY_OVERRIDE_18 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_19}" ]; then   if [ -z "${HTTP_PROXY+x}" ] || [ "${HTTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_19}" ]; then export HTTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_19}"; else export HTTP_PROXY; fi else builtin unset HTTP_PROXY 2>/dev/null || command unset HTTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_19 __CODEX_SNAPSHOT_PROXY_OVERRIDE_19 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_19 __CODEX_SNAPSHOT_PROXY_OVERRIDE_19 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_20}" ]; then   if [ -z "${NODE_EXTRA_CA_CERTS+x}" ] || [ "${NODE_EXTRA_CA_CERTS-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_20}" ]; then export NODE_EXTRA_CA_CERTS="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_20}"; else export NODE_EXTRA_CA_CERTS; fi else builtin unset NODE_EXTRA_CA_CERTS 2>/dev/null || command unset NODE_EXTRA_CA_CERTS; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_20 __CODEX_SNAPSHOT_PROXY_OVERRIDE_20 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_20 __CODEX_SNAPSHOT_PROXY_OVERRIDE_20 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_21}" ]; then   if [ -z "${NODE_USE_ENV_PROXY+x}" ] || [ "${NODE_USE_ENV_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_21}" ]; then export NODE_USE_ENV_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_21}"; else export NODE_USE_ENV_PROXY; fi else builtin unset NODE_USE_ENV_PROXY 2>/dev/null || command unset NODE_USE_ENV_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_21 __CODEX_SNAPSHOT_PROXY_OVERRIDE_21 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_21 __CODEX_SNAPSHOT_PROXY_OVERRIDE_21 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_22}" ]; then   if [ -z "${NO_PROXY+x}" ] || [ "${NO_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_22}" ]; then export NO_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_22}"; else export NO_PROXY; fi else builtin unset NO_PROXY 2>/dev/null || command unset NO_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_22 __CODEX_SNAPSHOT_PROXY_OVERRIDE_22 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_22 __CODEX_SNAPSHOT_PROXY_OVERRIDE_22 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_23}" ]; then   if [ -z "${NPM_CONFIG_CAFILE+x}" ] || [ "${NPM_CONFIG_CAFILE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_23}" ]; then export NPM_CONFIG_CAFILE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_23}"; else export NPM_CONFIG_CAFILE; fi else builtin unset NPM_CONFIG_CAFILE 2>/dev/null || command unset NPM_CONFIG_CAFILE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_23 __CODEX_SNAPSHOT_PROXY_OVERRIDE_23 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_23 __CODEX_SNAPSHOT_PROXY_OVERRIDE_23 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_24}" ]; then   if [ -z "${NPM_CONFIG_HTTPS_PROXY+x}" ] || [ "${NPM_CONFIG_HTTPS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_24}" ]; then export NPM_CONFIG_HTTPS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_24}"; else export NPM_CONFIG_HTTPS_PROXY; fi else builtin unset NPM_CONFIG_HTTPS_PROXY 2>/dev/null || command unset NPM_CONFIG_HTTPS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_24 __CODEX_SNAPSHOT_PROXY_OVERRIDE_24 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_24 __CODEX_SNAPSHOT_PROXY_OVERRIDE_24 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_25}" ]; then   if [ -z "${NPM_CONFIG_HTTP_PROXY+x}" ] || [ "${NPM_CONFIG_HTTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_25}" ]; then export NPM_CONFIG_HTTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_25}"; else export NPM_CONFIG_HTTP_PROXY; fi else builtin unset NPM_CONFIG_HTTP_PROXY 2>/dev/null || command unset NPM_CONFIG_HTTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_25 __CODEX_SNAPSHOT_PROXY_OVERRIDE_25 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_25 __CODEX_SNAPSHOT_PROXY_OVERRIDE_25 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_26}" ]; then   if [ -z "${NPM_CONFIG_NOPROXY+x}" ] || [ "${NPM_CONFIG_NOPROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_26}" ]; then export NPM_CONFIG_NOPROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_26}"; else export NPM_CONFIG_NOPROXY; fi else builtin unset NPM_CONFIG_NOPROXY 2>/dev/null || command unset NPM_CONFIG_NOPROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_26 __CODEX_SNAPSHOT_PROXY_OVERRIDE_26 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_26 __CODEX_SNAPSHOT_PROXY_OVERRIDE_26 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_27}" ]; then   if [ -z "${NPM_CONFIG_PROXY+x}" ] || [ "${NPM_CONFIG_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_27}" ]; then export NPM_CONFIG_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_27}"; else export NPM_CONFIG_PROXY; fi else builtin unset NPM_CONFIG_PROXY 2>/dev/null || command unset NPM_CONFIG_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_27 __CODEX_SNAPSHOT_PROXY_OVERRIDE_27 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_27 __CODEX_SNAPSHOT_PROXY_OVERRIDE_27 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_28}" ]; then   if [ -z "${PIP_CERT+x}" ] || [ "${PIP_CERT-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_28}" ]; then export PIP_CERT="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_28}"; else export PIP_CERT; fi else builtin unset PIP_CERT 2>/dev/null || command unset PIP_CERT; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_28 __CODEX_SNAPSHOT_PROXY_OVERRIDE_28 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_28 __CODEX_SNAPSHOT_PROXY_OVERRIDE_28 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_29}" ]; then   if [ -z "${PIP_PROXY+x}" ] || [ "${PIP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_29}" ]; then export PIP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_29}"; else export PIP_PROXY; fi else builtin unset PIP_PROXY 2>/dev/null || command unset PIP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_29 __CODEX_SNAPSHOT_PROXY_OVERRIDE_29 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_29 __CODEX_SNAPSHOT_PROXY_OVERRIDE_29 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_30}" ]; then   if [ -z "${REQUESTS_CA_BUNDLE+x}" ] || [ "${REQUESTS_CA_BUNDLE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_30}" ]; then export REQUESTS_CA_BUNDLE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_30}"; else export REQUESTS_CA_BUNDLE; fi else builtin unset REQUESTS_CA_BUNDLE 2>/dev/null || command unset REQUESTS_CA_BUNDLE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_30 __CODEX_SNAPSHOT_PROXY_OVERRIDE_30 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_30 __CODEX_SNAPSHOT_PROXY_OVERRIDE_30 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_31}" ]; then   if [ -z "${SSL_CERT_FILE+x}" ] || [ "${SSL_CERT_FILE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_31}" ]; then export SSL_CERT_FILE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_31}"; else export SSL_CERT_FILE; fi else builtin unset SSL_CERT_FILE 2>/dev/null || command unset SSL_CERT_FILE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_31 __CODEX_SNAPSHOT_PROXY_OVERRIDE_31 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_31 __CODEX_SNAPSHOT_PROXY_OVERRIDE_31 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_32}" ]; then   if [ -z "${WSS_PROXY+x}" ] || [ "${WSS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_32}" ]; then export WSS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_32}"; else export WSS_PROXY; fi else builtin unset WSS_PROXY 2>/dev/null || command unset WSS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_32 __CODEX_SNAPSHOT_PROXY_OVERRIDE_32 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_32 __CODEX_SNAPSHOT_PROXY_OVERRIDE_32 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_33}" ]; then   if [ -z "${WS_PROXY+x}" ] || [ "${WS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_33}" ]; then export WS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_33}"; else export WS_PROXY; fi else builtin unset WS_PROXY 2>/dev/null || command unset WS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_33 __CODEX_SNAPSHOT_PROXY_OVERRIDE_33 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_33 __CODEX_SNAPSHOT_PROXY_OVERRIDE_33 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_34}" ]; then   if [ -z "${YARN_HTTPS_PROXY+x}" ] || [ "${YARN_HTTPS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_34}" ]; then export YARN_HTTPS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_34}"; else export YARN_HTTPS_PROXY; fi else builtin unset YARN_HTTPS_PROXY 2>/dev/null || command unset YARN_HTTPS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_34 __CODEX_SNAPSHOT_PROXY_OVERRIDE_34 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_34 __CODEX_SNAPSHOT_PROXY_OVERRIDE_34 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_35}" ]; then   if [ -z "${YARN_HTTP_PROXY+x}" ] || [ "${YARN_HTTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_35}" ]; then export YARN_HTTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_35}"; else export YARN_HTTP_PROXY; fi else builtin unset YARN_HTTP_PROXY 2>/dev/null || command unset YARN_HTTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_35 __CODEX_SNAPSHOT_PROXY_OVERRIDE_35 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_35 __CODEX_SNAPSHOT_PROXY_OVERRIDE_35 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_36}" ]; then   if [ -z "${YARN_NO_PROXY+x}" ] || [ "${YARN_NO_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_36}" ]; then export YARN_NO_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_36}"; else export YARN_NO_PROXY; fi else builtin unset YARN_NO_PROXY 2>/dev/null || command unset YARN_NO_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_36 __CODEX_SNAPSHOT_PROXY_OVERRIDE_36 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_36 __CODEX_SNAPSHOT_PROXY_OVERRIDE_36 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_37}" ]; then   if [ -z "${all_proxy+x}" ] || [ "${all_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_37}" ]; then export all_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_37}"; else export all_proxy; fi else builtin unset all_proxy 2>/dev/null || command unset all_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_37 __CODEX_SNAPSHOT_PROXY_OVERRIDE_37 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_37 __CODEX_SNAPSHOT_PROXY_OVERRIDE_37 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_38}" ]; then   if [ -z "${ftp_proxy+x}" ] || [ "${ftp_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_38}" ]; then export ftp_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_38}"; else export ftp_proxy; fi else builtin unset ftp_proxy 2>/dev/null || command unset ftp_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_38 __CODEX_SNAPSHOT_PROXY_OVERRIDE_38 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_38 __CODEX_SNAPSHOT_PROXY_OVERRIDE_38 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_39}" ]; then   if [ -z "${http_proxy+x}" ] || [ "${http_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_39}" ]; then export http_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_39}"; else export http_proxy; fi else builtin unset http_proxy 2>/dev/null || command unset http_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_39 __CODEX_SNAPSHOT_PROXY_OVERRIDE_39 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_39 __CODEX_SNAPSHOT_PROXY_OVERRIDE_39 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_40}" ]; then   if [ -z "${https_proxy+x}" ] || [ "${https_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_40}" ]; then export https_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_40}"; else export https_proxy; fi else builtin unset https_proxy 2>/dev/null || command unset https_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_40 __CODEX_SNAPSHOT_PROXY_OVERRIDE_40 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_40 __CODEX_SNAPSHOT_PROXY_OVERRIDE_40 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_41}" ]; then   if [ -z "${no_proxy+x}" ] || [ "${no_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_41}" ]; then export no_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_41}"; else export no_proxy; fi else builtin unset no_proxy 2>/dev/null || command unset no_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_41 __CODEX_SNAPSHOT_PROXY_OVERRIDE_41 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_41 __CODEX_SNAPSHOT_PROXY_OVERRIDE_41 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_42}" ]; then   if [ -z "${npm_config_cafile+x}" ] || [ "${npm_config_cafile-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_42}" ]; then export npm_config_cafile="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_42}"; else export npm_config_cafile; fi else builtin unset npm_config_cafile 2>/dev/null || command unset npm_config_cafile; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_42 __CODEX_SNAPSHOT_PROXY_OVERRIDE_42 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_42 __CODEX_SNAPSHOT_PROXY_OVERRIDE_42 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_43}" ]; then   if [ -z "${npm_config_http_proxy+x}" ] || [ "${npm_config_http_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_43}" ]; then export npm_config_http_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_43}"; else export npm_config_http_proxy; fi else builtin unset npm_config_http_proxy 2>/dev/null || command unset npm_config_http_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_43 __CODEX_SNAPSHOT_PROXY_OVERRIDE_43 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_43 __CODEX_SNAPSHOT_PROXY_OVERRIDE_43 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_44}" ]; then   if [ -z "${npm_config_https_proxy+x}" ] || [ "${npm_config_https_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_44}" ]; then export npm_config_https_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_44}"; else export npm_config_https_proxy; fi else builtin unset npm_config_https_proxy 2>/dev/null || command unset npm_config_https_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_44 __CODEX_SNAPSHOT_PROXY_OVERRIDE_44 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_44 __CODEX_SNAPSHOT_PROXY_OVERRIDE_44 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_45}" ]; then   if [ -z "${npm_config_noproxy+x}" ] || [ "${npm_config_noproxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_45}" ]; then export npm_config_noproxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_45}"; else export npm_config_noproxy; fi else builtin unset npm_config_noproxy 2>/dev/null || command unset npm_config_noproxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_45 __CODEX_SNAPSHOT_PROXY_OVERRIDE_45 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_45 __CODEX_SNAPSHOT_PROXY_OVERRIDE_45 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_46}" ]; then   if [ -z "${npm_config_proxy+x}" ] || [ "${npm_config_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_46}" ]; then export npm_config_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_46}"; else export npm_config_proxy; fi else builtin unset npm_config_proxy 2>/dev/null || command unset npm_config_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_46 __CODEX_SNAPSHOT_PROXY_OVERRIDE_46 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_46 __CODEX_SNAPSHOT_PROXY_OVERRIDE_46 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_47}" ]; then   if [ -z "${ws_proxy+x}" ] || [ "${ws_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_47}" ]; then export ws_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_47}"; else export ws_proxy; fi else builtin unset ws_proxy 2>/dev/null || command unset ws_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_47 __CODEX_SNAPSHOT_PROXY_OVERRIDE_47 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_47 __CODEX_SNAPSHOT_PROXY_OVERRIDE_47 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_48}" ]; then   if [ -z "${wss_proxy+x}" ] || [ "${wss_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_48}" ]; then export wss_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_48}"; else export wss_proxy; fi else builtin unset wss_proxy 2>/dev/null || command unset wss_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_48 __CODEX_SNAPSHOT_PROXY_OVERRIDE_48 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_48 __CODEX_SNAPSHOT_PROXY_OVERRIDE_48 fi if [ -n "${PATH:-}" ]; then export PATH='/home/manuel/.local/share/pnpm/global/5/.pnpm/@openai+codex@0.172.0-linux-x64/node_modules/@openai/codex/vendor/x86_64-unknown-linux-musl/codex-path':"$PATH"; else export PATH='/home/manuel/.local/share/pnpm/global/5/.pnpm/@openai+codex@0.172.0-linux-x64/node_modules/@openai/codex/vendor/x86_64-unknown-linux-musl/codex-path'; fi  exec '/usr/bin/zsh' -c 'ps -eo pid,ppid,stat,comm,args | rg '"'"'node|prettier'"'"' | head -35'
+      2       1 S    zsh             /usr/bin/zsh -c ps -eo pid,ppid,stat,comm,args | rg 'node|prettier' | head -35
+    390       2 R    zsh             /usr/bin/zsh -c ps -eo pid,ppid,stat,comm,args | rg 'node|prettier' | head -35
+
+exec
+/usr/bin/zsh -lc 'tail -25 /tmp/irwb-041-a-tests.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 7371ms:
+✔ tests/framework/conformance.test.mjs (4722.374578ms)
+✔ tests/framework/contracts.test.mjs (2522.013105ms)
+✔ tests/framework/core-review.test.mjs (681.125586ms)
+✔ tests/framework/core.test.mjs (1212.894612ms)
+✔ tests/framework/correspondence-entities.test.mjs (1006.544407ms)
+✔ tests/framework/ext-e1-e2.test.mjs (970.306094ms)
+✔ tests/framework/ext-e3-e6.test.mjs (1825.256683ms)
+✔ tests/framework/ext-e4.test.mjs (1244.423649ms)
+✔ tests/framework/ext-e5.test.mjs (1932.729713ms)
+✔ tests/framework/identity-caches.test.mjs (8826.584664ms)
+✔ tests/framework/ir-examples.test.mjs (7625.126621ms)
+✔ tests/framework/ir-foundation.test.mjs (2793.637567ms)
+✔ tests/framework/ir-review.test.mjs (1544.354411ms)
+✔ tests/framework/ir-rewriting.test.mjs (2099.426876ms)
+✔ tests/framework/layering.test.mjs (1049.672128ms)
+✔ tests/framework/native-pass-sync.test.mjs (442.977898ms)
+✔ tests/framework/pass-policy.test.mjs (1685.714219ms)
+✔ tests/framework/r3-defects.test.mjs (1424.047275ms)
+✔ tests/framework/run-extensions.test.mjs (539.296755ms)
+✔ tests/framework/scoped.test.mjs (639.35289ms)
+✔ tests/framework/strategy.test.mjs (2201.892372ms)
+✔ tests/tensor/corpus.test.mjs (3839.508656ms)
+
+codex
+The full suite initially put too much load on the shared machine, so I stopped it and restarted with concurrency limited to two. The framework tests completed so far are passing; the Tix and Typed tests are still progressing.
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+p='src/tensor/index.ts';s=open(p).read().replace(\"import { AnalysisManager, defineInvariant, defineTransformation, type DifferentialEvidence } from '../framework/contracts/index.js';\", \"import {\\n  AnalysisManager,\\n  defineInvariant,\\n  defineTransformation,\\n  type DifferentialEvidence,\\n} from '../framework/contracts/index.js';\").replace(\"    ensures: [{\\n      invariant,\\n      bindings: {\\n        before: { from: 'inputs', port: 'input' },\\n        origin: { from: 'inputs', port: 'origin' },\\n        after: { from: 'outputs', port: 'output' },\\n      },\\n    }],\", \"    ensures: [\\n      {\\n        invariant,\\n        bindings: {\\n          before: { from: 'inputs', port: 'input' },\\n          origin: { from: 'inputs', port: 'origin' },\\n          after: { from: 'outputs', port: 'output' },\\n        },\\n      },\\n    ],\");open(p,'w').write(s)
+p='src/tensor/passes.ts';s=open(p).read().replace('  return Object.freeze({ ...definePass<Module>({\\n', '  return Object.freeze({\\n    ...definePass<Module>({\\n').replace(\"    id: 'tensor.' + name,\\n    version: '1',\\n    description: name,\\n    ir: TixIR,\\n    adapter,\\n    writes: { entities: ['tensor'], relations: ['reads', 'contains'] },\\n    run: ({ before }) => ({ native: { functions: before.value.functions.map(transform) } }),\\n  }), relation });\", \"      id: 'tensor.' + name,\\n      version: '1',\\n      description: name,\\n      ir: TixIR,\\n      adapter,\\n      writes: { entities: ['tensor'], relations: ['reads', 'contains'] },\\n      run: ({ before }) => ({ native: { functions: before.value.functions.map(transform) } }),\\n    }),\\n    relation,\\n  });\");open(p,'w').write(s)
+PY" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 6220ms:
+exec
+/usr/bin/zsh -lc "git add src/tensor/contract.ts src/tensor/index.ts src/tensor/passes.ts tests/tensor/r3-tix-in-plans.test.mjs ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans && git commit -m 'IRWB-041-A: preserve Tix meaning gates in strategy plans'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 7204ms:
+[v7-f27-tl/irwb-041-a 6d0b06a] IRWB-041-A: preserve Tix meaning gates in strategy plans
+ 10 files changed, 229 insertions(+), 19 deletions(-)
+ create mode 100644 ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/README.md
+ create mode 100644 ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/changelog.md
+ create mode 100644 ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/index.md
+ create mode 100644 ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference/01-implementation-diary.md
+ create mode 100644 ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference/02-short-report.md
+ create mode 100644 ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/tasks.md
+
+exec
+/usr/bin/zsh -lc 'tail -10 /tmp/irwb-041-a-tests.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 4610ms:
+✔ tests/framework/strategy.test.mjs (2201.892372ms)
+✔ tests/tensor/corpus.test.mjs (3839.508656ms)
+✔ tests/tensor/cuda.test.mjs (51147.291353ms)
+✔ tests/tensor/fusion.test.mjs (22538.211116ms)
+✔ tests/tensor/language.test.mjs (476.807087ms)
+✔ tests/tensor/passes.test.mjs (1546.111103ms)
+✔ tests/tensor/r3-tix-in-plans.test.mjs (2200.686446ms)
+✔ tests/tensor/schedule.test.mjs (16000.531837ms)
+✔ tests/typed/attribute.test.mjs (13532.884233ms)
+✔ tests/typed/audit.test.mjs (1802.8877ms)
+
+codex
+The implementation is committed as a working checkpoint. The Tix and framework test files have passed in the limited-concurrency run; Typed and workbench checks and the corpus baseline comparison are continuing.
+exec
+/usr/bin/zsh -lc 'tail -8 /tmp/irwb-041-a-tests.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 6005ms:
+✔ tests/tensor/passes.test.mjs (1546.111103ms)
+✔ tests/tensor/r3-tix-in-plans.test.mjs (2200.686446ms)
+✔ tests/tensor/schedule.test.mjs (16000.531837ms)
+✔ tests/typed/attribute.test.mjs (13532.884233ms)
+✔ tests/typed/audit.test.mjs (1802.8877ms)
+✔ tests/typed/backend.test.mjs (67567.763806ms)
+✔ tests/typed/bcm.test.mjs (4140.769721ms)
+✔ tests/typed/bytecode-vm.test.mjs (18342.947369ms)
+
+exec
+/usr/bin/zsh -lc 'cat ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference/02-short-report.md' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 5334ms:
+---
+Title: Short report
+Ticket: IRWB-041-A
+Status: active
+Topics:
+    - tensor
+    - framework
+DocType: reference
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: ""
+LastUpdated: 2026-11-27T17:27:41.720097202-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Short report
+
+## Goal
+
+<!-- What is the purpose of this reference document? -->
+
+## Context
+
+<!-- Provide background context needed to use this reference -->
+
+## Quick Reference
+
+<!-- Provide copy/paste-ready content, API contracts, or quick-look tables -->
+
+## Usage Examples
+
+<!-- Show how to use this reference in practice -->
+
+## Related
+
+<!-- Link to related documents or resources -->
+
+codex
+The acceptance run is still progressing through the Typed files; no failures have appeared in the completed files. The baseline script has not produced its final comparison yet.
+exec
+/usr/bin/zsh -lc "tail -10 /tmp/irwb-041-a-tests.log; rg --files tests/typed tests/workbench -g '*.test.mjs' | wc -l" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 5379ms:
+✔ tests/tensor/fusion.test.mjs (22538.211116ms)
+✔ tests/tensor/language.test.mjs (476.807087ms)
+✔ tests/tensor/passes.test.mjs (1546.111103ms)
+✔ tests/tensor/r3-tix-in-plans.test.mjs (2200.686446ms)
+✔ tests/tensor/schedule.test.mjs (16000.531837ms)
+✔ tests/typed/attribute.test.mjs (13532.884233ms)
+✔ tests/typed/audit.test.mjs (1802.8877ms)
+✔ tests/typed/backend.test.mjs (67567.763806ms)
+✔ tests/typed/bcm.test.mjs (4140.769721ms)
+✔ tests/typed/bytecode-vm.test.mjs (18342.947369ms)
+42
+
+exec
+/usr/bin/zsh -lc 'tail -5 /tmp/irwb-041-a-tests.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 4788ms:
+✔ tests/typed/attribute.test.mjs (13532.884233ms)
+✔ tests/typed/audit.test.mjs (1802.8877ms)
+✔ tests/typed/backend.test.mjs (67567.763806ms)
+✔ tests/typed/bcm.test.mjs (4140.769721ms)
+✔ tests/typed/bytecode-vm.test.mjs (18342.947369ms)
+
+codex
+The remaining Typed tests include long-running corpus checks. I’m letting those finish rather than treating the partial output as a suite result.
+exec
+/usr/bin/zsh -lc "rg --files tests/typed -g '*.test.mjs' | sort" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 3658ms:
+tests/typed/attribute.test.mjs
+tests/typed/audit.test.mjs
+tests/typed/backend.test.mjs
+tests/typed/bcm.test.mjs
+tests/typed/bytecode-vm.test.mjs
+tests/typed/candela.test.mjs
+tests/typed/chess-search.test.mjs
+tests/typed/d2-defects.test.mjs
+tests/typed/dfe.test.mjs
+tests/typed/edit-classes.test.mjs
+tests/typed/evaluate-analyses.test.mjs
+tests/typed/f32-backend.test.mjs
+tests/typed/f32-dsp.test.mjs
+tests/typed/f32.test.mjs
+tests/typed/facts-check.test.mjs
+tests/typed/format.test.mjs
+tests/typed/guards.test.mjs
+tests/typed/ingest.test.mjs
+tests/typed/inline.test.mjs
+tests/typed/lz-roundtrip.test.mjs
+tests/typed/meaning-memo.test.mjs
+tests/typed/missed.test.mjs
+tests/typed/mutate.test.mjs
+tests/typed/parallel.test.mjs
+tests/typed/passes.test.mjs
+tests/typed/pe.test.mjs
+tests/typed/program.test.mjs
+tests/typed/project-meta.test.mjs
+tests/typed/reference-check.test.mjs
+tests/typed/regex-nfa.test.mjs
+tests/typed/rules.test.mjs
+tests/typed/sha-chacha.test.mjs
+tests/typed/specialize.test.mjs
+tests/typed/speed.test.mjs
+tests/typed/ssa.test.mjs
+tests/typed/strategies.test.mjs
+tests/typed/tape.test.mjs
+
+exec
+/usr/bin/zsh -lc 'npm run check' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 31116ms:
+
+> compiler-workbench@0.1.0 check
+> tsc -p tsconfig.json --noEmit
+
+
+codex
+The committed source also passes a fresh TypeScript check. I’m waiting for the two longer acceptance commands to finish so the report can include their final counts and baseline result.
+exec
+/usr/bin/zsh -lc 'tail -12 /tmp/irwb-041-a-tests.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 2751ms:
+✔ tests/tensor/cuda.test.mjs (51147.291353ms)
+✔ tests/tensor/fusion.test.mjs (22538.211116ms)
+✔ tests/tensor/language.test.mjs (476.807087ms)
+✔ tests/tensor/passes.test.mjs (1546.111103ms)
+✔ tests/tensor/r3-tix-in-plans.test.mjs (2200.686446ms)
+✔ tests/tensor/schedule.test.mjs (16000.531837ms)
+✔ tests/typed/attribute.test.mjs (13532.884233ms)
+✔ tests/typed/audit.test.mjs (1802.8877ms)
+✔ tests/typed/backend.test.mjs (67567.763806ms)
+✔ tests/typed/bcm.test.mjs (4140.769721ms)
+✔ tests/typed/bytecode-vm.test.mjs (18342.947369ms)
+✔ tests/typed/candela.test.mjs (198331.729994ms)
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+p='ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference/02-short-report.md'
+s=open(p).read().split('# Short report')[0]+'''# Short report
+
+Tix passes now carry their meaning relation: inline is exact and split-sum uses tolerance. "'`optimizeTix` reads that declaration. `tixAlgorithm` supplies a transformation contract and origin input to the existing strategy bridge, with the gate as an invariant. Evidence is normalized by a JSON round trip as in the R3 probe, because the analysis manager rejects undefined fields.
+
+The simplest alternative, choosing the relation by pass name, would repeat the original coupling and would not work for a renamed or derived pass. The synchronous optimization path remains in place; a synchronous strategy driver is later work.
+
+The F27 regression and TypeScript check passed. The corpus baseline comparison and non-GPU suites are running. No framework files changed. GPU tests were excluded as requested.
+'"''';open(p,'w').write(s)
+PY" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 4758ms:
+exec
+/usr/bin/zsh -lc 'tail -6 /tmp/irwb-041-a-tests.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 3948ms:
+✔ tests/typed/attribute.test.mjs (13532.884233ms)
+✔ tests/typed/audit.test.mjs (1802.8877ms)
+✔ tests/typed/backend.test.mjs (67567.763806ms)
+✔ tests/typed/bcm.test.mjs (4140.769721ms)
+✔ tests/typed/bytecode-vm.test.mjs (18342.947369ms)
+✔ tests/typed/candela.test.mjs (198331.729994ms)
+
+codex
+The long-running `candela` test passed; the runner is now working through the next Typed files. The ticket report records the implementation and the reason for the evidence conversion.
+exec
+/usr/bin/zsh -lc 'tail -8 /tmp/irwb-041-a-tests.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 4562ms:
+✔ tests/tensor/r3-tix-in-plans.test.mjs (2200.686446ms)
+✔ tests/tensor/schedule.test.mjs (16000.531837ms)
+✔ tests/typed/attribute.test.mjs (13532.884233ms)
+✔ tests/typed/audit.test.mjs (1802.8877ms)
+✔ tests/typed/backend.test.mjs (67567.763806ms)
+✔ tests/typed/bcm.test.mjs (4140.769721ms)
+✔ tests/typed/bytecode-vm.test.mjs (18342.947369ms)
+✔ tests/typed/candela.test.mjs (198331.729994ms)
+
+codex
+The remaining checks are substantially slower than the targeted regression, with the Typed corpus tests taking several minutes under the current load. No completed test file has failed so far.
+exec
+/usr/bin/zsh -lc 'tail -5 /tmp/irwb-041-a-tests.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 4264ms:
+✔ tests/typed/audit.test.mjs (1802.8877ms)
+✔ tests/typed/backend.test.mjs (67567.763806ms)
+✔ tests/typed/bcm.test.mjs (4140.769721ms)
+✔ tests/typed/bytecode-vm.test.mjs (18342.947369ms)
+✔ tests/typed/candela.test.mjs (198331.729994ms)
+
+ succeeded in 688068ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ tests/tensor/r3-tix-in-plans.test.mjs (281.496986ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 301.371392
+no differences from /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/various/baselines/main.json
+timing: inline on attention 0.527 -> 1.959 ms per application
+
+codex
+The baseline comparison finished with `no differences`. The suite is still running; its output is ordered by file, so a long Typed test can delay later results appearing.
+exec
+/usr/bin/zsh -lc 'wc -l tests/typed/chess-search.test.mjs && head -35 tests/typed/chess-search.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 2530ms:
+51 tests/typed/chess-search.test.mjs
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { projectAllFiles } from '../../tools/corpus.mjs';
+import {
+  id, loadProject, buildImages, checkGenerated, checkMoveFixtures, checkSearchFixture,
+  depthOneFixtures, fixture,
+} from '../../corpus/projects/chess-search/scripts/fixtures.mjs';
+
+const context = await loadProject();
+let images;
+test.before(async () => {
+  images = await buildImages(context);
+});
+
+test('chess-search generated entries agree through speed and all RV32 images', () => {
+  checkGenerated(context, images);
+});
+
+test('chess-search legal moves, check status, and perft match the reference positions', () => {
+  checkMoveFixtures(context, images);
+});
+
+test('chess-search finds mates, handles terminal positions, and avoids the poisoned pawn', () => {
+  for (const position of depthOneFixtures) checkSearchFixture(context, images, position, 1);
+  checkSearchFixture(context, images, fixture('quiet-mate-in-two'), 3);
+});
+
+test('chess-search workbench and fresh inspector check the configured roots', async () => {
+  const { createWb } = await import('../../dist/workbench/index.js');
+  const wb = createWb({ projects: [{ id, files: projectAllFiles(id) }] });
+  const project = wb.projects.open(id);
+  const checkRows = (rows, count) => {
+    assert.deepEqual(rows.map(row => row.fn), ['chessSearch', 'chessPerft']);
+    for (const row of rows) {
+      assert.equal(row.agree, count, row.fn);
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+p='ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference/02-short-report.md';s=open(p).read().replace('The F27 regression and TypeScript check passed. The corpus baseline comparison and non-GPU suites are running.', 'The F27 regression and TypeScript check passed. The corpus baseline comparison reported "'`no differences`. The non-GPU suites are running.'"');open(p,'w').write(s)
+p='ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference/01-implementation-diary.md';f=open(p,'a');f.write('\\n## 2. Validation\\n\\nThe baseline comparison reported "'`no differences`. The initial broad test run was interrupted to reduce load, then restarted with `--test-concurrency=2`; results are pending. The source checkpoint is commit `6d0b06a`.'"\\n');f.close()
+PY" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 3108ms:
+codex
+The baseline is unchanged across both corpora. The remaining suite includes the chess-search integration test, which builds and exercises several compiled images; I’m keeping the test runner at the lower concurrency requested by the shared-machine context.
+exec
+/usr/bin/zsh -lc 'tail -4 /tmp/irwb-041-a-tests.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 4248ms:
+✔ tests/typed/meaning-memo.test.mjs (1755.069848ms)
+✔ tests/typed/missed.test.mjs (30884.759189ms)
+✔ tests/typed/mutate.test.mjs (28122.217686ms)
+✔ tests/typed/parallel.test.mjs (10138.799747ms)
+
+exec
+/usr/bin/zsh -lc "rg '"'^(✖|not ok|ℹ fail)'"' /tmp/irwb-041-a-tests.log || true; tail -5 /tmp/irwb-041-a-tests.log" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 7525ms:
+✖ tests/typed/format.test.mjs (982.331625ms)
+✖ tests/typed/reference-check.test.mjs (4916.121581ms)
+✔ tests/typed/passes.test.mjs (15479.023445ms)
+✔ tests/typed/pe.test.mjs (20196.934051ms)
+✔ tests/typed/program.test.mjs (11549.188387ms)
+✔ tests/typed/project-meta.test.mjs (5887.263047ms)
+✖ tests/typed/reference-check.test.mjs (4916.121581ms)
+
+codex
+Two Typed test files have reported failures while the suite continues. I’ll inspect their diagnostics and rerun any subprocess permission failures with the escalation specified in the brief.
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/format.test.mjs tests/typed/reference-check.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 12077ms:
+✔ format: JSON keeps what fits on one line, breaks the rest, and round-trips (82.265189ms)
+✔ format: prose wraps without changing blocks; lists keep their items (35.691014ms)
+✔ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (1703.302768ms)
+✔ format: strategy presets and plans fit TILE_WIDTH (366.978573ms)
+✔ format: already wrapped list continuations remain indented and idempotent (0.652883ms)
+✔ reference check selects projects and rejects unknown ids (2809.811422ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4110.264831
+
+codex
+Both failing files pass outside the sandbox: 6 tests passed, 0 failed. That matches the brief’s warning about tests that spawn Node; I’ll retain the original run’s diagnostics and the successful rerun in the report.
+exec
+/usr/bin/zsh -lc 'tail -8 /tmp/irwb-041-a-tests.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 5192ms:
+✔ tests/typed/parallel.test.mjs (10138.799747ms)
+✔ tests/typed/passes.test.mjs (15479.023445ms)
+✔ tests/typed/pe.test.mjs (20196.934051ms)
+✔ tests/typed/program.test.mjs (11549.188387ms)
+✔ tests/typed/project-meta.test.mjs (5887.263047ms)
+✖ tests/typed/reference-check.test.mjs (4916.121581ms)
+✔ tests/typed/regex-nfa.test.mjs (65573.401623ms)
+✔ tests/typed/rules.test.mjs (79167.271882ms)
+
+codex
+The rerun confirms the two failures are sandbox-specific. The rest of the suite is still advancing through the larger Typed corpus tests, with no additional failures reported so far.
+exec
+/usr/bin/zsh -lc 'tail -7 /tmp/irwb-041-a-tests.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 7872ms:
+✔ tests/typed/regex-nfa.test.mjs (65573.401623ms)
+✔ tests/typed/rules.test.mjs (79167.271882ms)
+✔ tests/typed/sha-chacha.test.mjs (138190.664152ms)
+✔ tests/typed/specialize.test.mjs (8052.788425ms)
+✔ tests/typed/speed.test.mjs (21804.76125ms)
+✔ tests/typed/ssa.test.mjs (27930.825974ms)
+✔ tests/typed/strategies.test.mjs (17113.362351ms)
+
+codex
+The suite has reached the final Typed and workbench files. The baseline and targeted regression remain clean; the two sandbox failures have both passed on rerun.
+ succeeded in 1030081ms:
+ℹ todo 0
+ℹ duration_ms 1019125.496216
+
+✖ failing tests:
+
+test at tests/typed/format.test.mjs:1:1
+✖ tests/typed/format.test.mjs (982.331625ms)
+  'test failed'
+
+test at tests/typed/reference-check.test.mjs:1:1
+✖ tests/typed/reference-check.test.mjs (4916.121581ms)
+  'test failed'
+
+test at tests/workbench/candela.test.mjs:1:1
+✖ tests/workbench/candela.test.mjs (46365.029029ms)
+  'test failed'
+
+test at tests/workbench/site.test.mjs:1:1
+✖ tests/workbench/site.test.mjs (6374.125651ms)
+  'test failed'
+
+exec
+/usr/bin/zsh -lc 'node --test --test-concurrency=2 tests/workbench/candela.test.mjs tests/workbench/site.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+exec
+/usr/bin/zsh -lc 'tail -30 /tmp/irwb-041-a-tests.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 4821ms:
+✔ tests/workbench/scripts.test.mjs (9572.029938ms)
+✖ tests/workbench/site.test.mjs (6374.125651ms)
+✔ tests/workbench/strategies.test.mjs (12169.636733ms)
+✔ tests/workbench/wb.test.mjs (6689.982313ms)
+ℹ tests 70
+ℹ suites 0
+ℹ pass 66
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1019125.496216
+
+✖ failing tests:
+
+test at tests/typed/format.test.mjs:1:1
+✖ tests/typed/format.test.mjs (982.331625ms)
+  'test failed'
+
+test at tests/typed/reference-check.test.mjs:1:1
+✖ tests/typed/reference-check.test.mjs (4916.121581ms)
+  'test failed'
+
+test at tests/workbench/candela.test.mjs:1:1
+✖ tests/workbench/candela.test.mjs (46365.029029ms)
+  'test failed'
+
+test at tests/workbench/site.test.mjs:1:1
+✖ tests/workbench/site.test.mjs (6374.125651ms)
+  'test failed'
+
+codex
+The broad run finished with 66 files passing and four failing in the sandbox. Two of those already passed outside it; I’m rerunning the remaining two workbench files with the same escalation to distinguish sandbox restrictions from actual failures.
+ succeeded in 30978ms:
+✔ the site bundles Candela and the reference compiler as checked, lazily loaded scripts (3920.184139ms)
+✔ the Candela project: its files in app.json order, the same source as tools/candela.mjs, narrow text (19.576126ms)
+✔ renderProgressive: one span per row at stride 1, one per pixel otherwise, as renderScene (12.598504ms)
+✔ renderProgressive: pass p renders frame 0, then p + 1, and colour is summed as f32 (6.712946ms)
+✔ renderProgressive stops when asked, and keeps what it rendered (14.043252ms)
+✔ compareFrames counts differing bits, and compares the colour sums only over the same passes (4.89831ms)
+✔ B-01 at stride 32: the emulator and the evaluator at r0 give the same floats (20360.511057ms)
+﹣ Candela opens as a project: ingested from the tape, check inputs derived (IRWB_FULL=1) (0.438934ms) # SKIP
+✔ build:site writes the page, the bundle, the styles and the checked vendor scripts (3406.165801ms)
+✔ the reference, the divergences and the book are wrapped at 72 columns (314.601751ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 26006.520166
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+p='ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference/02-short-report.md';s=open(p).read().replace('The non-GPU suites are running.', 'The non-GPU suite run reported 66 passing and 4 failing files out of 70 in the sandbox. All four failing files passed on an escalated rerun: 15 tests passed, 1 skipped, 0 failed. The file-level reporter did not expose the original individual failures, so their precise causes are unconfirmed.')+'''\\nThe test file's introductory comment says "'`optimizeTix` should run a plan; the task explicitly keeps it synchronous, so that comment is stale. No assertions were weakened.'"\\n''';open(p,'w').write(s)
+p='ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference/01-implementation-diary.md';f=open(p,'a');f.write('\\nThe limited-concurrency non-GPU suite completed: 66 files passed, 4 failed, 70 total. The file reporter only said "'`test failed`. Reran the four failing files outside the sandbox: Typed format and reference-check passed 6 tests; workbench candela and site passed 9 tests, skipped 1. The user brief notes spawned Node processes can fail in the sandbox. Exact original causes were not exposed by the aggregate reporter.'"\\n');f.close()
+PY
+git add ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference && git commit -m 'IRWB-041-A: record validation results'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ exited 128 in 4613ms:
+fatal: Unable to create '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/worktrees/v7-f27-tl-irwb-041-a/index.lock': Read-only file system
+
+codex
+All four files that failed in the sandbox passed on escalated rerun, with one existing skip. The final documentation commit hit a read-only Git index lock, so I’m retrying that commit with the necessary filesystem access.
+exec
+/usr/bin/zsh -lc "git add ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference && git commit -m 'IRWB-041-A: record validation results'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a
+ succeeded in 3137ms:
+[v7-f27-tl/irwb-041-a 51e30df] IRWB-041-A: record validation results
+ 2 files changed, 10 insertions(+), 16 deletions(-)
+
+codex
+Implemented F27 and committed it as `51e30df`. The [ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/index.md) contains the [short report](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference/02-short-report.md) and diary.
+
+- [passes.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/src/tensor/passes.ts): Declares exact or tolerance meaning relations on Tix passes.
+- [contract.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/src/tensor/contract.ts): Exports the relation type.
+- [index.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/src/tensor/index.ts): Uses the declared relation in `optimizeTix` and exports the contract-backed `tixAlgorithm`.
+- [r3-tix-in-plans.test.mjs](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/tests/tensor/r3-tix-in-plans.test.mjs): Removes the F27 todo without changing its assertions.
+
+The F27 test passed, `npm run check` passed, and the baseline check printed **`no differences`**. The non-GPU suite reported 66 passing and 4 failing files out of 70 in the sandbox. All four failing files passed on escalated rerun: 15 tests passed, 1 skipped, and 0 failed. The aggregate sandbox reporter did not expose the original failure details, so their precise causes remain unconfirmed.
+
+The test file’s introductory comment says `optimizeTix` should run a plan; the task explicitly keeps it synchronous, so that comment is stale. GPU tests were excluded as requested.
+tokens used
+71,303
+Implemented F27 and committed it as `51e30df`. The [ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/index.md) contains the [short report](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/ttmp/2026/11/27/IRWB-041-A--tix-meaning-gates-in-strategy-plans/reference/02-short-report.md) and diary.
+
+- [passes.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/src/tensor/passes.ts): Declares exact or tolerance meaning relations on Tix passes.
+- [contract.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/src/tensor/contract.ts): Exports the relation type.
+- [index.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/src/tensor/index.ts): Uses the declared relation in `optimizeTix` and exports the contract-backed `tixAlgorithm`.
+- [r3-tix-in-plans.test.mjs](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f27-tl-irwb-041-a/tests/tensor/r3-tix-in-plans.test.mjs): Removes the F27 todo without changing its assertions.
+
+The F27 test passed, `npm run check` passed, and the baseline check printed **`no differences`**. The non-GPU suite reported 66 passing and 4 failing files out of 70 in the sandbox. All four failing files passed on escalated rerun: 15 tests passed, 1 skipped, and 0 failed. The aggregate sandbox reporter did not expose the original failure details, so their precise causes remain unconfirmed.
+
+The test file’s introductory comment says `optimizeTix` should run a plan; the task explicitly keeps it synchronous, so that comment is stale. GPU tests were excluded as requested.

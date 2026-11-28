@@ -1,0 +1,2263 @@
+Reading additional input from stdin...
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+model: gpt-6.1-terra
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git]
+reasoning effort: low
+reasoning summaries: none
+session id: 01a21f1e-cd21-7901-bd3b-08cc1b70768d
+--------
+user
+You are working in a git worktree of the IR Workbench repository (TypeScript, Node 24). It compiles two languages on one IR framework (`src/framework/`: `core`, `ir`, `contracts`, `passes`, `dataflow`, `strategy`):
+- **Typed,** a small statically typed language compiled to 32-bit RISC-V (`src/typed/`; the corpus in `corpus/projects/`);
+- **Tix,** an index-notation tensor language compiled to CUDA (`src/tensor/`; its corpus in `corpus/tensor/`).
+
+Every optimization is a checked pass: a meaning contract compares a pass's output with its input on generated cases, and every edit carries a correspondence back to the IR before it. The framework is being refactored in small steps (ticket `ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/`, design doc `design-doc/01-...md`). Your step is one of them.
+
+Your ticket is IRWB-042-A. This is a **small specified fix**, in one session of up to 90 minutes. Create your ticket with docmgr under `ttmp/2026/11/27/`, keep a short diary, and end with a short report in the ticket.
+
+## Your task (F36, F38): two Typed pass defects
+Both were found by the previous stage (ticket `ttmp/2026/11/27/IRWB-037-G--missed-optimizations-found-from-provenance-hot-instructions-with-no-rule-new-verified-rules/`, report section "Found on the way, not changed").
+
+- **F36, `bce` (`src/typed/passes.ts`, around line 615):** it accepts a dominating `i < buf.length` as proof for a later `buf[i]` when the index has the same *set* of reaching definitions at the branch and at the access. Equal sets are not equal values: in the test's program the only assignment to `i` lies between the two and reaches both. Today `bce` removes the check and only the meaning contract rejects the pass (16 of 40 cases disagree). The fix proposed there: compare values (SSA names), not definition sets.
+- **F38, `lvn` (`src/typed/passes.ts`, around line 525):** run a second time before `rotate` on `regex-nfa`, it throws `[absent] v:regexMatch.587 is not used in regexMatch at this revision` (from `src/typed/tx.ts`). A pass should be applicable to any revision it is given. Find why it refers to a value that is no longer used, and fix it.
+
+## Acceptance (all of these, checked on your last commit)
+- **The tests:** `F36: bce keeps a bounds check when the index is reassigned between the guard and the check` and `F38: lvn can run a second time (speed with lvn again before rotate, on regex-nfa)` in `tests/typed/d2-defects.test.mjs` pass without their `todo`.
+- **The baselines:** `node ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/scripts/02-baselines.mjs check` (after `npm run build`) prints `no differences`. It compares RV32 image hashes, instruction counts and edit records for every corpus project under r0, O2 and `speed`, and the CUDA source and `optimizeTix` revisions for every Tix program. A difference is allowed only in projects where your change to `bce` or `lvn` applies; list each one with its reason in the report, and no project may get slower (more instructions) than in the baseline.
+- **The suites:** `tests/typed/*.test.mjs`, `tests/framework/*.test.mjs`, `tests/workbench/*.test.mjs`, and `tests/tensor/*.test.mjs` except the `*-gpu.test.mjs` files, all pass, apart from the `todo` tests of other steps.
+- `npm run check` (tsc) is clean, and `node tools/build-site.mjs` builds if you changed `src/framework/` or `src/workbench/`.
+
+## Repository facts
+- **Build and test:** build with `npm run build` (`tsc`, into `dist/`). Tests are `node --test tests/<dir>/<name>.test.mjs` and import from `../../dist/...`; on Node 24, pass files, not a bare directory. Do not run the full suite (`npm test`) and do not run the `*-gpu.test.mjs` files (there is no GPU here): other agents share this machine. Prettier: 110 columns, single quotes; `npm run format:check` covers `src/**/*.ts`; run Prettier only on files that were formatted before you changed them.
+- **Tests of the correct behaviour already exist.** `tests/framework/r3-defects.test.mjs`, `tests/tensor/r3-tix-in-plans.test.mjs` and `tests/typed/d2-defects.test.mjs` hold one `todo` test per refactor step. Your step's test is named in the acceptance above: make it pass and remove its `todo` option in the same commit. Do not weaken a test's assertions; if you believe one is wrong, say so in your report and leave it.
+- **Scope:** `src/typed/` and tests. Not `src/framework/` or `src/tensor/`.
+- **Scripts:** put every probe and temporary program you write in your ticket's `scripts/` directory, numbered (`01-name.mjs`), and commit them.
+- **Sandboxed sessions:** a test that spawns `node` can fail with EPERM. Request escalation for that command.
+- **Commits:** commit on your current branch with messages starting `IRWB-042-A:`, as you go, so that your last commit always holds working code. Do not push.
+- **Never use `git stash`:** every worktree of this repository shares one stash stack with other agents' worktrees. To set work aside, make a temporary commit.
+- **Outside your worktree,** use nothing.
+
+## Final message
+- the ticket and report paths;
+- what you changed, file by file, in one line each;
+- the acceptance results: the test, the baselines check output, the suites' pass/fail counts;
+- anything you left out or believe is wrong in the brief or the test;
+- the last commit hash.
+codex
+I’ll inspect the two passes and their existing defect tests, then make the fixes within Typed’s current framework interfaces. I’ll create the ticket and diary first, and verify the requested baselines and suites before committing.
+exec
+/usr/bin/zsh -lc 'cat /home/manuel/.codex/skills/docmgr/SKILL.md && cat /home/manuel/.codex/skills/diary/SKILL.md' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 324ms:
+---
+description: 'Documentation management with the `docmgr` CLI: create and work in ticket workspaces (`ttmp/...`), add documents, relate code/files to docs, manage tasks/changelogs/metadata/vocabulary, and search/validate docs. Use when a user mentions `docmgr`, ticket docs, `docmgr doc relate`, `docmgr doc search`, YAML frontmatter validation, or asks to turn ad-hoc markdown into a structured, searchable knowledge base.'
+metadata:
+    title: Docmgr
+    topics:
+        - imported-skill
+    what_for: 'Documentation management with the `docmgr` CLI: create and work in ticket workspaces (`ttmp/...`), add documents, relate code/files to docs, manage tasks/changelogs/metadata/vocabulary, and search/validate docs. Use when a user mentions `docmgr`, ticket docs, `docmgr doc relate`, `docmgr doc search`, YAML frontmatter validation, or asks to turn ad-hoc markdown into a structured, searchable knowledge base.'
+    when_to_use: Use when working with Docmgr.
+name: docmgr
+---
+
+# Docmgr
+
+## Overview
+
+Use `docmgr` to keep documentation organized into ticket workspaces, with consistent metadata and bidirectional links between code/files and docs.
+
+## Quick Start
+
+### Shell safety: never paste unquoted backticks
+
+Bash/zsh treat backticks as command substitution. If you see a path rendered as `` `ttmp/.../doc.md` ``:
+- Prefer removing the backticks: `ttmp/.../doc.md`
+- Or quote the whole argument: ``'`ttmp/.../doc.md`'``
+
+### First-time setup (one-time)
+
+```bash
+docmgr status --summary-only
+docmgr init --seed-vocabulary
+docmgr vocab list
+```
+
+### Create a ticket
+
+```bash
+docmgr ticket create-ticket \
+  --ticket TICKET-ID \
+  --title "Descriptive Title" \
+  --topics topic1,topic2
+```
+
+### Add a document + relate files immediately
+
+```bash
+docmgr doc add --ticket TICKET-ID --doc-type analysis --title "Document Title"
+docmgr doc relate --ticket TICKET-ID \
+  --file-note "/abs/path/to/file.go:Why this file matters"
+```
+
+## Core Conventions (strict)
+
+- Use `docmgr doc relate` (not `docmgr relate`).
+- Do not pass `--doc-type` to `doc relate`; target either `--ticket TICKET-ID` (ticket index) or `--doc PATH` (specific doc).
+- Always format related files as `--file-note "path:reason"` (colon separator, not dash).
+- Prefer absolute paths in `--file-note` for clarity and copy/paste safety.
+- Prefer "subdocument-first" linking: relate most files to the focused subdoc, keep `index.md` as the overview.
+- Keep "RelatedFiles" tight (roughly 3-7 per ticket, not 20+).
+- Store any ad-hoc scripts you create for a ticket in that ticket's `scripts/` directory under `ttmp/.../scripts` so they are tracked. Name scripts with a numerical prefix (`01-...`, `02-...`) to preserve execution order and trace investigation steps.
+- Every active ticket should have a **diary**. On resume, read its latest relevant checkpoint and current files; expand earlier steps when needed rather than automatically rereading the entire history. An explicit detailed-diary request uses investigation mode from the diary skill.
+- Keep one authoritative current-state source per fact. A milestone receipt can own task/history effects while the diary owns reasoning; do not duplicate the same progress paragraph across every projection.
+
+## Milestones and compact resume
+
+A verified binary with `milestone record` can consolidate task/history bookkeeping and `ticket resume` can derive the current checkpoint. Check command availability once for an unfamiliar binary; this repository's implemented contract uses Glazed v1.3.6, including `--with-glaze-output --output json`. Follow installed help if that output API changes. Older binaries require the existing task/changelog workflow; never invoke a proposed API from a design sketch as though installed.
+
+Read [milestone commands and safety](references/milestones.md) when using these operations. A receipt is not proof of the underlying claim and does not replace a requested diary. Retry interrupted operations using the same ID/request; do not bypass conflicts or overwrite human edits.
+
+## Common Workflows
+
+### Get oriented on an existing ticket
+
+```bash
+docmgr ticket list --ticket TICKET-ID
+docmgr doc list --ticket TICKET-ID
+docmgr task list --ticket TICKET-ID
+docmgr vocab list
+```
+
+### Task bookkeeping
+
+```bash
+docmgr task add --ticket TICKET-ID --text "New task"
+docmgr task check --ticket TICKET-ID --id 1,2
+```
+
+### Changelog update (what + why + related files)
+
+```bash
+docmgr changelog update --ticket TICKET-ID \
+  --entry "What changed and why" \
+  --file-note "/abs/path/to/file.go:Reason"
+```
+
+### Search
+
+```bash
+docmgr doc search --query "search term"
+docmgr doc search --query "term" --topics backend --doc-type design-doc
+docmgr doc search --file path/to/file.go
+docmgr doc search --dir path/to/dir/
+```
+
+### Validate / hygiene
+
+```bash
+docmgr doctor --ticket TICKET-ID --stale-after 30
+docmgr validate frontmatter --doc path/to/doc.md --suggest-fixes
+```
+
+## Vocabulary
+
+If a `doctor` warning indicates an unknown topic/doc-type/category, add it to the vocabulary (or ignore if it's intentionally out-of-vocab):
+
+```bash
+docmgr vocab add --category topics --slug my-topic --description "Description"
+```
+
+## Reference
+
+Load `references/docmgr.md` for the full (long-form) docmgr workflow, command reference, and best practices.
+---
+name: diary
+description: Write and maintain chronological implementation diaries with evidence, failures, decisions, commits and review instructions. Use when asked to keep a diary, dev log, ticket work history or debugging record; detailed diary requests use the full investigation format.
+---
+
+# Diary
+
+## Select the entry mode
+
+- **Investigation:** substantive implementation, debugging, design decisions, or an explicit detailed diary request. Use the full [investigation format](references/investigation-entry.md).
+- **Milestone:** routine successful validation, publication or bookkeeping without substantive debugging. Use the compact [milestone format](references/milestone-entry.md).
+- When uncertain, preserve the meaningful failure/decision context rather than compressing it away. Higher-priority instructions and an explicit user format override these defaults.
+
+Each numbered step begins with 1–2 short prose paragraphs explaining intent and outcome. Record failures promptly, including the exact command and relevant diagnostic. Keep historical entries intact; change future entry conventions prospectively.
+
+## Prompt and evidence discipline
+
+Record the actual authored user request verbatim the first time it appears; later steps link to that entry. Do not fabricate a verbatim quote from a summary. Distinguish user-authored instructions from automatically injected runtime metadata; avoid repeating counters or budget notices. If only a summary survives, label it as a summary and link the original source when available.
+
+Use [evidence levels](references/evidence-levels.md): routine success needs command/result/revision, experiments need configuration and measurements, and failures need exact relevant diagnostics. Preserve raw bytes when identity matters, not just to archive decorative successful CLI output.
+
+## Working loop
+
+Implement toward a major feature or integration milestone, then validate its affected behavior at that boundary. Commit boundaries and validation boundaries are not the same: smaller focused commits are useful checkpoints and do not warrant extensive checks, full builds or broad test suites merely because a commit is being made. Prioritize visible feature progress over repeated validation and bookkeeping loops.
+
+At a major boundary, run the relevant validation gate. If it fails, collect the diagnostics, fix the issues together where practical, and rerun the narrow checks needed to verify those fixes rather than restarting the entire validation pipeline after each edit. Run an earlier targeted check only when it resolves a concrete uncertainty or material risk; honor explicit project-required checks. Record which checks passed, failed or were deferred, and never describe an unvalidated checkpoint as qualified.
+
+Update the detailed diary, tasks and changelog at meaningful milestones, preserving failure evidence as it occurs without requiring a full bookkeeping cycle for every small edit. Code and documentation may share a focused commit when that is clearer; two separate commits per small edit are not mandatory. Record the code hash in the subsequent checkpoint when available.
+
+Use `docmgr` for ticket creation, task updates and relations. If a verified local binary provides `milestone record`, it can consolidate task/history updates; it does not author the diary or judge evidence. Follow the docmgr skill's actual API and capability check, not a proposed command from a design sketch.
+
+Keep RelatedFiles focused on primary implementation and evidence files, with absolute `--file-note "path:reason"` arguments. A commit or bounded receipt supplies the full changed-path inventory; do not duplicate every path in metadata. Never hide review-critical files merely to hit an arbitrary count.
+
+## Resume and review
+
+Resume from the latest relevant checkpoint, current request and current files, then expand the necessary earlier investigation. Do not reread an entire long diary automatically. Unchanged instruction hashes are change signals, not proof the model still remembers the text; reload absent instructions and obey higher-priority full-read rules.
+
+The [workflow reference](references/diary.md) points to the canonical formats and evidence rules. No runtime phase loader or automatic policy enforcement is implied by this prose.
+
+codex
+I’m using the docmgr and diary workflows for the requested ticket and work log.
+exec
+/usr/bin/zsh -lc "rg --files -g AGENTS.md -g package.json -g '*defects*'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc pwd in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc 'docmgr ticket create-ticket --help' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc 'git status --short' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 794ms:
+package.json
+tests/framework/r3-defects.test.mjs
+tests/typed/d2-defects.test.mjs
+ttmp/2026/11/24/IRWB-001--ir-workbench/sources/ir-source-workbench-v6/package.json
+
+ succeeded in 821ms:
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+
+ succeeded in 840ms:
+ succeeded in 912ms:
+
+  # create - Create a new ticket workspace under the docs root                
+                                                                              
+  Creates a new ticket workspace directory with the standard structure.       
+                                                                              
+  Examples:                                                                   
+                                                                              
+  # Create a ticket (default root + default date-based path template)         
+                                                                              
+  docmgr ticket create --ticket MEN-3475 --title "Chat API cleanup" --topics  
+  chat,llm-                                                                   
+  workflow                                                                    
+                                                                              
+  # Create with multiple topics                                               
+                                                                              
+  docmgr ticket create --ticket MEN-8888 --title "WebSocket reconnection plan" --
+  topics chat,backend,websocket                                               
+                                                                              
+  # Create under a custom path template (relative to --root)                  
+                                                                              
+  docmgr ticket create --ticket MEN-9999 --title "Scratch ticket for          
+  experiments"  --                                                            
+  root ttmp --path-template "examples/{{TICKET}}--{{SLUG}}"                   
+                                                                              
+  For more help, run: docmgr help create                                      
+                                                                              
+  Run docmgr help --ui to open the interactive help TUI.                      
+                                                                              
+  ## Usage:                                                                   
+                                                                              
+  docmgr ticket create [flags]                                                
+                                                                              
+  ## Aliases:                                                                 
+                                                                              
+  create, create-ticket                                                       
+                                                                              
+  ## Flags:                                                                   
+                                                                              
+                   --force    Force overwrite of existing files - <bool>      
+                -h, --help    help for create                                 
+           --path-template    Template for ticket directory relative to root  
+  (placeholders: {{YYYY}}, {{MM}}, {{DD}}, {{DATE}}, {{TICKET}}, {{SLUG}},    
+  {{TITLE}}) - <string> (default "{{YYYY}}/{{MM}}/{{DD}}/{{TICKET}}--         
+  {{SLUG}}")                                                                  
+                    --root    Root directory for docs (defaults to 'ttmp' or .
+  ttmp.yaml root) - <string> (default "ttmp")                                 
+                  --ticket    Ticket identifier (e.g., MEN-3475) - <string>   
+                   --title    Ticket title - <string>                         
+                  --topics    Comma-separated list of topics - <stringList>   
+       --with-glaze-output    Switch this run to Glaze structured output      
+               --long-help    Show long help                                  
+                                                                              
+  Use docmgr ticket create --help --long-help for information about all flags.
+
+
+exec
+/usr/bin/zsh -lc "docmgr ticket create-ticket --ticket IRWB-042-A --title 'Typed BCE and LVN defects' --topics typed,compiler --path-template '2026/11/27/{{TICKET}}--{{SLUG}}'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 525ms:
+created IRWB-042-A at ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects (9 dirs, 4 files)
+
+exec
+/usr/bin/zsh -lc "sed -n '460,740p' src/typed/passes.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc 'cat tests/typed/d2-defects.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc 'docmgr doc add --help' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc "rg -n 'reaching|ssa|SSA|replaceAllUses|replace.*Uses' src/typed/passes.ts src/typed/tx.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc 'cat package.json' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 1081ms:
+        'add',
+        'sub',
+        'mul',
+        'shl',
+        'shr',
+        'and',
+        'or',
+        'xor',
+        'eq',
+        'ne',
+        'lt',
+        'gt',
+        'le',
+        'ge',
+        'eqz',
+        // f32 operators are pure and never trap, so hoisting one out of a loop is safe
+        ...F32_OPERANDS,
+        ...F32_RESULT,
+        'aaddr',
+      ];
+      const inv = (id: string): boolean => {
+        const v = st.get(id) as ValueRec;
+        if (!INV.includes(v.op)) return false;
+        if (v.op === 'get') return !assigned.has(v.imm as number);
+        return v.args.every(inv);
+      };
+      // IRWB-034-G: structurally equal invariant trees of a loop get one local (the bytecode VM's dispatch loop has
+      // fifteen uses of two frame addresses; a local per use filled the registers). `share: false` is the old way.
+      const share = params.share !== false;
+      const keyOf = (id: string): string => {
+        const v = st.get(id) as ValueRec;
+        return `${v.op}:${v.imm ?? ''}:${v.type ?? ''}(${v.args.map(keyOf).join(',')})`;
+      };
+      const hoisted = new Map<string, { t: number; set: string }>();
+      const hoist = (id: string): string => {
+        const v = st.get(id) as ValueRec;
+        if (v.op !== 'const' && v.op !== 'get' && inv(id)) {
+          const key = share ? keyOf(id) : id;
+          let h = hoisted.get(key);
+          if (!h) {
+            const t = tx.local('inv', { because: [L.id], type: v.type ?? 'i32' });
+            const set = tx.set(t, id, { because: [L.id], note: `hoisted out of ${L.id}` });
+            tx.insert(tx.at.end(pre!), set, { because: [L.id] });
+            hoisted.set(key, (h = { t, set }));
+          }
+          return tx.get(h.t, { from: id, because: [h.set] });
+        }
+        const args = v.args.map(hoist);
+        return args.some((a, i) => a !== v.args[i])
+          ? tx.make(v.op, ...args, { imm: v.imm, from: id, type: v.type ?? 'i32' })
+          : id;
+      };
+      for (const bid of L.body)
+        for (const sid of (st.get(bid) as BlockRec).stmts.slice()) {
+          const s = st.get(sid) as StmtRec;
+          for (const k of ['value', 'cond', 'addr'] as const)
+            if (s[k]) {
+              const n = hoist(s[k]!);
+              if (n !== s[k]) tx.setField(sid, k, n, { because: [L.id] });
+            }
+        }
+    }
+  },
+});
+
+export const lvn = typedPass({
+  name: 'lvn',
+  about: 'local value numbering: the same pure expression computed twice in a block is computed once',
+  writes: ['stmts', 'values', 'locals'],
+  // Compiler Workbench also claims 'loops'; false: adding or removing a `set` in a loop changes its assigned locals.
+  preserves: ['cfg', 'dominators'],
+  body({ st, f, tx }) {
+    // a key names the operator, its immediate (an array offset, a load offset) and type, so an f32 constant and an
+    // i32 constant with the same bits, or two frame addresses, never share a number
+    const key = (id: string): string => {
+      const v = st.get(id) as ValueRec;
+      const t = v.type === 'f32' ? 'f' : '';
+      return v.op === 'const'
+        ? `#${t}${v.imm}`
+        : v.op === 'get'
+          ? `@${v.imm}`
+          : `${v.op}${v.imm === undefined ? '' : `[${v.imm}]`}${t}(${v.args.map(key).join(',')})`;
+    };
+    const size = (id: string): number => 1 + (st.get(id) as ValueRec).args.reduce((n, a) => n + size(a), 0);
+    for (const b of f.blocks) {
+      const seen = new Map<string, { stmt: string; value: string }>();
+      for (const sid of b.stmts.slice()) {
+        const s = st.get(sid) as StmtRec;
+        const visit = (id: string): boolean => {
+          const v = st.get(id) as ValueRec;
+          if (v.op !== 'tuple' && v.args.length && size(id) >= 3 && isPure(st, id)) {
+            const k = key(id),
+              first = seen.get(k);
+            if (first && first.value !== id) {
+              const t = tx.local('vn', { because: [first.value], type: v.type ?? 'i32' });
+              const set = tx.set(t, first.value, {
+                because: [first.value, id],
+                note: `computed once for ${first.stmt} and ${sid}`,
+              });
+              tx.replace(first.value, tx.get(t, { from: first.value, because: [set] }));
+              tx.replace(id, tx.get(t, { from: id, because: [set] }));
+              tx.insert(tx.at.before(first.stmt), set, { because: [first.value, id] });
+              seen.delete(k);
+              return true;
+            }
+            if (!first) seen.set(k, { stmt: sid, value: id });
+          }
+          return v.args.some(visit);
+        };
+        for (const k of ['addr', 'value', 'cond'] as const) if (s[k] && visit(s[k]!)) break;
+        if (s.op === 'set')
+          for (const [k, e] of [...seen]) if (readsOf(st, e.value).has(s.local!)) seen.delete(k);
+      }
+    }
+  },
+});
+
+export const strength = typedPass({
+  name: 'strength',
+  about:
+    'strength reduction with proof: x / 2^k and x % 2^k become shifts and masks when ranges prove x is not negative',
+  needs: { ranges: 'ranges' },
+  writes: ['values'],
+  preserves: ['cfg', 'dominators', 'loops'],
+  body({ f, tx, facts }) {
+    const ranges = facts.ranges!;
+    tx.rewrite(v => {
+      if ((v.op !== 'div' && v.op !== 'rem') || !v.args[1].isConst || !isPow2(v.args[1].imm as number))
+        return;
+      const sid = v.statement!,
+        r = ranges.of(sid, v.args[0].id);
+      if (r[0] < 0) return;
+      const k = v.args[1].imm as number,
+        why = [`fact:ranges(${f.name})@r${tx.rev - 1}: ${v.args[0].text} in [${r[0]}, ${r[1]}]`];
+      return v.op === 'div'
+        ? tx.make('shr', v.args[0].id, tx.const(log2(k)), { because: why, note: `x / ${k} with x ≥ 0` })
+        : tx.make('and', v.args[0].id, tx.const(k - 1), { because: why, note: `x % ${k} with x ≥ 0` });
+    });
+  },
+});
+
+export const divToShift = typedPass({
+  name: 'div-to-shift',
+  about: 'deliberately wrong: x / 2^k becomes x >> k with no proof that x is not negative',
+  writes: ['values'],
+  preserves: ['cfg', 'dominators', 'loops'],
+  body: ({ tx }) =>
+    tx.rewrite(v => {
+      if (v.op === 'div' && v.args[1].isConst && isPow2(v.args[1].imm as number))
+        return tx.make('shr', v.args[0].id, tx.const(log2(v.args[1].imm as number)), {
+          note: 'no range check: wrong for negative x',
+        });
+    }),
+});
+
+export const bce = typedPass({
+  name: 'bce',
+  about:
+    'bounds-check elimination: a check i >=u buf.length goes when a dominating branch proved i < buf.length and ranges prove i ≥ 0',
+  needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges' },
+  writes: ['stmts', 'cfg'],
+  preserves: [],
+  body({ st, f, tx, facts }) {
+    const dom = facts.dom!,
+      reach = facts.reach!,
+      ranges = facts.ranges!;
+    // resolve a read through single copies: t = x  ->  x (when t has one definition)
+    const resolve = (
+      sid: string,
+      id: string,
+    ): { id: string; local: number | null; sid: string; via?: string } => {
+      const v = st.get(id) as ValueRec;
+      if (v.op !== 'get') return { id, local: null, sid };
+      const defs = reach.reachingAt(sid, v.imm as number);
+      if (defs.length === 1 && defs[0].startsWith('s:')) {
+        const d = st.get(defs[0]) as StmtRec,
+          dv = st.get(d.value!) as ValueRec;
+        if (dv.op === 'get') return { id: d.value!, local: dv.imm as number, sid: d.id, via: d.id };
+      }
+      return { id, local: v.imm as number, sid };
+    };
+    const isLength = (id: string, buf?: number) => {
+      const v = st.get(id) as ValueRec;
+      return (
+        v.op === 'load' &&
+        v.imm === 0 &&
+        (st.get(v.args[0]) as ValueRec).op === 'get' &&
+        (buf === undefined || (st.get(v.args[0]) as ValueRec).imm === buf)
+      );
+    };
+    for (const b of f.blocks) {
+      const last = lastStmt(st, b);
+      if (!last || last.op !== 'br_if') continue;
+      const c = st.get(last.cond!) as ValueRec;
+      if (c.op !== 'geu' || !isLength(c.args[1])) continue;
+      const trapB = st.get(last.then!) as BlockRec;
+      if (!trapB.stmts.length || (st.get(trapB.stmts[0]) as StmtRec).op !== 'trap') continue;
+      const idx = resolve(last.id, c.args[0]),
+        buf = (st.get((st.get(c.args[1]) as ValueRec).args[0]) as ValueRec).imm as number;
+      if (idx.local === null) continue;
+      // walk up the dominator tree for a branch whose taken edge proves idx < buf.length
+      for (let d = dom.idom.get(b.id), child = b.id; d && d !== child; child = d, d = dom.idom.get(d)) {
+        const t = lastStmt(st, st.get(d) as BlockRec);
+        if (!t || t.op !== 'br_if') continue;
+        let cond = st.get(t.cond!) as ValueRec,
+          onTrue = true;
+        if (cond.op === 'eqz') {
+          cond = st.get(cond.args[0]) as ValueRec;
+          onTrue = false;
+        }
+        if (cond.op === 'ge')
+          onTrue = !onTrue; // x >= len taken means x < len on the other arm
+        else if (cond.op !== 'lt') continue;
+        const arm = onTrue ? t.then! : t.else!;
+        if (!dom.dominates(arm, b.id)) continue;
+        const x = st.get(cond.args[0]) as ValueRec;
+        if (x.op !== 'get' || x.imm !== idx.local || !isLength(cond.args[1], buf)) continue;
+        // the index and the buffer are the same values at the branch and at the check
+        const same = (l: number) => {
+          const a = reach.reachingAt(t.id, l).sort().join(),
+            z = reach.reachingAt(idx.sid, l).sort().join();
+          return a === z;
+        };
+        if (!same(idx.local) || !same(buf)) continue;
+        if (ranges.at(t.id, idx.local)[0] < 0) continue;
+        tx.replaceStmt(
+          last.id,
+          { op: 'br', to: last.else },
+          {
+            because: [t.id, `fact:ranges(${f.name}): ${f.locals[idx.local].name} ≥ 0`],
+            note: `${t.id} already proved ${f.locals[idx.local].name} < length`,
+          },
+        );
+        break;
+      }
+    }
+  },
+});
+
+/**
+ * Bounds-check merging for checked text addresses. `caddr(r, p)` traps unless p <u capacity(r) and gives r + 2p.
+ * When one block computes several of them on the same receiver, with positions that are one base plus constant
+ * offsets (p = B + k, B possibly 0), checking the smallest and the largest position covers every position between:
+ * if B + kmin and B + kmax are both below the capacity, so is every B + k with kmin ≤ k ≤ kmax. (For a symbolic
+ * B this uses that a text's capacity is below 2^31 units, as its units occupy 2·capacity bytes of a 32-bit
+ * address space, so B + kmin + (kmax - kmin) cannot wrap. For constant positions, all ≥ 0, the largest suffices.)
+ *
+ * The group's first site checks the largest position and its second site the smallest, each rewritten as
+ * `caddr(r, p + Δ) - 2Δ` when its own position is not the one checked; every later site becomes the unchecked
+ * `r + 2p`. The merged checks run before the original check of the largest position did, which changes only
+ * where the program traps, never whether it does:
+ * - every caddr of a block runs whenever the block runs (no value operator evaluates its arguments
+ *   conditionally), unless something traps first;
+ * - a trap aborts the program.
+ * A group ends at anything that could break that or change a capacity: a call (it might not return), a store not
+ * provably inside a buffer's data, or `zero`.
+ *
+ * Linear forms are exact modulo 2^32 (add, sub, shifts and products by constants). A symbolic term names either a
+ * definition earlier in the same block (one execution per block execution, so equal names are equal values) or
+ * a local the block never assigns.
+ */
+export const bcm = typedPass({
+  name: 'bcm',
+  about:
+    'bounds-check merging: checked text addresses on one receiver whose positions differ by constants are checked once for the smallest and once for the largest position',
+  needs: { reach: 'reaching' },
+  writes: ['values'],
+  preserves: ['cfg', 'dominators', 'loops'],
+  body({ st, f, tx, facts }) {
+    const reach = facts.reach!;
+    type Lin = { t: Map<string, number>; k: number };
+    type Site = { vid: string; sid: string; key: string; k: number; symbolic: boolean };
+    /** keep: the site's own check is one of the group's; check: rewrite to check `check`; unchecked: r + 2p */
+    type Plan = { site: Site; first: Site; mode: 'keep' | 'check' | 'unchecked'; check?: number };
+    const plan = new Map<string, Plan>();
+    const isLit = (v: ValueRec) => v.op === 'const' && !v.type;
+    const add = (a: Lin, b: Lin, sign = 1): Lin => {
+      const t = new Map(a.t);
+      for (const [x, c] of b.t) t.set(x, ((t.get(x) ?? 0) + sign * c) | 0);
+      return { t, k: (a.k + sign * b.k) | 0 };
+    };
+
+ succeeded in 1131ms:
+src/typed/tx.ts:40:    message: string,
+src/typed/tx.ts:43:    super(`[${code}] ${message}${fix ? `\n  fix: ${fix}` : ''}`);
+src/typed/passes.ts:55:import { ssaAnalysis, type SsaFn } from './ssa.js';
+src/typed/passes.ts:57:/** What a pass may name as a need: the six analyses of ANALYSES, and the SSA view (IRWB-037-G). */
+src/typed/passes.ts:58:const NEEDS = { ...ANALYSES, ssa: ssaAnalysis } as const;
+src/typed/passes.ts:67:  ssa?: SsaFn;
+src/typed/passes.ts:116:    case 'reaching':
+src/typed/passes.ts:278:  preserves: ['cfg', 'dominators', 'loops', 'liveness', 'reaching'],
+src/typed/passes.ts:302:    'constant propagation: a read whose reaching definitions all assign the same constant becomes that constant',
+src/typed/passes.ts:303:  needs: { reach: 'reaching' },
+src/typed/passes.ts:314:          const defs = reach.reachingAt(sid, v.imm as number);
+src/typed/passes.ts:619:  needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges' },
+src/typed/passes.ts:633:      const defs = reach.reachingAt(sid, v.imm as number);
+src/typed/passes.ts:679:          const a = reach.reachingAt(t.id, l).sort().join(),
+src/typed/passes.ts:680:            z = reach.reachingAt(idx.sid, l).sort().join();
+src/typed/passes.ts:725:  needs: { reach: 'reaching' },
+src/typed/passes.ts:760:        const defs = reach.reachingAt(sid, l);
+src/typed/passes.ts:1087:    'guard facts: a check whose outcome dominating branches already decide becomes a jump, and x / 2^k, x % 2^k with x proven non-negative become a shift and a mask (intervals of SSA names; params.all: every branch)',
+src/typed/passes.ts:1088:  needs: { ssa: 'ssa' },
+src/typed/passes.ts:1092:    const plan = guardPlan({ st, f, tx }, facts.ssa!, params.all === true);
+src/typed/passes.ts:1113:  needs: { ssa: 'ssa' },
+src/typed/passes.ts:1117:    const ssa = facts.ssa!,
+src/typed/passes.ts:1118:      plan = copyReads({ st, f, tx }, ssa, params.whole === true);
+src/typed/passes.ts:1125:        because: [ssa.names[ssa.uses[v.id]].stmt!],
+
+ succeeded in 1139ms:
+{
+  "name": "compiler-workbench",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An inspectable compiler workbench: the IR Workbench v6 framework extended for a complete Typed -> RV32 compiler",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "build:site": "node tools/build-site.mjs",
+    "serve:site": "node tools/serve-site.mjs",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "test": "npm run build && node --test \"tests/**/*.test.mjs\"",
+    "test:only": "node --test \"tests/**/*.test.mjs\""
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "esbuild": "0.25.12",
+    "prettier": "3.6.2",
+    "typescript": "5.9.3"
+  }
+}
+
+ succeeded in 1196ms:
+// IRWB-039 phase 1a: three defects IRWB-037-G (D2) found and left unchanged, as tests of the CORRECT behaviour
+// (BACKLOG F36-F38; IRWB-037-G scripts/13 and 14). Remove `todo` in the fixing commit.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { installVendor } from '../../tools/node-vendor.mjs';
+import { projectFiles } from '../../tools/corpus.mjs';
+
+await installVendor();
+const { Program } = await import('../../dist/typed/program.js');
+const { projectSource } = await import('../../dist/typed/project.js');
+const { storeOf } = await import('../../dist/typed/ir.js');
+const { PIPELINES } = await import('../../dist/typed/passes.js');
+
+test(
+  'F36: bce keeps a bounds check when the index is reassigned between the guard and the check',
+  { todo: 'F36' },
+  async () => {
+    // the only assignment to i lies between `i < buf.length` and `buf.charCodeAt(i)`, and reaches both: the sets of
+    // reaching definitions are equal, the values are not
+    const source = `
+function walk(buf: buffer, c: bool): i32 {
+    let i = 0;
+    let s = 0;
+    while (i < buf.length) {
+        if (c) {
+            i = i + 1;
+        }
+        s = s + buf.charCodeAt(i);
+        if (s > 1000) {
+            break;
+        }
+    }
+    return s;
+}`;
+    const p = Program.fromProject(
+      projectSource('bce-probe', {
+        'main.typed': source,
+        'project.json': JSON.stringify({
+          inputs: { walk: { buf: { buffer: [1, 4], cell: [400, 600] }, c: { bool: true } } },
+        }),
+      }),
+    );
+    assert.equal(p.status, 'ok');
+    await p.apply('cfg');
+    await p.apply('simplify');
+    // today bce removes the check and only the meaning check rejects the pass (16 of 40 cases disagree)
+    await assert.doesNotReject(p.apply('bce'), 'bce produced a candidate the meaning check rejects');
+  },
+);
+
+test(
+  'F37: typed.ranges keeps an outer loop counter non-negative under an inner loop',
+  { todo: 'F37' },
+  async () => {
+    const p = Program.fromProject(projectSource('chess-search', projectFiles('chess-search')));
+    for (const pass of PIPELINES.speed.slice(0, PIPELINES.speed.indexOf('strength')))
+      await p.apply(pass, { count: 3 });
+    const f = storeOf(p.head.value).fn('chessPseudoMoves');
+    const dense = String(f.locals.findIndex(l => l.name === 'dense'));
+    const ranges = (await p.fact('ranges', 'chessPseudoMoves')).value;
+    // dense counts 0..63; today its interval at the block of `dense / 8` is [-2^31, 63]
+    const [lo] = ranges.in['bb:chessPseudoMoves.3'][dense];
+    assert.ok(lo >= 0, `dense's lower bound is ${lo}`);
+  },
+);
+
+test(
+  'F38: lvn can run a second time (speed with lvn again before rotate, on regex-nfa)',
+  { todo: 'F38' },
+  async () => {
+    const p = Program.fromProject(projectSource('regex-nfa', projectFiles('regex-nfa')));
+    const speed = [...PIPELINES.speed];
+    speed.splice(speed.indexOf('rotate'), 0, 'lvn');
+    const r = await p.pipeline(speed, { count: 3 });
+    assert.deepEqual(
+      r.steps.filter(s => s.rejected).map(s => s.pass),
+      [],
+    );
+  },
+);
+
+ succeeded in 1268ms:
+
+  # add - Add a new document to a workspace                                   
+                                                                              
+  Creates a new document in the subdirectory named after its doc-type.        
+                                                                              
+  Examples:                                                                   
+                                                                              
+  # Create a design doc in a ticket workspace                                 
+                                                                              
+  docmgr doc add --ticket MEN-3475 --doc-type design-doc --title "Draft       
+  Architecture"                                                               
+                                                                              
+  # Override ticket defaults (topics/owners) for this one doc                 
+                                                                              
+  docmgr doc add --ticket MEN-3475 --doc-type reference --title "API          
+  Contracts"  --                                                              
+  topics api,backend --owners manuel,alice                                    
+                                                                              
+  # Seed multiple external sources + related files in frontmatter             
+                                                                              
+  docmgr doc add --ticket MEN-3475 --doc-type reference --title "Trace Links"  --
+  external-sources                                                            
+  "https://example.com/spec,https://github.com/org/repo/issues/123"  --related-
+  files "pkg/commands/add.go,pkg/commands/relate.go"                          
+                                                                              
+  For more help, run: docmgr help add                                         
+                                                                              
+  Run docmgr help --ui to open the interactive help TUI.                      
+                                                                              
+  ## Usage:                                                                   
+                                                                              
+  docmgr doc add [flags]                                                      
+                                                                              
+  ## Flags:                                                                   
+                                                                              
+                --doc-type    Document type (per vocabulary; stored under <doc-
+  type>/ subdir - <string>                                                    
+        --external-sources    Comma-separated list of external sources (URLs) -
+  <stringList>                                                                
+                -h, --help    help for add                                    
+                  --intent    Intent (overrides ticket default) - <string>    
+                  --owners    Comma-separated list of owners (overrides ticket
+  defaults) - <stringList>                                                    
+           --related-files    Comma-separated list of related files to seed   
+  frontmatter - <stringList>                                                  
+                    --root    Root directory for docs - <string> (default     
+  "ttmp")                                                                     
+                  --status    Status (overrides ticket default) - <string>    
+                 --summary    Short summary for the document - <string>       
+                  --ticket    Ticket identifier - <string>                    
+                   --title    Document title - <string>                       
+                  --topics    Comma-separated list of topics (overrides ticket
+  defaults) - <stringList>                                                    
+       --with-glaze-output    Switch this run to Glaze structured output      
+               --long-help    Show long help                                  
+                                                                              
+  Use docmgr doc add --help --long-help for information about all flags.      
+
+
+exec
+/usr/bin/zsh -lc "rg -n 'replace\\(|isUsed|used|uses' src/typed/tx.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc "docmgr doc add --ticket IRWB-042-A --doc-type reference --title 'Implementation diary'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc "docmgr doc add --ticket IRWB-042-A --doc-type reference --title 'Final report'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc "sed -n '1,160p' src/typed/tx.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc "rg -n 'F36|F38|Found on the way' ttmp/2026/11/27/IRWB-037-G*" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc 'cat src/typed/ssa.ts' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 935ms:
+/**
+ * Transactions over the working store: the only way a typed pass changes a program (Compiler Workbench's Tx),
+ * and read-only value handles for pass code.
+ *
+ * Every entity a transaction makes records its origin: the entity it was made from, the pass, the revision, and
+ * `because` (the facts or entities that make the change valid). Every change is an edit record. A transaction
+ * enforces the pass's declared write kinds (values, stmts, locals, cfg) with `undeclaredWrite`, removal needs a
+ * `because`, and `commit` derives successors from terminators and drops unreachable blocks. The framework then
+ * checks the coarser entity-kind declaration, the contract, and preservation claims on the resulting revision.
+ */
+import { prune } from './lift.js';
+import { describeText, show, showStmt, COMPARE } from './listing.js';
+import { hasEffect, isPure, readsOf } from './analyses.js';
+import { F32_RESULT } from './f32.js';
+import {
+  typeClass,
+  type BlockRec,
+  type Origin,
+  type StmtRec,
+  type Store,
+  type TypeClass,
+  type ValueOp,
+  type ValueRec,
+  type WorkFn,
+} from './model.js';
+
+/** `frame`: the function record's frame array area (`arrayBytes`), IRWB-036-F. */
+export type WriteKind = 'values' | 'stmts' | 'locals' | 'cfg' | 'frame';
+export const WRITE_KINDS: readonly WriteKind[] = ['values', 'stmts', 'locals', 'cfg', 'frame'];
+
+export class TxError extends Error {
+  constructor(
+    readonly code:
+      | 'undeclaredWrite'
+      | 'missingBecause'
+      | 'absent'
+      | 'badPosition'
+      | 'unknownLocal'
+      | 'unsupported',
+    message: string,
+    readonly fix?: string,
+  ) {
+    super(`[${code}] ${message}${fix ? `\n  fix: ${fix}` : ''}`);
+    this.name = 'TxError';
+  }
+}
+
+export interface Edit {
+  readonly id: string;
+  readonly rev: number;
+  readonly pass: string;
+  readonly fn: string;
+  readonly kind: string;
+  readonly [field: string]: unknown;
+}
+
+type Ref = string | { readonly id: string };
+export interface MakeOptions {
+  readonly from?: Ref | null;
+  readonly because?: readonly (Ref | string)[];
+  readonly note?: string;
+  readonly imm?: number | string;
+  /**
+   * The result type of a made value. Derived for get (the local's) and the f32 operators; needed for a constant,
+   * a load or a result leaf of an f32 (absent: i32).
+   */
+  readonly type?: TypeClass;
+}
+export interface Position {
+  readonly block: BlockRec;
+  readonly index: number;
+}
+
+const TERMINATORS = new Set(['br', 'br_if', 'return', 'trap']);
+const id = (x: Ref | null | undefined): string | undefined =>
+  x === null || x === undefined ? undefined : typeof x === 'string' ? x : x.id;
+
+// ---------- value handles ----------
+export interface ValueHandle {
+  readonly id: string;
+  readonly op: ValueOp;
+  readonly imm: number | string | undefined;
+  readonly args: ValueHandle[];
+  readonly isConst: boolean;
+  readonly isLeaf: boolean;
+  readonly isPure: boolean;
+  readonly hasEffect: boolean;
+  readonly isBoolean: boolean;
+  /** The statement holding this value (given by the traversal, else looked up). */
+  readonly statement: string | null;
+  readonly text: string;
+  same(other: Ref): boolean;
+  size(): number;
+}
+
+const sameTree = (st: Store, a: string, b: string): boolean => {
+  const x = st.get(a) as ValueRec,
+    y = st.get(b) as ValueRec;
+  return (
+    x.op === y.op &&
+    x.imm === y.imm &&
+    x.type === y.type &&
+    x.args.length === y.args.length &&
+    x.args.every((u, i) => sameTree(st, u, y.args[i]))
+  );
+};
+
+/** Which statement holds each live value (values have one user). */
+export function statementOf(st: Store, value: string): string | null {
+  for (const f of st.fns.values())
+    for (const b of f.blocks)
+      for (const sid of b.stmts) {
+        const s = st.get(sid) as StmtRec;
+        const walk = (v: string | undefined): boolean =>
+          !!v && (v === value || (st.get(v) as ValueRec).args.some(walk));
+        if (walk(s.value) || walk(s.cond) || walk(s.addr)) return sid;
+      }
+  return null;
+}
+
+export function valueHandle(st: Store, vid: string, ctx: { stmt?: string } = {}): ValueHandle {
+  const e = st.get(vid) as ValueRec | undefined;
+  if (!e || e.kind !== 'value') throw new TxError('absent', `${vid} is not a value of ${st.program}`);
+  return {
+    id: vid,
+    op: e.op,
+    imm: e.imm,
+    get args() {
+      return e.args.map(a => valueHandle(st, a, ctx));
+    },
+    get isConst() {
+      return e.op === 'const';
+    },
+    get isLeaf() {
+      return !e.args.length;
+    },
+    get isPure() {
+      return isPure(st, vid);
+    },
+    get hasEffect() {
+      return hasEffect(st, vid);
+    },
+    get isBoolean() {
+      return COMPARE.has(e.op);
+    },
+    get statement() {
+      return ctx.stmt ?? statementOf(st, vid);
+    },
+    get text() {
+      return describeText(st, vid);
+    },
+    same: other => sameTree(st, vid, id(other)!),
+    size() {
+      const n = (x: string): number => 1 + (st.get(x) as ValueRec).args.reduce((s, a) => s + n(a), 0);
+      return n(vid);
+    },
+  };
+}
+
+// ---------- transactions ----------
+
+ succeeded in 978ms:
+/**
+ * A single-assignment view of `typed.blocks` (IRWB-006, agenda item A1): a fact about a revision, not a new IR.
+ *
+ * The construction is Cytron, Ferrante, Rosen, Wegman and Zadeck's: the dominator tree (from `dominatorsOf`),
+ * dominance frontiers (Cooper, Harvey and Kennedy's runner), phis for each local at the iterated frontier of its
+ * `set` statements (minimal SSA: no liveness), and renaming by a preorder walk of the dominator tree with a stack of
+ * names per local. Every local also has a definition at function entry (`param:i` or `init:i`, as in reaching
+ * definitions), placed in a virtual block `^entry` that immediately dominates the real entry and has one edge to it;
+ * so a loop whose header is the entry block gets phis like any other join.
+ *
+ * Names are `<local>.<n>` (a `.` cannot occur in a Typed identifier), numbered per local in the order the walk
+ * creates them, `.0` being the entry definition; a local whose name another local of the function shares is
+ * `<local>#<index>.<n>`. The result maps every SSA name back to what defines it (a `set`
+ * statement and its value tree, an entry definition, or a phi: a block and a local), every `get` value to the name
+ * it reads, and every `set` statement to the name it defines. `checkSsa` validates it against reaching definitions.
+ */
+import { defineAnalysis, defineType } from '../framework/contracts/definitions.js';
+import { canonical } from '../framework/core/data.js';
+import { cfgOf, dominatorsOf, stmtValues, type LiveView, type ReachView } from './analyses.js';
+import { BlocksIR, storeOf } from './ir.js';
+import type { BlockRec, StmtRec, Store, TypedBlocks, ValueRec, WorkFn } from './model.js';
+
+export const VIRTUAL_ENTRY = '^entry';
+
+export interface SsaDef {
+  readonly local: number;
+  readonly kind: 'param' | 'init' | 'set' | 'phi';
+  /** The block of the definition: '^entry' for param and init, the join block for a phi. */
+  readonly block: string;
+  /** kind 'set': the statement and the value tree it assigns. */
+  readonly stmt?: string;
+  readonly value?: string;
+  /** The definition's id in reaching definitions: 'param:i', 'init:i' or the statement id (absent for a phi). */
+  readonly def?: string;
+}
+export interface SsaPhi {
+  readonly name: string;
+  readonly local: number;
+  /** Predecessor block (or '^entry') -> the name that reaches the end of it. */
+  readonly args: Readonly<Record<string, string>>;
+}
+export interface SsaFn {
+  readonly entry: string;
+  readonly names: Readonly<Record<string, SsaDef>>;
+  /** Block -> its phis, ordered by local index. */
+  readonly phis: Readonly<Record<string, readonly SsaPhi[]>>;
+  /** Every `get` value id in a reachable block -> the name it reads. */
+  readonly uses: Readonly<Record<string, string>>;
+  /** Every `set` statement id in a reachable block -> the name it defines. */
+  readonly defs: Readonly<Record<string, string>>;
+  /** Block -> immediate dominator ('^entry' for the entry block). */
+  readonly idom: Readonly<Record<string, string>>;
+  /** Block -> its dominance frontier (blocks in reverse postorder). */
+  readonly frontier: Readonly<Record<string, readonly string[]>>;
+  /** The blocks the dominator tree does not reach (no names, no uses). */
+  readonly unreachable: readonly string[];
+}
+
+/** The SSA form of one function of a working store. */
+export function ssaOf(st: Store, f: WorkFn): SsaFn {
+  const cfg = cfgOf(f),
+    entry = cfg.entry,
+    rpo = cfg.rpo,
+    reachable = new Set(rpo);
+  const position = new Map(rpo.map((b, i) => [b, i]));
+  const d = dominatorsOf(f);
+  const idom = new Map<string, string>();
+  for (const b of rpo) idom.set(b, b === entry ? VIRTUAL_ENTRY : d.idom[b]!);
+  const preds = (b: string): string[] => [
+    ...(b === entry ? [VIRTUAL_ENTRY] : []),
+    ...new Set((cfg.preds[b] ?? []).filter(p => reachable.has(p))),
+  ];
+  const succs = (b: string): string[] => [...new Set((cfg.succ[b] ?? []).filter(s => reachable.has(s)))];
+
+  // dominance frontiers: for each join Y, climb from each predecessor to idom(Y)
+  const df = new Map<string, Set<string>>([[VIRTUAL_ENTRY, new Set()]]);
+  for (const b of rpo) df.set(b, new Set());
+  for (const y of rpo) {
+    const ps = preds(y);
+    if (ps.length < 2) continue;
+    for (const p of ps) {
+      let runner = p;
+      while (runner !== idom.get(y)) {
+        df.get(runner)!.add(y);
+        if (runner === VIRTUAL_ENTRY) break; // only reached if idom(y) is not on the path: cannot happen
+        runner = idom.get(runner)!;
+      }
+    }
+  }
+
+  // phi placement at the iterated frontier of each local's `set` blocks
+  const defBlocks = new Map<number, Set<string>>();
+  for (const b of rpo)
+    for (const sid of (st.get(b) as BlockRec).stmts) {
+      const s = st.get(sid) as StmtRec;
+      if (s.op === 'set') {
+        if (!defBlocks.has(s.local!)) defBlocks.set(s.local!, new Set());
+        defBlocks.get(s.local!)!.add(b);
+      }
+    }
+  const phiLocals = new Map<string, Set<number>>();
+  for (const [l, blocks] of defBlocks) {
+    const work = [...blocks],
+      placed = new Set<string>();
+    while (work.length) {
+      const x = work.pop()!;
+      for (const y of df.get(x)!) {
+        if (placed.has(y)) continue;
+        placed.add(y);
+        if (!phiLocals.has(y)) phiLocals.set(y, new Set());
+        phiLocals.get(y)!.add(l);
+        if (!blocks.has(y)) work.push(y);
+      }
+    }
+  }
+  const phiRecs = new Map<string, { name: string; local: number; args: Record<string, string> }[]>();
+  for (const b of rpo)
+    if (phiLocals.has(b))
+      phiRecs.set(
+        b,
+        [...phiLocals.get(b)!].sort((x, y) => x - y).map(local => ({ name: '', local, args: {} })),
+      );
+
+  // renaming: a preorder walk of the dominator tree, a stack of names per local
+  const names: Record<string, SsaDef> = {},
+    uses: Record<string, string> = {},
+    defs: Record<string, string> = {};
+  const counter = f.locals.map(() => 0),
+    stacks: string[][] = f.locals.map(() => []);
+  // a local whose name another local shares (Candela has such functions, from nested scopes) is named with its
+  // index too: `z#4.1`; neither `.` nor `#` can occur in a Typed identifier, so names stay unique
+  const shared = new Set(f.locals.map(l => l.name).filter((n, i, all) => all.indexOf(n) !== i));
+  const base = f.locals.map((l, i) => (shared.has(l.name) ? `${l.name}#${i}` : l.name));
+  const fresh = (l: number) => `${base[l]}.${counter[l]++}`;
+  const top = (l: number) => stacks[l][stacks[l].length - 1];
+  f.locals.forEach((loc, i) => {
+    const name = fresh(i);
+    names[name] = {
+      local: i,
+      kind: loc.param ? 'param' : 'init',
+      block: VIRTUAL_ENTRY,
+      def: (loc.param ? 'param:' : 'init:') + i,
+    };
+    stacks[i].push(name);
+  });
+  for (const phi of phiRecs.get(entry) ?? []) phi.args[VIRTUAL_ENTRY] = top(phi.local);
+  const children = new Map<string, string[]>(rpo.map(b => [b, []]));
+  for (const b of rpo) if (b !== entry) children.get(idom.get(b)!)!.push(b);
+  const readGets = (vid: string | undefined) => {
+    const work = vid ? [vid] : [];
+    while (work.length) {
+      const v = st.get(work.pop()!) as ValueRec;
+      if (v.op === 'get') uses[v.id] = top(v.imm as number);
+      for (const a of v.args) work.push(a);
+    }
+  };
+  const frames: { block: string; exit: boolean; pushed?: number[] }[] = [{ block: entry, exit: false }];
+  while (frames.length) {
+    const fr = frames.pop()!;
+    if (fr.exit) {
+      for (const l of fr.pushed!) stacks[l].pop();
+      continue;
+    }
+    const b = fr.block,
+      pushed: number[] = [];
+    for (const phi of phiRecs.get(b) ?? []) {
+      phi.name = fresh(phi.local);
+      names[phi.name] = { local: phi.local, kind: 'phi', block: b };
+      stacks[phi.local].push(phi.name);
+      pushed.push(phi.local);
+    }
+    for (const sid of (st.get(b) as BlockRec).stmts) {
+      const s = st.get(sid) as StmtRec;
+      for (const vid of stmtValues(s)) readGets(vid);
+      if (s.op === 'set') {
+        const name = fresh(s.local!);
+        names[name] = { local: s.local!, kind: 'set', block: b, stmt: sid, value: s.value!, def: sid };
+        defs[sid] = name;
+        stacks[s.local!].push(name);
+        pushed.push(s.local!);
+      }
+    }
+    for (const s of succs(b)) for (const phi of phiRecs.get(s) ?? []) phi.args[b] = top(phi.local);
+    frames.push({ block: b, exit: true, pushed });
+    const kids = children.get(b)!;
+    for (let i = kids.length - 1; i >= 0; i--) frames.push({ block: kids[i], exit: false });
+  }
+
+  const byRpo = (s: Set<string>) =>
+    [...s].filter(x => x !== VIRTUAL_ENTRY).sort((a, b) => position.get(a)! - position.get(b)!);
+  return {
+    entry,
+    names,
+    phis: Object.fromEntries(
+      [...phiRecs].map(([b, ps]) => [b, ps.map(p => ({ ...p, args: { ...p.args } }))]),
+    ),
+    uses,
+    defs,
+    idom: Object.fromEntries(idom),
+    frontier: Object.fromEntries([...df].filter(([b]) => b !== VIRTUAL_ENTRY).map(([b, s]) => [b, byRpo(s)])),
+    unreachable: f.blocks.map(b => b.id).filter(b => !reachable.has(b)),
+  };
+}
+
+const SsaFacts = defineType<Readonly<Record<string, SsaFn>>>({
+  id: 'typed.ssa-facts',
+  version: '1',
+  description: 'per-function SSA form as finite JSON',
+  validate(v) {
+    canonical(v);
+    if (!v || typeof v !== 'object') throw new Error('SSA facts must be an object keyed by function');
+  },
+});
+
+/**
+ * The SSA view as an analysis: a new name, cached per revision like every fact. It is not in ANALYSES (whose six
+ * names a test and the workbench list); passes that use SSA compute `ssaOf` on their working copy, as the views do.
+ */
+export const ssaAnalysis = defineAnalysis({
+  id: 'typed.ssa',
+  version: '1',
+  description: 'static single assignment: phis at iterated dominance frontiers, names by renaming',
+  input: BlocksIR,
+  output: SsaFacts,
+  run: (_ctx, a) => {
+    const st = storeOf((a as { value: TypedBlocks }).value);
+    return Object.fromEntries([...st.fns.values()].map(f => [f.name, ssaOf(st, f)]));
+  },
+});
+
+// ---------- queries ----------
+export interface SsaView {
+  readonly fact: SsaFn;
+  /** The definition a `get` value reads. */
+  defOf(get: string): SsaDef | undefined;
+  /** The reads of a name: `get` values, and phis that take it as an argument. */
+  usersOf(name: string): { gets: string[]; phis: { block: string; name: string; pred: string }[] };
+  phisOf(block: string): readonly SsaPhi[];
+  /** The reaching-definition ids a name stands for: itself, or through phis the definitions of their arguments. */
+  reachingDefs(name: string): string[];
+  dominates(a: string, b: string): boolean;
+}
+export function ssaView(fact: SsaFn): SsaView {
+  const gets = new Map<string, string[]>(),
+    phiUsers = new Map<string, { block: string; name: string; pred: string }[]>();
+  for (const [g, n] of Object.entries(fact.uses)) (gets.get(n) ?? gets.set(n, []).get(n)!).push(g);
+  for (const [block, ps] of Object.entries(fact.phis))
+    for (const p of ps)
+      for (const [pred, a] of Object.entries(p.args))
+        (phiUsers.get(a) ?? phiUsers.set(a, []).get(a)!).push({ block, name: p.name, pred });
+  const phiOf = new Map<string, SsaPhi>();
+  for (const ps of Object.values(fact.phis)) for (const p of ps) phiOf.set(p.name, p);
+  const memo = new Map<string, string[]>();
+  const reachingDefs = (name: string): string[] => {
+    const hit = memo.get(name);
+    if (hit) return hit;
+    const out = new Set<string>(),
+      seen = new Set<string>([name]),
+      work = [name];
+    while (work.length) {
+      const n = work.pop()!,
+        d = fact.names[n];
+      if (d.kind !== 'phi') {
+        out.add(d.def!);
+        continue;
+      }
+      for (const a of Object.values(phiOf.get(n)!.args))
+        if (!seen.has(a)) {
+          seen.add(a);
+          work.push(a);
+        }
+    }
+    const r = [...out].sort();
+    memo.set(name, r);
+    return r;
+  };
+  const dominates = (a: string, b: string): boolean => {
+    for (let x: string | undefined = b; x; x = x === VIRTUAL_ENTRY ? undefined : fact.idom[x])
+      if (x === a) return true;
+    return false;
+  };
+  return {
+    fact,
+    defOf: g => (fact.uses[g] ? fact.names[fact.uses[g]] : undefined),
+    usersOf: n => ({ gets: gets.get(n) ?? [], phis: phiUsers.get(n) ?? [] }),
+    phisOf: b => fact.phis[b] ?? [],
+    reachingDefs,
+    dominates,
+  };
+}
+
+/** Phis whose local is not live on entry to their block (minimal SSA places them; pruned SSA would not). */
+export function deadPhis(fact: SsaFn, live: LiveView): number {
+  let n = 0;
+  for (const [b, ps] of Object.entries(fact.phis)) for (const p of ps) if (!live.liveIn(b).has(p.local)) n++;
+  return n;
+}
+
+// ---------- validation against reaching definitions ----------
+export interface SsaCheck {
+  readonly fn: string;
+  readonly blocks: number;
+  readonly gets: number;
+  /** (definition, use) pairs of reaching definitions, i.e. the def-use chains compared. */
+  readonly pairs: number;
+  readonly names: number;
+  readonly phis: number;
+  readonly unreachable: number;
+  readonly mismatches: readonly {
+    stmt: string;
+    get: string;
+    local: number;
+    reaching: string[];
+    ssa: string[];
+  }[];
+  readonly violations: readonly string[];
+}
+
+/**
+ * Check an SSA form against reaching definitions: for every `get` g of local l in a reachable statement s, the
+ * definitions its name stands for (through phis) are exactly `reach.reachingAt(s, l)`. Also check the SSA
+ * invariants: one definition per name, one phi argument per reachable predecessor, and every definition dominating
+ * its uses (a phi argument: the end of its predecessor).
+ */
+export function checkSsa(st: Store, f: WorkFn, fact: SsaFn, reach: ReachView): SsaCheck {
+  const view = ssaView(fact),
+    mismatches: SsaCheck['mismatches'][number][] = [],
+    violations: string[] = [];
+  const unreachable = new Set(fact.unreachable);
+  const cfg = cfgOf(f);
+  let gets = 0,
+    pairs = 0;
+  for (const b of f.blocks) {
+    if (unreachable.has(b.id)) continue;
+    b.stmts.forEach((sid, index) => {
+      const s = st.get(sid) as StmtRec;
+      const work = stmtValues(s);
+      while (work.length) {
+        const v = st.get(work.pop()!) as ValueRec;
+        work.push(...v.args);
+        if (v.op !== 'get') continue;
+        gets++;
+        const l = v.imm as number,
+          expect = [...new Set(reach.reachingAt(sid, l))].sort();
+        pairs += expect.length;
+        const name = fact.uses[v.id];
+        if (!name) {
+          violations.push(`${v.id} in ${sid} has no SSA name`);
+          continue;
+        }
+        const got = view.reachingDefs(name);
+        if (got.join() !== expect.join())
+          mismatches.push({ stmt: sid, get: v.id, local: l, reaching: expect, ssa: got });
+        const d = fact.names[name];
+        if (d.local !== l)
+          violations.push(`${v.id} reads local ${l} but its name ${name} is of local ${d.local}`);
+        if (!view.dominates(d.block, b.id))
+          violations.push(`${name} (${d.block}) does not dominate its use in ${b.id}`);
+        if (d.kind === 'set' && d.block === b.id && b.stmts.indexOf(d.stmt!) >= index)
+          violations.push(`${name} is used in ${sid} before (or by) its own definition`);
+      }
+    });
+  }
+  const defined = Object.keys(fact.names).length;
+  if (new Set(Object.keys(fact.names)).size !== defined) violations.push('a name is defined twice');
+  let phis = 0;
+  for (const [y, ps] of Object.entries(fact.phis)) {
+    const expect = [
+      ...(y === fact.entry ? [VIRTUAL_ENTRY] : []),
+      ...new Set((cfg.preds[y] ?? []).filter(p => !unreachable.has(p))),
+    ].sort();
+    for (const p of ps) {
+      phis++;
+      if (Object.keys(p.args).sort().join() !== expect.join())
+        violations.push(
+          `phi ${p.name} at ${y} has arguments for [${Object.keys(p.args)}], preds [${expect}]`,
+        );
+      for (const [pred, a] of Object.entries(p.args))
+        if (pred !== VIRTUAL_ENTRY && !view.dominates(fact.names[a].block, pred))
+          violations.push(`phi argument ${a} of ${p.name} does not dominate the end of ${pred}`);
+    }
+  }
+  return {
+    fn: f.name,
+    blocks: f.blocks.length,
+    gets,
+    pairs,
+    names: defined,
+    phis,
+    unreachable: unreachable.size,
+    mismatches,
+    violations,
+  };
+}
+
+ succeeded in 1007ms:
+419:      id: this.st.fresh(`bb:${this.fn.name}`).replace(/\.(\d+)$/, (_m, n) => '.n' + n),
+483:  replace(old: Ref, next: Ref, opts: MakeOptions = {}): string {
+497:    if (!found) throw new TxError('absent', `${oid} is not used in ${this.fn.name} at this revision`);
+
+ succeeded in 1035ms:
+ttmp/2026/11/27/IRWB-037-G--missed-optimizations-found-from-provenance-hot-instructions-with-no-rule-new-verified-rules/reference/02-report-missed-optimizations-found-from-provenance.md:413:## Found on the way, not changed
+
+ succeeded in 1837ms:
+created ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/01-implementation-diary.md
+
+ succeeded in 1842ms:
+created ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/02-final-report.md
+
+exec
+/usr/bin/zsh -lc "sed -n '470,510p' src/typed/tx.ts && sed -n '413,455p' ttmp/2026/11/27/IRWB-037-G*/reference/02-report*.md && sed -n '1,130p' src/typed/passes.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 467ms:
+                field: k,
+                from: s[k],
+                to: n,
+                text: show(this.st, n),
+                because: this.because(opts),
+              });
+              s[k] = n;
+            }
+          }
+      }
+    this.sid = null;
+  }
+  /** Replace one value wherever it occurs (it has one user), rebuilding its parents. */
+  replace(old: Ref, next: Ref, opts: MakeOptions = {}): string {
+    const oid = id(old)!,
+      nid = id(next)!;
+    let found = false;
+    this.rewrite(
+      h => {
+        if (h.id === oid) {
+          found = true;
+          return nid;
+        }
+      },
+      this.fn.blocks,
+      opts,
+    );
+    if (!found) throw new TxError('absent', `${oid} is not used in ${this.fn.name} at this revision`);
+    return nid;
+  }
+  note(text: string): void {
+    this.record('note', { text });
+  }
+  /** Derive successors from terminators, then drop unreachable blocks. */
+  commit(): void {
+    for (const b of this.fn.blocks) {
+      const last = b.stmts.length ? (this.st.get(b.stmts.at(-1)!) as StmtRec) : null;
+      const succ = !last
+        ? b.succ
+        : last.op === 'br'
+          ? [last.to!]
+## Found on the way, not changed
+
+- **bce is unsound without its gate.** It accepts a dominating `i < buf.length` when the index has the same
+  *set* of reaching definitions at the branch and at the check. In `scripts/13-probe-bce-same-defs.mjs` the
+  only assignment to `i` lies between the two and reaches both. bce removes the check, and the meaning check
+  rejects the pass (16 of 40 cases disagree). Comparing SSA names instead of sets would fix it.
+- **`typed.ranges` loses a counter's lower bound** under an inner loop (above). It is an O2 analysis, so I did
+  not change it; `guards` has its own rule.
+- **lvn throws `absent`** on regex-nfa when run a second time before rotate (the ablation skips a pass that
+  throws and says so). Where it runs, a second lvn saves 1,324 instructions on the 49 projects (default options).
+
+## Measured and argued
+
+Measured:
+
+- every instruction count in this report (emulator runs; the scripts named with each table);
+- that the tables of `hotShapes` sum to the emulator's count (test);
+- each pass alone and all together, on the whole corpus (`09-ablation`);
+- each rule's verification, and its firings and gain (`11`, `16`, `17`);
+- `decideCompare` and `narrowBy` against every value of small intervals (test);
+- that `typed.ranges` loses the bound (probe 14) and that bce removes a needed check (probe 13);
+- parity, the reference checks, the test suites (below).
+
+Argued, and checked only by the meaning checks of the runs above:
+
+- that a fact about an SSA name holds in every block the walk has it in scope (the dominance argument in
+  `guards.ts`);
+- the induction for counters;
+- that `thread` never lengthens a path (a jump and a branch become a branch): no project is higher, which is
+  consistent with it and does not prove it;
+- that moving a load is safe when no store, zeroing or call lies between.
+
+## Verification
+
+After `npm run build`, on the final compiler sources (the passes and rules of commit 22bf2f7; later commits
+change comments, the recorded evidence, tests and this ticket):
+
+| Check | Result |
+| --- | --- |
+| `scripts/21-speed-full-check.mjs`: `speed` on all 50 projects, every pass checked on 40 cases per function, then the default and the tuned image against the evaluator at r0 on 100 cases per function | 368 revisions, none rejected; 16,572 of 16,572 decided cases agree, 28 at the limit (`various/21-speed-full-check.log`) |
+| `node tools/parity.mjs` (every project's own pipeline) | 50 projects, 135 functions, 8,286 of 8,286 decided cases agree, 14 at the limit, 0 failures (`various/18-parity.log`) |
+| `node tools/reference-check.mjs` | reference images: 8,286 of 8,286 agree |
+| `node tools/reference-check.mjs --o2` | our O2 images: 8,286 of 8,286 agree |
+/**
+ * The built-in optimization passes over `typed.blocks`, defined with the framework's `definePass` (E3).
+ *
+ * Each pass body is Compiler Workbench's (passes.js), run once per function through a `Tx` on a working copy of
+ * the input revision. The framework computes the declared analyses for the exact input, diffs the result against
+ * the input, enforces the declared entity kinds, checks the contract the host supplies (normally
+ * `optimizationContract`: the program still means what r0 meant), and checks each preservation claim before the
+ * new revision is published. Correspondence between the revisions comes from the origin records the transaction
+ * wrote and from the `because` of each removal, so `why` can walk any entity back to the front end.
+ */
+import { defineTransformation } from '../framework/contracts/definitions.js';
+import type { TransformationDefinition } from '../framework/contracts/types.js';
+import type { CorrespondenceEntry } from '../framework/ir/types.js';
+import { definePass, type Pass } from '../framework/passes/define-pass.js';
+import type { DataflowResult } from '../framework/dataflow/analysis.js';
+import {
+  ANALYSES,
+  domView,
+  hasEffect,
+  isPure,
+  liveView,
+  rangeView,
+  reachView,
+  readsOf,
+  stmtValues,
+  type Dominators,
+  type DomView,
+  type LiveView,
+  type Loop,
+  type RangeView,
+  type ReachView,
+} from './analyses.js';
+import { F32_OPERANDS, F32_RESULT } from './f32.js';
+import { BlocksIR, blocksAdapter, blocksEntities, entityIdSet } from './ir.js';
+import { hash, meaningKept, type MeaningParams } from './evaluate.js';
+import { tableBody } from './rules/compile.js';
+import { FOLD_RULES } from './rules/fold.js';
+import { SIMPLIFY_RULES } from './rules/simplify.js';
+import { IDENTITY_RULES } from './rules/identities.js';
+import {
+  Store,
+  typeClass,
+  type BlockRec,
+  type StmtRec,
+  type TypedBlocks,
+  type ValueRec,
+  type WorkFn,
+} from './model.js';
+import { Tx, TxError, type Edit, type ValueHandle, type WriteKind } from './tx.js';
+import { rotateSpec } from './rotate.js';
+import { promoteSpec } from './promote.js';
+import { websSpec } from './webs.js';
+import { makeInline } from './inline.js';
+import { copyReads, guardPlan, threadTests } from './guards.js';
+import { ssaAnalysis, type SsaFn } from './ssa.js';
+
+/** What a pass may name as a need: the six analyses of ANALYSES, and the SSA view (IRWB-037-G). */
+const NEEDS = { ...ANALYSES, ssa: ssaAnalysis } as const;
+type AnalysisName = keyof typeof NEEDS;
+interface FactViews {
+  cfg?: unknown;
+  dom?: DomView;
+  loops?: readonly Loop[];
+  live?: LiveView;
+  reach?: ReachView;
+  ranges?: RangeView;
+  ssa?: SsaFn;
+  [alias: string]: unknown;
+}
+interface BodyContext {
+  readonly st: Store;
+  readonly f: WorkFn;
+  readonly tx: Tx;
+  readonly facts: FactViews;
+  readonly params: Readonly<Record<string, unknown>>;
+}
+
+export interface TypedPassSpec {
+  readonly name: string;
+  readonly about: string;
+  readonly needs?: Readonly<Record<string, AnalysisName>>;
+  readonly writes: readonly WriteKind[];
+  readonly preserves?: readonly AnalysisName[];
+  body(ctx: BodyContext): void;
+  /** A pass over the whole program (it removes functions), not per function: never restricted to one function. */
+  readonly program?: true;
+}
+
+/** Compiler Workbench write kinds -> the entity and relation kinds of the projection they may change. */
+const ENTITY_WRITES: Record<WriteKind, { entities: string[]; relations: string[] }> = {
+  values: { entities: ['value.*'], relations: ['operand', 'reads', 'uses'] },
+  stmts: {
+    entities: ['stmt.*', 'value.*'],
+    relations: ['contains', 'uses', 'operand', 'reads', 'writes', 'jump'],
+  },
+  locals: { entities: ['local'], relations: ['declares'] },
+  cfg: {
+    entities: ['block', 'stmt.*', 'value.*'],
+    relations: ['succ', 'jump', 'contains', 'uses', 'operand', 'reads'],
+  },
+  frame: { entities: ['fn'], relations: [] },
+};
+
+export interface RevisionReport {
+  readonly pass: string;
+  readonly rev: number;
+  readonly edits: readonly Edit[];
+  readonly fns: readonly string[];
+  readonly kinds: Readonly<Record<string, number>>;
+}
+
+const view = (name: AnalysisName, value: unknown, st: Store, fname: string): unknown => {
+  switch (name) {
+    case 'liveness':
+      return liveView(value as DataflowResult, st, fname);
+    case 'reaching':
+      return reachView(value as DataflowResult, st, fname);
+    case 'ranges':
+      return rangeView(value as DataflowResult, st, fname);
+    case 'dominators':
+      return domView((value as Record<string, Dominators>)[fname]);
+    default:
+      return (value as Record<string, unknown>)[fname];
+  }
+};
+
+/** Correspondence entries from origins of new entities and the reasons of removals. */
+export function revisionCorrespondence(
+  before: TypedBlocks,
+  after: TypedBlocks,
+
+codex
+The BCE defect comes from treating loop-carried definitions as values; the existing SSA analysis gives each read its actual name. LVN keeps candidate IDs after replacing an enclosing expression, so some candidates no longer occur in their recorded statement. I’m fixing those two points directly.
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+p='src/typed/passes.ts'
+s=open(p).read().replace(\"needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges' },\\n  writes: ['stmts', 'cfg'],\", \"needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges', ssa: 'ssa' },\\n  writes: ['stmts', 'cfg'],\",1).replace(\"      ranges = facts.ranges"'!;'"\\n    // resolve a read\", \"      ranges = facts.ranges"'!,'"\\n      ssa = facts.ssa"'!;'"\\n    // resolve a read\",1)
+old=\"\"\"        // the index and the buffer are the same values at the branch and at the check
+        const same = (l: number) => {
+          const a = reach.reachingAt(t.id, l).sort().join(),
+            z = reach.reachingAt(idx.sid, l).sort().join();
+          return a === z;
+        };
+        if ("'!same(idx.local) || !same(buf)) continue;"""
+new="""        // Equal reaching-definition sets can describe different loop iterations. Compare the reads'"' SSA names.
+        const guardBuf = (st.get(cond.args[1]) as ValueRec).args[0],
+          checkBuf = (st.get(c.args[1]) as ValueRec).args[0];
+        if ("'!ssa.uses[x.id] || ssa.uses[x.id] !== ssa.uses[idx.id]) continue;
+        if (!ssa.uses[guardBuf] || ssa.uses[guardBuf] !== ssa.uses[checkBuf]) continue;"""
+assert old in s;s=s.replace(old,new)
+s=s.replace("              seen.delete(k);'"\\n              return true;\", \"\"\"              // Replacing a tree also removes its descendants and rebuilds its ancestors. Forget candidates
+              // whose recorded value no longer occurs in their statement.
+              const contains = (root: string | undefined, target: string): boolean =>
+                "'!!root && (root === target || (st.get(root) as ValueRec).args.some(a => contains(a, target)));
+              for (const [candidate, entry] of seen) {
+                const stmt = st.get(entry.stmt) as StmtRec;
+                if (!contains(stmt.addr, entry.value) && !contains(stmt.value, entry.value) &&
+                    !contains(stmt.cond, entry.value)) seen.delete(candidate);
+              }
+              return true;""",1)
+open(p,'"'w').write(s)
+p='tests/typed/d2-defects.test.mjs';s=open(p).read().replace(\"  { todo: 'F36' },\\n\",'').replace(\"  { todo: 'F38' },\\n\",'');open(p,'w').write(s)
+PY
+npm run build
+node --test tests/typed/d2-defects.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc "tmux new-session -d -s irwb042-verify 'node ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/scripts/02-baselines.mjs check > /tmp/irwb042-baseline.log 2>&1; echo "'$? > /tmp/irwb042-baseline.exit'"'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ exited 1 in 1123ms:
+error connecting to /tmp/tmux-1000/default (Operation not permitted)
+
+exec
+/usr/bin/zsh -lc "tmux new-session -d -s irwb042-verify 'node ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/scripts/02-baselines.mjs check > /tmp/irwb042-baseline.log 2>&1; echo "'$? > /tmp/irwb042-baseline.exit'"'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 2877ms:
+exec
+/usr/bin/zsh -lc "tmux new-session -d -s irwb042-suites 'node --test "'$(rg --files tests/typed tests/framework tests/workbench tests/tensor -g "*.test.mjs" -g "!*'"\\-gpu.test.mjs\") > /tmp/irwb042-suites.log 2>&1; echo "'$? > /tmp/irwb042-suites.exit'"'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 5739ms:
+exec
+/usr/bin/zsh -lc 'tail -20 /tmp/irwb042-baseline.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc 'git show HEAD:src/typed/passes.ts > /tmp/irwb042-original.ts
+./node_modules/.bin/prettier --check /tmp/irwb042-original.ts' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc 'cat /tmp/irwb042-baseline.exit /tmp/irwb042-suites.exit' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc 'tail -15 /tmp/irwb042-suites.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc 'npm run check' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+codex
+The targeted fixes are in place, and the baseline and non-GPU suites are running. The baseline check may reveal legitimate changes in BCE decisions, so I’ll inspect any differences project by project.
+ succeeded in 14035ms:
+✔ insertion can wrap a required child and edits reject dangling bindings, duplicate ids and invalid removal (3.65674ms)
+✔ serialization is deterministic, rejects malformed input, and round-trips exact plan revision (5.491479ms)
+✔ a parallel rejection cannot hide a simultaneously failing implementation behind attempt fallback (5.718429ms)
+✔ cancellation between acquired permits and algorithm starts avoids starting subsequent algorithms (5.553296ms)
+✔ node budget includes skipped subtrees and bounds trace allocation during repeated branches (28.408036ms)
+✔ cooperatively aborted host algorithms retain completed-task links and report cancellation (5.316868ms)
+✔ plan requirements pin hidden host dependencies independently of directly edited call nodes (3.47128ms)
+✔ walk visitor and find predicate expose typed traversal context without modifying the plan (5.97048ms)
+✔ choice evidence bindings retain exact earlier decisions across later scoring of the same candidates (3.294478ms)
+✔ matmul agrees with the numerical oracle before and after optimization (73.220214ms)
+✔ softmax agrees with the numerical oracle before and after optimization (39.793339ms)
+✔ layernorm agrees with the numerical oracle before and after optimization (28.497478ms)
+✔ attention agrees with the numerical oracle before and after optimization (181.384836ms)
+✔ mlp agrees with the numerical oracle before and after optimization (144.809875ms)
+✔ conv2d agrees with the numerical oracle before and after optimization (6.569452ms)
+
+ exited 1 in 15150ms:
+cat: /tmp/irwb042-baseline.exit: No such file or directory
+cat: /tmp/irwb042-suites.exit: No such file or directory
+
+ succeeded in 15323ms:
+ exited 127 in 15718ms:
+zsh:2: no such file or directory: ./node_modules/.bin/prettier
+
+exec
+/usr/bin/zsh -lc 'ps -eo pid,stat,comm,args | head -35' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc 'tmux send-keys -t irwb042-suites C-c' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 10488ms:
+    PID STAT COMMAND         COMMAND
+      1 Ss   codex           codex-linux-sandbox --sandbox-policy-cwd /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a --command-cwd /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a --permission-profile {"type":"managed","file_system":{"type":"restricted","entries":[{"path":{"type":"special","value":{"kind":"root"}},"access":"read"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a"},"access":"write"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git"},"access":"write"},{"path":{"type":"special","value":{"kind":"slash_tmp"}},"access":"write"},{"path":{"type":"special","value":{"kind":"tmpdir"}},"access":"write"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/.git"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/.git"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/.agents"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/.agents"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/.codex"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/.codex"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/.aws"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/.aws"},"access":"read","missing_path_behavior":"skip"}]},"network":"restricted"} --apply-seccomp-then-exec -- /usr/bin/zsh -c __CODEX_SNAPSHOT_OVERRIDE_SET_0="${CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS+x}" __CODEX_SNAPSHOT_OVERRIDE_0="${CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS-}" __CODEX_SNAPSHOT_OVERRIDE_SET_1="${CODEX_PERMISSION_PROFILE+x}" __CODEX_SNAPSHOT_OVERRIDE_1="${CODEX_PERMISSION_PROFILE-}" __CODEX_SNAPSHOT_OVERRIDE_SET_2="${CODEX_PLUGIN_METRICS_OUTPUT+x}" __CODEX_SNAPSHOT_OVERRIDE_2="${CODEX_PLUGIN_METRICS_OUTPUT-}" __CODEX_SNAPSHOT_OVERRIDE_SET_3="${CODEX_SESSION_ID+x}" __CODEX_SNAPSHOT_OVERRIDE_3="${CODEX_SESSION_ID-}" __CODEX_SNAPSHOT_OVERRIDE_SET_4="${CODEX_THREAD_ID+x}" __CODEX_SNAPSHOT_OVERRIDE_4="${CODEX_THREAD_ID-}" __CODEX_SNAPSHOT_OVERRIDE_SET_5="${CODEX_TOOL_CALL_ID+x}" __CODEX_SNAPSHOT_OVERRIDE_5="${CODEX_TOOL_CALL_ID-}" __CODEX_SNAPSHOT_OVERRIDE_SET_6="${CODEX_VERSION+x}" __CODEX_SNAPSHOT_OVERRIDE_6="${CODEX_VERSION-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_0="${ALL_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_0="${ALL_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_1="${BUNDLE_HTTPS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_1="${BUNDLE_HTTPS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_2="${BUNDLE_HTTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_2="${BUNDLE_HTTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_3="${BUNDLE_NO_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_3="${BUNDLE_NO_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_4="${BUNDLE_SSL_CA_CERT+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_4="${BUNDLE_SSL_CA_CERT-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_5="${CARGO_HTTP_CAINFO+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_5="${CARGO_HTTP_CAINFO-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_6="${CODEX_CA_CERTIFICATE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_6="${CODEX_CA_CERTIFICATE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_7="${CODEX_NETWORK_ALLOW_LOCAL_BINDING+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_7="${CODEX_NETWORK_ALLOW_LOCAL_BINDING-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_8="${CODEX_NETWORK_PROXY_ACTIVE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_8="${CODEX_NETWORK_PROXY_ACTIVE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_9="${CODEX_NETWORK_PROXY_ATTRIBUTION+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_9="${CODEX_NETWORK_PROXY_ATTRIBUTION-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_10="${CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_10="${CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_11="${CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_11="${CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_12="${CURL_CA_BUNDLE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_12="${CURL_CA_BUNDLE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_13="${DOCKER_HTTPS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_13="${DOCKER_HTTPS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_14="${DOCKER_HTTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_14="${DOCKER_HTTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_15="${ELECTRON_GET_USE_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_15="${ELECTRON_GET_USE_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_16="${FTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_16="${FTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_17="${GIT_SSL_CAINFO+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_17="${GIT_SSL_CAINFO-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_18="${HTTPS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_18="${HTTPS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_19="${HTTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_19="${HTTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_20="${NODE_EXTRA_CA_CERTS+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_20="${NODE_EXTRA_CA_CERTS-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_21="${NODE_USE_ENV_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_21="${NODE_USE_ENV_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_22="${NO_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_22="${NO_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_23="${NPM_CONFIG_CAFILE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_23="${NPM_CONFIG_CAFILE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_24="${NPM_CONFIG_HTTPS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_24="${NPM_CONFIG_HTTPS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_25="${NPM_CONFIG_HTTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_25="${NPM_CONFIG_HTTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_26="${NPM_CONFIG_NOPROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_26="${NPM_CONFIG_NOPROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_27="${NPM_CONFIG_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_27="${NPM_CONFIG_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_28="${PIP_CERT+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_28="${PIP_CERT-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_29="${PIP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_29="${PIP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_30="${REQUESTS_CA_BUNDLE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_30="${REQUESTS_CA_BUNDLE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_31="${SSL_CERT_FILE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_31="${SSL_CERT_FILE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_32="${WSS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_32="${WSS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_33="${WS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_33="${WS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_34="${YARN_HTTPS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_34="${YARN_HTTPS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_35="${YARN_HTTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_35="${YARN_HTTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_36="${YARN_NO_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_36="${YARN_NO_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_37="${all_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_37="${all_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_38="${ftp_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_38="${ftp_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_39="${http_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_39="${http_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_40="${https_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_40="${https_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_41="${no_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_41="${no_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_42="${npm_config_cafile+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_42="${npm_config_cafile-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_43="${npm_config_http_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_43="${npm_config_http_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_44="${npm_config_https_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_44="${npm_config_https_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_45="${npm_config_noproxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_45="${npm_config_noproxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_46="${npm_config_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_46="${npm_config_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_47="${ws_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_47="${ws_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_48="${wss_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_48="${wss_proxy-}" __CODEX_SNAPSHOT_PROXY_ENV_SET="${CODEX_NETWORK_PROXY_ACTIVE+x}"  if . '/home/manuel/.codex/shell_snapshots/01a21f1e-cd21-7901-bd3b-08cc1b70768d.1795818442137816387.sh' >/dev/null 2>&1; then :; fi  if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_0}" ]; then   if [ -z "${CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS+x}" ] || [ "${CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS-}" != "${__CODEX_SNAPSHOT_OVERRIDE_0}" ]; then export CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS="${__CODEX_SNAPSHOT_OVERRIDE_0}"; else export CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS; fi else builtin unset CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS 2>/dev/null || command unset CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_0 __CODEX_SNAPSHOT_OVERRIDE_0 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_0 __CODEX_SNAPSHOT_OVERRIDE_0 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_1}" ]; then   if [ -z "${CODEX_PERMISSION_PROFILE+x}" ] || [ "${CODEX_PERMISSION_PROFILE-}" != "${__CODEX_SNAPSHOT_OVERRIDE_1}" ]; then export CODEX_PERMISSION_PROFILE="${__CODEX_SNAPSHOT_OVERRIDE_1}"; else export CODEX_PERMISSION_PROFILE; fi else builtin unset CODEX_PERMISSION_PROFILE 2>/dev/null || command unset CODEX_PERMISSION_PROFILE; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_1 __CODEX_SNAPSHOT_OVERRIDE_1 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_1 __CODEX_SNAPSHOT_OVERRIDE_1 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_2}" ]; then   if [ -z "${CODEX_PLUGIN_METRICS_OUTPUT+x}" ] || [ "${CODEX_PLUGIN_METRICS_OUTPUT-}" != "${__CODEX_SNAPSHOT_OVERRIDE_2}" ]; then export CODEX_PLUGIN_METRICS_OUTPUT="${__CODEX_SNAPSHOT_OVERRIDE_2}"; else export CODEX_PLUGIN_METRICS_OUTPUT; fi else builtin unset CODEX_PLUGIN_METRICS_OUTPUT 2>/dev/null || command unset CODEX_PLUGIN_METRICS_OUTPUT; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_2 __CODEX_SNAPSHOT_OVERRIDE_2 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_2 __CODEX_SNAPSHOT_OVERRIDE_2 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_3}" ]; then   if [ -z "${CODEX_SESSION_ID+x}" ] || [ "${CODEX_SESSION_ID-}" != "${__CODEX_SNAPSHOT_OVERRIDE_3}" ]; then export CODEX_SESSION_ID="${__CODEX_SNAPSHOT_OVERRIDE_3}"; else export CODEX_SESSION_ID; fi else builtin unset CODEX_SESSION_ID 2>/dev/null || command unset CODEX_SESSION_ID; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_3 __CODEX_SNAPSHOT_OVERRIDE_3 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_3 __CODEX_SNAPSHOT_OVERRIDE_3 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_4}" ]; then   if [ -z "${CODEX_THREAD_ID+x}" ] || [ "${CODEX_THREAD_ID-}" != "${__CODEX_SNAPSHOT_OVERRIDE_4}" ]; then export CODEX_THREAD_ID="${__CODEX_SNAPSHOT_OVERRIDE_4}"; else export CODEX_THREAD_ID; fi else builtin unset CODEX_THREAD_ID 2>/dev/null || command unset CODEX_THREAD_ID; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_4 __CODEX_SNAPSHOT_OVERRIDE_4 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_4 __CODEX_SNAPSHOT_OVERRIDE_4 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_5}" ]; then   if [ -z "${CODEX_TOOL_CALL_ID+x}" ] || [ "${CODEX_TOOL_CALL_ID-}" != "${__CODEX_SNAPSHOT_OVERRIDE_5}" ]; then export CODEX_TOOL_CALL_ID="${__CODEX_SNAPSHOT_OVERRIDE_5}"; else export CODEX_TOOL_CALL_ID; fi else builtin unset CODEX_TOOL_CALL_ID 2>/dev/null || command unset CODEX_TOOL_CALL_ID; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_5 __CODEX_SNAPSHOT_OVERRIDE_5 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_5 __CODEX_SNAPSHOT_OVERRIDE_5 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_6}" ]; then   if [ -z "${CODEX_VERSION+x}" ] || [ "${CODEX_VERSION-}" != "${__CODEX_SNAPSHOT_OVERRIDE_6}" ]; then export CODEX_VERSION="${__CODEX_SNAPSHOT_OVERRIDE_6}"; else export CODEX_VERSION; fi else builtin unset CODEX_VERSION 2>/dev/null || command unset CODEX_VERSION; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_6 __CODEX_SNAPSHOT_OVERRIDE_6 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_6 __CODEX_SNAPSHOT_OVERRIDE_6 if [ -n "$__CODEX_SNAPSHOT_PROXY_ENV_SET" ] || [ -n "${CODEX_NETWORK_PROXY_ACTIVE+x}" ]; then if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_0}" ]; then   if [ -z "${ALL_PROXY+x}" ] || [ "${ALL_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_0}" ]; then export ALL_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_0}"; else export ALL_PROXY; fi else builtin unset ALL_PROXY 2>/dev/null || command unset ALL_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_0 __CODEX_SNAPSHOT_PROXY_OVERRIDE_0 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_0 __CODEX_SNAPSHOT_PROXY_OVERRIDE_0 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_1}" ]; then   if [ -z "${BUNDLE_HTTPS_PROXY+x}" ] || [ "${BUNDLE_HTTPS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_1}" ]; then export BUNDLE_HTTPS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_1}"; else export BUNDLE_HTTPS_PROXY; fi else builtin unset BUNDLE_HTTPS_PROXY 2>/dev/null || command unset BUNDLE_HTTPS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_1 __CODEX_SNAPSHOT_PROXY_OVERRIDE_1 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_1 __CODEX_SNAPSHOT_PROXY_OVERRIDE_1 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_2}" ]; then   if [ -z "${BUNDLE_HTTP_PROXY+x}" ] || [ "${BUNDLE_HTTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_2}" ]; then export BUNDLE_HTTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_2}"; else export BUNDLE_HTTP_PROXY; fi else builtin unset BUNDLE_HTTP_PROXY 2>/dev/null || command unset BUNDLE_HTTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_2 __CODEX_SNAPSHOT_PROXY_OVERRIDE_2 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_2 __CODEX_SNAPSHOT_PROXY_OVERRIDE_2 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_3}" ]; then   if [ -z "${BUNDLE_NO_PROXY+x}" ] || [ "${BUNDLE_NO_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_3}" ]; then export BUNDLE_NO_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_3}"; else export BUNDLE_NO_PROXY; fi else builtin unset BUNDLE_NO_PROXY 2>/dev/null || command unset BUNDLE_NO_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_3 __CODEX_SNAPSHOT_PROXY_OVERRIDE_3 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_3 __CODEX_SNAPSHOT_PROXY_OVERRIDE_3 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_4}" ]; then   if [ -z "${BUNDLE_SSL_CA_CERT+x}" ] || [ "${BUNDLE_SSL_CA_CERT-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_4}" ]; then export BUNDLE_SSL_CA_CERT="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_4}"; else export BUNDLE_SSL_CA_CERT; fi else builtin unset BUNDLE_SSL_CA_CERT 2>/dev/null || command unset BUNDLE_SSL_CA_CERT; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_4 __CODEX_SNAPSHOT_PROXY_OVERRIDE_4 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_4 __CODEX_SNAPSHOT_PROXY_OVERRIDE_4 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_5}" ]; then   if [ -z "${CARGO_HTTP_CAINFO+x}" ] || [ "${CARGO_HTTP_CAINFO-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_5}" ]; then export CARGO_HTTP_CAINFO="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_5}"; else export CARGO_HTTP_CAINFO; fi else builtin unset CARGO_HTTP_CAINFO 2>/dev/null || command unset CARGO_HTTP_CAINFO; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_5 __CODEX_SNAPSHOT_PROXY_OVERRIDE_5 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_5 __CODEX_SNAPSHOT_PROXY_OVERRIDE_5 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_6}" ]; then   if [ -z "${CODEX_CA_CERTIFICATE+x}" ] || [ "${CODEX_CA_CERTIFICATE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_6}" ]; then export CODEX_CA_CERTIFICATE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_6}"; else export CODEX_CA_CERTIFICATE; fi else builtin unset CODEX_CA_CERTIFICATE 2>/dev/null || command unset CODEX_CA_CERTIFICATE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_6 __CODEX_SNAPSHOT_PROXY_OVERRIDE_6 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_6 __CODEX_SNAPSHOT_PROXY_OVERRIDE_6 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_7}" ]; then   if [ -z "${CODEX_NETWORK_ALLOW_LOCAL_BINDING+x}" ] || [ "${CODEX_NETWORK_ALLOW_LOCAL_BINDING-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_7}" ]; then export CODEX_NETWORK_ALLOW_LOCAL_BINDING="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_7}"; else export CODEX_NETWORK_ALLOW_LOCAL_BINDING; fi else builtin unset CODEX_NETWORK_ALLOW_LOCAL_BINDING 2>/dev/null || command unset CODEX_NETWORK_ALLOW_LOCAL_BINDING; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_7 __CODEX_SNAPSHOT_PROXY_OVERRIDE_7 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_7 __CODEX_SNAPSHOT_PROXY_OVERRIDE_7 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_8}" ]; then   if [ -z "${CODEX_NETWORK_PROXY_ACTIVE+x}" ] || [ "${CODEX_NETWORK_PROXY_ACTIVE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_8}" ]; then export CODEX_NETWORK_PROXY_ACTIVE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_8}"; else export CODEX_NETWORK_PROXY_ACTIVE; fi else builtin unset CODEX_NETWORK_PROXY_ACTIVE 2>/dev/null || command unset CODEX_NETWORK_PROXY_ACTIVE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_8 __CODEX_SNAPSHOT_PROXY_OVERRIDE_8 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_8 __CODEX_SNAPSHOT_PROXY_OVERRIDE_8 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_9}" ]; then   if [ -z "${CODEX_NETWORK_PROXY_ATTRIBUTION+x}" ] || [ "${CODEX_NETWORK_PROXY_ATTRIBUTION-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_9}" ]; then export CODEX_NETWORK_PROXY_ATTRIBUTION="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_9}"; else export CODEX_NETWORK_PROXY_ATTRIBUTION; fi else builtin unset CODEX_NETWORK_PROXY_ATTRIBUTION 2>/dev/null || command unset CODEX_NETWORK_PROXY_ATTRIBUTION; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_9 __CODEX_SNAPSHOT_PROXY_OVERRIDE_9 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_9 __CODEX_SNAPSHOT_PROXY_OVERRIDE_9 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_10}" ]; then   if [ -z "${CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS+x}" ] || [ "${CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_10}" ]; then export CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_10}"; else export CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS; fi else builtin unset CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS 2>/dev/null || command unset CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_10 __CODEX_SNAPSHOT_PROXY_OVERRIDE_10 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_10 __CODEX_SNAPSHOT_PROXY_OVERRIDE_10 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_11}" ]; then   if [ -z "${CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE+x}" ] || [ "${CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_11}" ]; then export CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_11}"; else export CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE; fi else builtin unset CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE 2>/dev/null || command unset CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_11 __CODEX_SNAPSHOT_PROXY_OVERRIDE_11 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_11 __CODEX_SNAPSHOT_PROXY_OVERRIDE_11 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_12}" ]; then   if [ -z "${CURL_CA_BUNDLE+x}" ] || [ "${CURL_CA_BUNDLE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_12}" ]; then export CURL_CA_BUNDLE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_12}"; else export CURL_CA_BUNDLE; fi else builtin unset CURL_CA_BUNDLE 2>/dev/null || command unset CURL_CA_BUNDLE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_12 __CODEX_SNAPSHOT_PROXY_OVERRIDE_12 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_12 __CODEX_SNAPSHOT_PROXY_OVERRIDE_12 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_13}" ]; then   if [ -z "${DOCKER_HTTPS_PROXY+x}" ] || [ "${DOCKER_HTTPS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_13}" ]; then export DOCKER_HTTPS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_13}"; else export DOCKER_HTTPS_PROXY; fi else builtin unset DOCKER_HTTPS_PROXY 2>/dev/null || command unset DOCKER_HTTPS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_13 __CODEX_SNAPSHOT_PROXY_OVERRIDE_13 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_13 __CODEX_SNAPSHOT_PROXY_OVERRIDE_13 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_14}" ]; then   if [ -z "${DOCKER_HTTP_PROXY+x}" ] || [ "${DOCKER_HTTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_14}" ]; then export DOCKER_HTTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_14}"; else export DOCKER_HTTP_PROXY; fi else builtin unset DOCKER_HTTP_PROXY 2>/dev/null || command unset DOCKER_HTTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_14 __CODEX_SNAPSHOT_PROXY_OVERRIDE_14 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_14 __CODEX_SNAPSHOT_PROXY_OVERRIDE_14 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_15}" ]; then   if [ -z "${ELECTRON_GET_USE_PROXY+x}" ] || [ "${ELECTRON_GET_USE_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_15}" ]; then export ELECTRON_GET_USE_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_15}"; else export ELECTRON_GET_USE_PROXY; fi else builtin unset ELECTRON_GET_USE_PROXY 2>/dev/null || command unset ELECTRON_GET_USE_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_15 __CODEX_SNAPSHOT_PROXY_OVERRIDE_15 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_15 __CODEX_SNAPSHOT_PROXY_OVERRIDE_15 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_16}" ]; then   if [ -z "${FTP_PROXY+x}" ] || [ "${FTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_16}" ]; then export FTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_16}"; else export FTP_PROXY; fi else builtin unset FTP_PROXY 2>/dev/null || command unset FTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_16 __CODEX_SNAPSHOT_PROXY_OVERRIDE_16 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_16 __CODEX_SNAPSHOT_PROXY_OVERRIDE_16 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_17}" ]; then   if [ -z "${GIT_SSL_CAINFO+x}" ] || [ "${GIT_SSL_CAINFO-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_17}" ]; then export GIT_SSL_CAINFO="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_17}"; else export GIT_SSL_CAINFO; fi else builtin unset GIT_SSL_CAINFO 2>/dev/null || command unset GIT_SSL_CAINFO; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_17 __CODEX_SNAPSHOT_PROXY_OVERRIDE_17 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_17 __CODEX_SNAPSHOT_PROXY_OVERRIDE_17 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_18}" ]; then   if [ -z "${HTTPS_PROXY+x}" ] || [ "${HTTPS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_18}" ]; then export HTTPS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_18}"; else export HTTPS_PROXY; fi else builtin unset HTTPS_PROXY 2>/dev/null || command unset HTTPS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_18 __CODEX_SNAPSHOT_PROXY_OVERRIDE_18 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_18 __CODEX_SNAPSHOT_PROXY_OVERRIDE_18 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_19}" ]; then   if [ -z "${HTTP_PROXY+x}" ] || [ "${HTTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_19}" ]; then export HTTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_19}"; else export HTTP_PROXY; fi else builtin unset HTTP_PROXY 2>/dev/null || command unset HTTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_19 __CODEX_SNAPSHOT_PROXY_OVERRIDE_19 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_19 __CODEX_SNAPSHOT_PROXY_OVERRIDE_19 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_20}" ]; then   if [ -z "${NODE_EXTRA_CA_CERTS+x}" ] || [ "${NODE_EXTRA_CA_CERTS-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_20}" ]; then export NODE_EXTRA_CA_CERTS="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_20}"; else export NODE_EXTRA_CA_CERTS; fi else builtin unset NODE_EXTRA_CA_CERTS 2>/dev/null || command unset NODE_EXTRA_CA_CERTS; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_20 __CODEX_SNAPSHOT_PROXY_OVERRIDE_20 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_20 __CODEX_SNAPSHOT_PROXY_OVERRIDE_20 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_21}" ]; then   if [ -z "${NODE_USE_ENV_PROXY+x}" ] || [ "${NODE_USE_ENV_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_21}" ]; then export NODE_USE_ENV_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_21}"; else export NODE_USE_ENV_PROXY; fi else builtin unset NODE_USE_ENV_PROXY 2>/dev/null || command unset NODE_USE_ENV_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_21 __CODEX_SNAPSHOT_PROXY_OVERRIDE_21 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_21 __CODEX_SNAPSHOT_PROXY_OVERRIDE_21 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_22}" ]; then   if [ -z "${NO_PROXY+x}" ] || [ "${NO_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_22}" ]; then export NO_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_22}"; else export NO_PROXY; fi else builtin unset NO_PROXY 2>/dev/null || command unset NO_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_22 __CODEX_SNAPSHOT_PROXY_OVERRIDE_22 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_22 __CODEX_SNAPSHOT_PROXY_OVERRIDE_22 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_23}" ]; then   if [ -z "${NPM_CONFIG_CAFILE+x}" ] || [ "${NPM_CONFIG_CAFILE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_23}" ]; then export NPM_CONFIG_CAFILE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_23}"; else export NPM_CONFIG_CAFILE; fi else builtin unset NPM_CONFIG_CAFILE 2>/dev/null || command unset NPM_CONFIG_CAFILE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_23 __CODEX_SNAPSHOT_PROXY_OVERRIDE_23 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_23 __CODEX_SNAPSHOT_PROXY_OVERRIDE_23 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_24}" ]; then   if [ -z "${NPM_CONFIG_HTTPS_PROXY+x}" ] || [ "${NPM_CONFIG_HTTPS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_24}" ]; then export NPM_CONFIG_HTTPS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_24}"; else export NPM_CONFIG_HTTPS_PROXY; fi else builtin unset NPM_CONFIG_HTTPS_PROXY 2>/dev/null || command unset NPM_CONFIG_HTTPS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_24 __CODEX_SNAPSHOT_PROXY_OVERRIDE_24 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_24 __CODEX_SNAPSHOT_PROXY_OVERRIDE_24 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_25}" ]; then   if [ -z "${NPM_CONFIG_HTTP_PROXY+x}" ] || [ "${NPM_CONFIG_HTTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_25}" ]; then export NPM_CONFIG_HTTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_25}"; else export NPM_CONFIG_HTTP_PROXY; fi else builtin unset NPM_CONFIG_HTTP_PROXY 2>/dev/null || command unset NPM_CONFIG_HTTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_25 __CODEX_SNAPSHOT_PROXY_OVERRIDE_25 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_25 __CODEX_SNAPSHOT_PROXY_OVERRIDE_25 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_26}" ]; then   if [ -z "${NPM_CONFIG_NOPROXY+x}" ] || [ "${NPM_CONFIG_NOPROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_26}" ]; then export NPM_CONFIG_NOPROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_26}"; else export NPM_CONFIG_NOPROXY; fi else builtin unset NPM_CONFIG_NOPROXY 2>/dev/null || command unset NPM_CONFIG_NOPROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_26 __CODEX_SNAPSHOT_PROXY_OVERRIDE_26 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_26 __CODEX_SNAPSHOT_PROXY_OVERRIDE_26 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_27}" ]; then   if [ -z "${NPM_CONFIG_PROXY+x}" ] || [ "${NPM_CONFIG_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_27}" ]; then export NPM_CONFIG_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_27}"; else export NPM_CONFIG_PROXY; fi else builtin unset NPM_CONFIG_PROXY 2>/dev/null || command unset NPM_CONFIG_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_27 __CODEX_SNAPSHOT_PROXY_OVERRIDE_27 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_27 __CODEX_SNAPSHOT_PROXY_OVERRIDE_27 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_28}" ]; then   if [ -z "${PIP_CERT+x}" ] || [ "${PIP_CERT-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_28}" ]; then export PIP_CERT="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_28}"; else export PIP_CERT; fi else builtin unset PIP_CERT 2>/dev/null || command unset PIP_CERT; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_28 __CODEX_SNAPSHOT_PROXY_OVERRIDE_28 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_28 __CODEX_SNAPSHOT_PROXY_OVERRIDE_28 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_29}" ]; then   if [ -z "${PIP_PROXY+x}" ] || [ "${PIP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_29}" ]; then export PIP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_29}"; else export PIP_PROXY; fi else builtin unset PIP_PROXY 2>/dev/null || command unset PIP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_29 __CODEX_SNAPSHOT_PROXY_OVERRIDE_29 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_29 __CODEX_SNAPSHOT_PROXY_OVERRIDE_29 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_30}" ]; then   if [ -z "${REQUESTS_CA_BUNDLE+x}" ] || [ "${REQUESTS_CA_BUNDLE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_30}" ]; then export REQUESTS_CA_BUNDLE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_30}"; else export REQUESTS_CA_BUNDLE; fi else builtin unset REQUESTS_CA_BUNDLE 2>/dev/null || command unset REQUESTS_CA_BUNDLE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_30 __CODEX_SNAPSHOT_PROXY_OVERRIDE_30 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_30 __CODEX_SNAPSHOT_PROXY_OVERRIDE_30 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_31}" ]; then   if [ -z "${SSL_CERT_FILE+x}" ] || [ "${SSL_CERT_FILE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_31}" ]; then export SSL_CERT_FILE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_31}"; else export SSL_CERT_FILE; fi else builtin unset SSL_CERT_FILE 2>/dev/null || command unset SSL_CERT_FILE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_31 __CODEX_SNAPSHOT_PROXY_OVERRIDE_31 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_31 __CODEX_SNAPSHOT_PROXY_OVERRIDE_31 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_32}" ]; then   if [ -z "${WSS_PROXY+x}" ] || [ "${WSS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_32}" ]; then export WSS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_32}"; else export WSS_PROXY; fi else builtin unset WSS_PROXY 2>/dev/null || command unset WSS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_32 __CODEX_SNAPSHOT_PROXY_OVERRIDE_32 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_32 __CODEX_SNAPSHOT_PROXY_OVERRIDE_32 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_33}" ]; then   if [ -z "${WS_PROXY+x}" ] || [ "${WS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_33}" ]; then export WS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_33}"; else export WS_PROXY; fi else builtin unset WS_PROXY 2>/dev/null || command unset WS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_33 __CODEX_SNAPSHOT_PROXY_OVERRIDE_33 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_33 __CODEX_SNAPSHOT_PROXY_OVERRIDE_33 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_34}" ]; then   if [ -z "${YARN_HTTPS_PROXY+x}" ] || [ "${YARN_HTTPS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_34}" ]; then export YARN_HTTPS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_34}"; else export YARN_HTTPS_PROXY; fi else builtin unset YARN_HTTPS_PROXY 2>/dev/null || command unset YARN_HTTPS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_34 __CODEX_SNAPSHOT_PROXY_OVERRIDE_34 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_34 __CODEX_SNAPSHOT_PROXY_OVERRIDE_34 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_35}" ]; then   if [ -z "${YARN_HTTP_PROXY+x}" ] || [ "${YARN_HTTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_35}" ]; then export YARN_HTTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_35}"; else export YARN_HTTP_PROXY; fi else builtin unset YARN_HTTP_PROXY 2>/dev/null || command unset YARN_HTTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_35 __CODEX_SNAPSHOT_PROXY_OVERRIDE_35 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_35 __CODEX_SNAPSHOT_PROXY_OVERRIDE_35 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_36}" ]; then   if [ -z "${YARN_NO_PROXY+x}" ] || [ "${YARN_NO_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_36}" ]; then export YARN_NO_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_36}"; else export YARN_NO_PROXY; fi else builtin unset YARN_NO_PROXY 2>/dev/null || command unset YARN_NO_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_36 __CODEX_SNAPSHOT_PROXY_OVERRIDE_36 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_36 __CODEX_SNAPSHOT_PROXY_OVERRIDE_36 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_37}" ]; then   if [ -z "${all_proxy+x}" ] || [ "${all_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_37}" ]; then export all_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_37}"; else export all_proxy; fi else builtin unset all_proxy 2>/dev/null || command unset all_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_37 __CODEX_SNAPSHOT_PROXY_OVERRIDE_37 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_37 __CODEX_SNAPSHOT_PROXY_OVERRIDE_37 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_38}" ]; then   if [ -z "${ftp_proxy+x}" ] || [ "${ftp_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_38}" ]; then export ftp_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_38}"; else export ftp_proxy; fi else builtin unset ftp_proxy 2>/dev/null || command unset ftp_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_38 __CODEX_SNAPSHOT_PROXY_OVERRIDE_38 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_38 __CODEX_SNAPSHOT_PROXY_OVERRIDE_38 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_39}" ]; then   if [ -z "${http_proxy+x}" ] || [ "${http_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_39}" ]; then export http_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_39}"; else export http_proxy; fi else builtin unset http_proxy 2>/dev/null || command unset http_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_39 __CODEX_SNAPSHOT_PROXY_OVERRIDE_39 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_39 __CODEX_SNAPSHOT_PROXY_OVERRIDE_39 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_40}" ]; then   if [ -z "${https_proxy+x}" ] || [ "${https_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_40}" ]; then export https_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_40}"; else export https_proxy; fi else builtin unset https_proxy 2>/dev/null || command unset https_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_40 __CODEX_SNAPSHOT_PROXY_OVERRIDE_40 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_40 __CODEX_SNAPSHOT_PROXY_OVERRIDE_40 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_41}" ]; then   if [ -z "${no_proxy+x}" ] || [ "${no_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_41}" ]; then export no_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_41}"; else export no_proxy; fi else builtin unset no_proxy 2>/dev/null || command unset no_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_41 __CODEX_SNAPSHOT_PROXY_OVERRIDE_41 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_41 __CODEX_SNAPSHOT_PROXY_OVERRIDE_41 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_42}" ]; then   if [ -z "${npm_config_cafile+x}" ] || [ "${npm_config_cafile-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_42}" ]; then export npm_config_cafile="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_42}"; else export npm_config_cafile; fi else builtin unset npm_config_cafile 2>/dev/null || command unset npm_config_cafile; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_42 __CODEX_SNAPSHOT_PROXY_OVERRIDE_42 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_42 __CODEX_SNAPSHOT_PROXY_OVERRIDE_42 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_43}" ]; then   if [ -z "${npm_config_http_proxy+x}" ] || [ "${npm_config_http_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_43}" ]; then export npm_config_http_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_43}"; else export npm_config_http_proxy; fi else builtin unset npm_config_http_proxy 2>/dev/null || command unset npm_config_http_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_43 __CODEX_SNAPSHOT_PROXY_OVERRIDE_43 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_43 __CODEX_SNAPSHOT_PROXY_OVERRIDE_43 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_44}" ]; then   if [ -z "${npm_config_https_proxy+x}" ] || [ "${npm_config_https_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_44}" ]; then export npm_config_https_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_44}"; else export npm_config_https_proxy; fi else builtin unset npm_config_https_proxy 2>/dev/null || command unset npm_config_https_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_44 __CODEX_SNAPSHOT_PROXY_OVERRIDE_44 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_44 __CODEX_SNAPSHOT_PROXY_OVERRIDE_44 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_45}" ]; then   if [ -z "${npm_config_noproxy+x}" ] || [ "${npm_config_noproxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_45}" ]; then export npm_config_noproxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_45}"; else export npm_config_noproxy; fi else builtin unset npm_config_noproxy 2>/dev/null || command unset npm_config_noproxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_45 __CODEX_SNAPSHOT_PROXY_OVERRIDE_45 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_45 __CODEX_SNAPSHOT_PROXY_OVERRIDE_45 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_46}" ]; then   if [ -z "${npm_config_proxy+x}" ] || [ "${npm_config_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_46}" ]; then export npm_config_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_46}"; else export npm_config_proxy; fi else builtin unset npm_config_proxy 2>/dev/null || command unset npm_config_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_46 __CODEX_SNAPSHOT_PROXY_OVERRIDE_46 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_46 __CODEX_SNAPSHOT_PROXY_OVERRIDE_46 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_47}" ]; then   if [ -z "${ws_proxy+x}" ] || [ "${ws_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_47}" ]; then export ws_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_47}"; else export ws_proxy; fi else builtin unset ws_proxy 2>/dev/null || command unset ws_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_47 __CODEX_SNAPSHOT_PROXY_OVERRIDE_47 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_47 __CODEX_SNAPSHOT_PROXY_OVERRIDE_47 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_48}" ]; then   if [ -z "${wss_proxy+x}" ] || [ "${wss_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_48}" ]; then export wss_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_48}"; else export wss_proxy; fi else builtin unset wss_proxy 2>/dev/null || command unset wss_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_48 __CODEX_SNAPSHOT_PROXY_OVERRIDE_48 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_48 __CODEX_SNAPSHOT_PROXY_OVERRIDE_48 fi if [ -n "${PATH:-}" ]; then export PATH='/home/manuel/.local/share/pnpm/global/5/.pnpm/@openai+codex@0.172.0-linux-x64/node_modules/@openai/codex/vendor/x86_64-unknown-linux-musl/codex-path':"$PATH"; else export PATH='/home/manuel/.local/share/pnpm/global/5/.pnpm/@openai+codex@0.172.0-linux-x64/node_modules/@openai/codex/vendor/x86_64-unknown-linux-musl/codex-path'; fi  exec '/usr/bin/zsh' -c 'ps -eo pid,stat,comm,args | head -35'
+      2 S    zsh             /usr/bin/zsh -c ps -eo pid,stat,comm,args | head -35
+    389 R    ps              ps -eo pid,stat,comm,args
+    390 S    head            head -35
+
+exec
+/usr/bin/zsh -lc "tmux new-session -d -s irwb042-suites2 'node --test --test-concurrency=2 "'$(rg --files tests/typed tests/framework tests/workbench tests/tensor -g "*.test.mjs" -g "!*gpu.test.mjs") > /tmp/irwb042-suites2.log 2>&1; echo $? > /tmp/irwb042-suites2.exit'"'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 9667ms:
+ succeeded in 6555ms:
+exec
+/usr/bin/zsh -lc 'git diff --stat
+ls /tmp/irwb042*.exit
+ tail -12 /tmp/irwb042-suites2.log
+ tail -12 /tmp/irwb042-baseline.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 8602ms:
+ src/typed/passes.ts             | 27 +++++++++++++++++----------
+ tests/typed/d2-defects.test.mjs |  2 --
+ 2 files changed, 17 insertions(+), 12 deletions(-)
+zsh:2: no matches found: /tmp/irwb042*.exit
+✔ cooperatively aborted host algorithms retain completed-task links and report cancellation (1.830952ms)
+✔ plan requirements pin hidden host dependencies independently of directly edited call nodes (1.51798ms)
+✔ walk visitor and find predicate expose typed traversal context without modifying the plan (0.623666ms)
+✔ choice evidence bindings retain exact earlier decisions across later scoring of the same candidates (5.727161ms)
+✔ matmul agrees with the numerical oracle before and after optimization (69.266008ms)
+✔ softmax agrees with the numerical oracle before and after optimization (20.530786ms)
+✔ layernorm agrees with the numerical oracle before and after optimization (33.171021ms)
+✔ attention agrees with the numerical oracle before and after optimization (131.29201ms)
+✔ mlp agrees with the numerical oracle before and after optimization (154.248107ms)
+✔ conv2d agrees with the numerical oracle before and after optimization (9.759893ms)
+✔ CUDA source is deterministic and preloads every emitted statement kernel before timing (20.732391ms)
+✔ CUDA binary requests and results preserve f32 words, including subarray and zero shape (9.019908ms)
+
+exec
+/usr/bin/zsh -lc "git status --short --untracked-files=all
+rg -n 'prettier' tools package-lock.json | head" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+codex
+The first suite run started too many test workers for the shared machine, so I stopped it and restarted with concurrency limited to two. The baseline check continues separately.
+ succeeded in 12158ms:
+ M src/typed/passes.ts
+ M tests/typed/d2-defects.test.mjs
+?? ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/README.md
+?? ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/changelog.md
+?? ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/index.md
+?? ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/01-implementation-diary.md
+?? ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/02-final-report.md
+?? ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/tasks.md
+package-lock.json:13:        "prettier": "3.6.2",
+package-lock.json:514:    "node_modules/prettier": {
+package-lock.json:516:      "resolved": "https://registry.npmjs.org/prettier/-/prettier-3.6.2.tgz",
+package-lock.json:521:        "prettier": "bin/prettier.cjs"
+package-lock.json:527:        "url": "https://github.com/prettier/prettier?sponsor=1"
+
+exec
+/usr/bin/zsh -lc 'tmux capture-pane -pt irwb042-verify' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 7216ms:
+exec
+/usr/bin/zsh -lc "cat >> ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/01-implementation-diary.md <<'EOF'
+
+## 1. Fix the two Typed defects
+
+The request is recorded in the conversation: fix F36 and F38, activate their existing tests, and check the corpus baselines and non-GPU suites. BCE compared reaching-definition sets, which conflate loop iterations; its existing SSA analysis distinguishes the values actually read at the guard and at the check. LVN kept candidate value IDs across replacements that removed descendants and rebuilt ancestors. It now drops candidates no longer present in their recorded statement.
+
+Ran "'`npm run build` and started the requested defect tests and corpus check. The first unbounded suite run was stopped because its worker count overloaded the shared machine; restarted with `--test-concurrency=2`. The tmux socket was inaccessible in the sandbox, so the tmux invocations were escalated.
+EOF
+cat >> ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/02-final-report.md <<'"'EOF'
+
+## Changes
+
+BCE compares SSA names for the index and buffer reads at the guard and the bounds check. LVN removes cached candidates whose values no longer occur in their original statement after a replacement. The F36 and F38 tests are active.
+EOF
+" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 9054ms:
+exec
+/usr/bin/zsh -lc 'git diff --check
+ git diff -- src/typed/passes.ts' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 163587ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ tests/typed/d2-defects.test.mjs (151643.451738ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 151675.576794
+
+ succeeded in 107594ms:
+
+> compiler-workbench@0.1.0 check
+> tsc -p tsconfig.json --noEmit
+
+
+ succeeded in 10453ms:
+diff --git a/src/typed/passes.ts b/src/typed/passes.ts
+index d60f136..59a1b19 100644
+--- a/src/typed/passes.ts
++++ b/src/typed/passes.ts
+@@ -559,7 +559,15 @@ export const lvn = typedPass({
+               tx.replace(first.value, tx.get(t, { from: first.value, because: [set] }));
+               tx.replace(id, tx.get(t, { from: id, because: [set] }));
+               tx.insert(tx.at.before(first.stmt), set, { because: [first.value, id] });
+-              seen.delete(k);
++              // Replacing a tree also removes its descendants and rebuilds its ancestors. Forget candidates
++              // whose recorded value no longer occurs in their statement.
++              const contains = (root: string | undefined, target: string): boolean =>
++                !!root && (root === target || (st.get(root) as ValueRec).args.some(a => contains(a, target)));
++              for (const [candidate, entry] of seen) {
++                const stmt = st.get(entry.stmt) as StmtRec;
++                if (!contains(stmt.addr, entry.value) && !contains(stmt.value, entry.value) &&
++                    !contains(stmt.cond, entry.value)) seen.delete(candidate);
++              }
+               return true;
+             }
+             if (!first) seen.set(k, { stmt: sid, value: id });
+@@ -616,13 +624,14 @@ export const bce = typedPass({
+   name: 'bce',
+   about:
+     'bounds-check elimination: a check i >=u buf.length goes when a dominating branch proved i < buf.length and ranges prove i ≥ 0',
+-  needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges' },
++  needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges', ssa: 'ssa' },
+   writes: ['stmts', 'cfg'],
+   preserves: [],
+   body({ st, f, tx, facts }) {
+     const dom = facts.dom!,
+       reach = facts.reach!,
+-      ranges = facts.ranges!;
++      ranges = facts.ranges!,
++      ssa = facts.ssa!;
+     // resolve a read through single copies: t = x  ->  x (when t has one definition)
+     const resolve = (
+       sid: string,
+@@ -674,13 +683,11 @@ export const bce = typedPass({
+         if (!dom.dominates(arm, b.id)) continue;
+         const x = st.get(cond.args[0]) as ValueRec;
+         if (x.op !== 'get' || x.imm !== idx.local || !isLength(cond.args[1], buf)) continue;
+-        // the index and the buffer are the same values at the branch and at the check
+-        const same = (l: number) => {
+-          const a = reach.reachingAt(t.id, l).sort().join(),
+-            z = reach.reachingAt(idx.sid, l).sort().join();
+-          return a === z;
+-        };
+-        if (!same(idx.local) || !same(buf)) continue;
++        // Equal reaching-definition sets can describe different loop iterations. Compare the reads' SSA names.
++        const guardBuf = (st.get(cond.args[1]) as ValueRec).args[0],
++          checkBuf = (st.get(c.args[1]) as ValueRec).args[0];
++        if (!ssa.uses[x.id] || ssa.uses[x.id] !== ssa.uses[idx.id]) continue;
++        if (!ssa.uses[guardBuf] || ssa.uses[guardBuf] !== ssa.uses[checkBuf]) continue;
+         if (ranges.at(t.id, idx.local)[0] < 0) continue;
+         tx.replaceStmt(
+           last.id,
+
+exec
+/usr/bin/zsh -lc 'tmux list-sessions' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 8425ms:
+irwb042-suites2: 1 windows (created Fri Nov 27 17:29:50 2026)
+irwb042-verify: 1 windows (created Fri Nov 27 17:28:43 2026)
+
+exec
+/usr/bin/zsh -lc 'ls -l /tmp/irwb042*log
+cat /tmp/irwb042-baseline.exit /tmp/irwb042-suites2.exit
+tail -25 /tmp/irwb042-suites2.log
+tail -20 /tmp/irwb042-baseline.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+codex
+The defect test file has completed successfully, and `npm run check` is clean. The corpus and bounded suite runs are still in progress; I’m checking their full results before the final commit.
+ succeeded in 7489ms:
+-rw-rw-r-- 1 manuel manuel     0 Nov 27 17:28 /tmp/irwb042-baseline.log
+-rw-rw-r-- 1 manuel manuel 46176 Nov 27 17:29 /tmp/irwb042-suites.log
+-rw-rw-r-- 1 manuel manuel 31612 Nov 27 17:31 /tmp/irwb042-suites2.log
+cat: /tmp/irwb042-baseline.exit: No such file or directory
+cat: /tmp/irwb042-suites2.exit: No such file or directory
+✔ P2.4: the book's other r0 numbers reproduce (435.61058ms)
+✔ P2.4: rv32.image-agrees holds for every function of every corpus project at r0 (11246.783228ms)
+✔ P2.4: the reference compiler (oracle) agrees with the evaluator, and with our images on results (547.136304ms)
+✔ P2.4: encoders and the disassembler round-trip (156.239065ms)
+✔ P2.4: options are validated with the prototype's codes (44.349229ms)
+✔ P2.4: a calling-convention fault in the emulator counts as disagreement (11.700098ms)
+✔ P2.4: imageAgrees is one definition per parameter set; limits make cases inconclusive (51.215331ms)
+✔ P2.4: rv32.image is a v6 IR: projection, validation, serialization (53.458819ms)
+✔ P2.4: the correspondence maps program entities to the instructions that cover them (41.752896ms)
+✔ P2.4: heat, diffs, machine stages and image status (68.850377ms)
+✔ P2.6: the book's table against the reference compiler, and 5160 bytes against 7628 (897.778099ms)
+✔ P2.6: the evaluator at r0 agrees with the reference images on 8286 decided cases (14 at the step limit) (7060.115486ms)
+✔ bcm: constant positions are checked once, for the largest, at the first site (394.80483ms)
+✔ bcm: one base plus offsets keeps the smallest and the largest check, three sites become two (358.612561ms)
+✔ bcm: a call ends a group (it might not return), so both checks stay (304.621912ms)
+✔ bcm: why on an unchecked address reaches the statement where the group is checked (162.433881ms)
+✔ bytecode fixtures match independent results and dispatch counts (13.536656ms)
+✔ generated and exhaustive VM cases agree across evaluators and RV32 compilers (3951.16418ms)
+ℹ entry 0, 184 guest instructions. RV32 r0/speed/specialized: 7678 / 6301 / 75 instructions, 41.73 / 34.24 / 0.41 per guest instruction
+ℹ entry 34, 160 guest instructions. RV32 r0/speed/specialized: 6874 / 5605 / 74 instructions, 42.96 / 35.03 / 0.46 per guest instruction
+ℹ maximum evaluator statements by entry: {"0":{"r0":4131,"speed":2384},"34":{"r0":3699,"speed":2108}}
+✔ the workbench opens the project and explores both entries on a fresh copy (2168.41871ms)
+✔ P4.2: the evaluator at r0 agrees with the reference compiler's image on every Candela function (43742.695529ms)
+✔ P4.2: the program host ingests Candela from the tape and runs f32 functions on bits (12041.790135ms)
+﹣ P4.2: O2 on Candela keeps its meaning (IRWB_CANDELA=1) (1.431345ms) # SKIP
+
+exec
+/usr/bin/zsh -lc "git add src/typed/passes.ts tests/typed/d2-defects.test.mjs ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects
+git commit -m 'IRWB-042-A: fix Typed BCE and LVN on repeated revisions'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 6513ms:
+[v7-f36-tl/irwb-042-a b306597] IRWB-042-A: fix Typed BCE and LVN on repeated revisions
+ 8 files changed, 188 insertions(+), 12 deletions(-)
+ create mode 100644 ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/README.md
+ create mode 100644 ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/changelog.md
+ create mode 100644 ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/index.md
+ create mode 100644 ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/01-implementation-diary.md
+ create mode 100644 ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/02-final-report.md
+ create mode 100644 ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/tasks.md
+
+exec
+/usr/bin/zsh -lc "rg 'F36:|F38:|F37:' /tmp/irwb042-suites2.log
+rg '"'^(✖|not ok)'"' /tmp/irwb042-suites2.log
+ls /tmp/irwb042-baseline.exit /tmp/irwb042-suites2.exit" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ exited 2 in 4763ms:
+ls: /tmp/irwb042-baseline.exit
+cannot access '/tmp/irwb042-suites2.exit': No such file or directory
+
+exec
+/usr/bin/zsh -lc "cat /tmp/irwb042-baseline.log /tmp/irwb042-baseline.exit
+rg -n 'd2-defects|F36|F38|✖' /tmp/irwb042-suites2.log" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ exited 1 in 5343ms:
+no differences from /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/various/baselines/main.json
+timing: inline on attention 0.527 -> 1.612 ms per application
+0
+
+exec
+/usr/bin/zsh -lc "stat -c '%y %n' dist/typed/passes.js /tmp/irwb042-baseline.log /tmp/irwb042-suites2.log
+rg -n 'F36|F38|d2-defects' /tmp/irwb042-suites.log /tmp/irwb042-suites2.log" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 4165ms:
+2026-11-27 17:28:23.028383257 -0500 dist/typed/passes.js
+2026-11-27 17:31:39.656467357 -0500 /tmp/irwb042-baseline.log
+2026-11-27 17:31:15.523583760 -0500 /tmp/irwb042-suites2.log
+/tmp/irwb042-suites.log:302:⚠ tests/typed/d2-defects.test.mjs (tests/typed/d2-defects.test.mjs:1:1)
+/tmp/irwb042-suites.log:322:✖ tests/typed/d2-defects.test.mjs (28747.89838ms)
+/tmp/irwb042-suites.log:583:test at tests/typed/d2-defects.test.mjs:1:1
+/tmp/irwb042-suites.log:584:✖ tests/typed/d2-defects.test.mjs (28747.89838ms)
+
+exec
+/usr/bin/zsh -lc "tmux new-session -d -s irwb042-baseline-final 'node ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/scripts/02-baselines.mjs check > /tmp/irwb042-baseline-final.log 2>&1; echo "'$? > /tmp/irwb042-baseline-final.exit'"'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 4103ms:
+exec
+/usr/bin/zsh -lc "tmux new-session -d -s irwb042-defects 'node --test tests/typed/d2-defects.test.mjs > /tmp/irwb042-defects.log 2>&1; echo "'$? > /tmp/irwb042-defects.exit'"'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+codex
+The first corpus comparison reports `no differences`. I’ve started a second check explicitly after the completed build to remove any ambiguity about whether the first run saw the rebuilt files.
+ succeeded in 4898ms:
+exec
+/usr/bin/zsh -lc 'tail -10 /tmp/irwb042-suites2.log
+cat /tmp/irwb042-defects.log
+ls /tmp/irwb042-suites2.exit /tmp/irwb042-defects.exit' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ exited 2 in 5783ms:
+✔ bcm: why on an unchecked address reaches the statement where the group is checked (162.433881ms)
+✔ bytecode fixtures match independent results and dispatch counts (13.536656ms)
+✔ generated and exhaustive VM cases agree across evaluators and RV32 compilers (3951.16418ms)
+ℹ entry 0, 184 guest instructions. RV32 r0/speed/specialized: 7678 / 6301 / 75 instructions, 41.73 / 34.24 / 0.41 per guest instruction
+ℹ entry 34, 160 guest instructions. RV32 r0/speed/specialized: 6874 / 5605 / 74 instructions, 42.96 / 35.03 / 0.46 per guest instruction
+ℹ maximum evaluator statements by entry: {"0":{"r0":4131,"speed":2384},"34":{"r0":3699,"speed":2108}}
+✔ the workbench opens the project and explores both entries on a fresh copy (2168.41871ms)
+✔ P4.2: the evaluator at r0 agrees with the reference compiler's image on every Candela function (43742.695529ms)
+✔ P4.2: the program host ingests Candela from the tape and runs f32 functions on bits (12041.790135ms)
+﹣ P4.2: O2 on Candela keeps its meaning (IRWB_CANDELA=1) (1.431345ms) # SKIP
+ls: cannot access '/tmp/irwb042-suites2.exit': No such file or directory
+ls: cannot access '/tmp/irwb042-defects.exit': No such file or directory
+
+exec
+/usr/bin/zsh -lc 'ps -C node -o pid,etime,pcpu,args' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ exited 1 in 6271ms:
+    PID     ELAPSED %CPU COMMAND
+
+exec
+/usr/bin/zsh -lc "command -v prettier
+node --version
+rg -n 'd2-defects|F36|F38|✖' /tmp/irwb042-suites2.log /tmp/irwb042-defects.log
+ls /tmp/irwb042-baseline-final.exit" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ exited 2 in 6719ms:
+v24.18.0
+ls: cannot access '/tmp/irwb042-baseline-final.exit': No such file or directory
+
+exec
+/usr/bin/zsh -lc "docmgr doc relate --doc ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/02-final-report.md --file-note 'src/typed/passes.ts:Pass fixes' --file-note 'tests/typed/d2-defects.test.mjs:Regression tests'
+docmgr task add --ticket IRWB-042-A --text 'Fix F36 and F38 and verify acceptance'
+docmgr task check --ticket IRWB-042-A --id 1" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+exec
+/usr/bin/zsh -lc 'tail -15 /tmp/irwb042-suites2.log
+cat /tmp/irwb042-defects.log
+cat /tmp/irwb042-baseline-final.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 7553ms:
+✔ P2.6: the book's table against the reference compiler, and 5160 bytes against 7628 (897.778099ms)
+✔ P2.6: the evaluator at r0 agrees with the reference images on 8286 decided cases (14 at the step limit) (7060.115486ms)
+✔ bcm: constant positions are checked once, for the largest, at the first site (394.80483ms)
+✔ bcm: one base plus offsets keeps the smallest and the largest check, three sites become two (358.612561ms)
+✔ bcm: a call ends a group (it might not return), so both checks stay (304.621912ms)
+✔ bcm: why on an unchecked address reaches the statement where the group is checked (162.433881ms)
+✔ bytecode fixtures match independent results and dispatch counts (13.536656ms)
+✔ generated and exhaustive VM cases agree across evaluators and RV32 compilers (3951.16418ms)
+ℹ entry 0, 184 guest instructions. RV32 r0/speed/specialized: 7678 / 6301 / 75 instructions, 41.73 / 34.24 / 0.41 per guest instruction
+ℹ entry 34, 160 guest instructions. RV32 r0/speed/specialized: 6874 / 5605 / 74 instructions, 42.96 / 35.03 / 0.46 per guest instruction
+ℹ maximum evaluator statements by entry: {"0":{"r0":4131,"speed":2384},"34":{"r0":3699,"speed":2108}}
+✔ the workbench opens the project and explores both entries on a fresh copy (2168.41871ms)
+✔ P4.2: the evaluator at r0 agrees with the reference compiler's image on every Candela function (43742.695529ms)
+✔ P4.2: the program host ingests Candela from the tape and runs f32 functions on bits (12041.790135ms)
+﹣ P4.2: O2 on Candela keeps its meaning (IRWB_CANDELA=1) (1.431345ms) # SKIP
+✔ F36: bce keeps a bounds check when the index is reassigned between the guard and the check (172.469291ms)
+⚠ F37: typed.ranges keeps an outer loop counter non-negative under an inner loop (32408.84766ms) # F37
+✔ F38: lvn can run a second time (speed with lvn again before rotate, on regex-nfa) (3849.127811ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 1
+ℹ duration_ms 36847.669079
+
+✖ failing tests:
+
+test at tests/typed/d2-defects.test.mjs:50:1
+⚠ F37: typed.ranges keeps an outer loop counter non-negative under an inner loop (32408.84766ms) # F37
+  AssertionError [ERR_ASSERTION]: dense's lower bound is -2147483648
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/tests/typed/d2-defects.test.mjs:62:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+codex
+Both named regression tests now pass; the unrelated F37 test remains marked todo and still shows its known assertion failure. The full suite is continuing with bounded concurrency.
+ succeeded in 25317ms:
+related 2 file(s) to ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/02-final-report.md (added 2, updated 0, removed 0)
+Task roml added to /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/tasks.md
+Task checked: roml (file=/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/tasks.md)
+All tasks complete! Consider closing the ticket: docmgr ticket close --ticket IRWB-042-A
+
+exec
+/usr/bin/zsh -lc 'ls -l /tmp/irwb042-baseline-final.exit /tmp/irwb042-suites2.exit
+ tail -8 /tmp/irwb042-suites2.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 5870ms:
+ls: cannot access '/tmp/irwb042-baseline-final.exit': No such file or directory
+ls: cannot access '/tmp/irwb042-suites2.exit': No such file or directory
+✔ generated and exhaustive VM cases agree across evaluators and RV32 compilers (3951.16418ms)
+ℹ entry 0, 184 guest instructions. RV32 r0/speed/specialized: 7678 / 6301 / 75 instructions, 41.73 / 34.24 / 0.41 per guest instruction
+ℹ entry 34, 160 guest instructions. RV32 r0/speed/specialized: 6874 / 5605 / 74 instructions, 42.96 / 35.03 / 0.46 per guest instruction
+ℹ maximum evaluator statements by entry: {"0":{"r0":4131,"speed":2384},"34":{"r0":3699,"speed":2108}}
+✔ the workbench opens the project and explores both entries on a fresh copy (2168.41871ms)
+✔ P4.2: the evaluator at r0 agrees with the reference compiler's image on every Candela function (43742.695529ms)
+✔ P4.2: the program host ingests Candela from the tape and runs f32 functions on bits (12041.790135ms)
+﹣ P4.2: O2 on Candela keeps its meaning (IRWB_CANDELA=1) (1.431345ms) # SKIP
+
+exec
+/usr/bin/zsh -lc "rg -n 'test\\(|test\\.' tests/typed/candela* | tail -20
+rg --files tests/typed tests/framework tests/workbench tests/tensor -g '*.test.mjs' -g '"'!*gpu.test.mjs'"' | wc -l" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 5426ms:
+18:test('P4.2: the evaluator at r0 agrees with the reference compiler\'s image on every Candela function', () => {
+41:test('P4.2: the program host ingests Candela from the tape and runs f32 functions on bits', async () => {
+52:test('P4.2: O2 on Candela keeps its meaning (IRWB_CANDELA=1)', { skip: process.env.IRWB_CANDELA !== '1', timeout: 4 * 3600e3 }, async () => {
+70
+
+exec
+/usr/bin/zsh -lc 'ls -l /tmp/irwb042-baseline-final.exit /tmp/irwb042-suites2.exit
+ tail -8 /tmp/irwb042-suites2.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 4174ms:
+ls: cannot access '/tmp/irwb042-baseline-final.exit': No such file or directory
+ls: cannot access '/tmp/irwb042-suites2.exit': No such file or directory
+✔ P2.1: front-end errors carry positions (0.563206ms)
+✔ inline: a whole-program pass, registered, in the speed pipeline twice, and not scoped per function (2.949656ms)
+✔ inline on calls: energy calls nothing afterwards, the check agrees, and why reaches callee and call (199.54383ms)
+✔ inline: record results become locals; leaf reads read them; f32 code stays correct through the backend (2647.093598ms)
+✔ inline: limits and refusals (138.314459ms)
+✔ inline under an entry-only contract, then dfe: the inlined callees disappear (316.406512ms)
+✔ inline: a callee local read before written starts at 0 at every inlined call (308.695014ms)
+✔ speed on every corpus project agrees with r0 under the default and the new backend options (IRWB_FULL) (1.631799ms)
+
+exec
+/usr/bin/zsh -lc "cat /tmp/irwb042-baseline-final.log
+rg -n '"'^(✖|ℹ (tests|pass|fail|todo|skipped))'"' /tmp/irwb042-suites2.log | tail -15
+rg 'F36:|F38:' /tmp/irwb042-suites2.log" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 4141ms:
+✔ F36: bce keeps a bounds check when the index is reassigned between the guard and the check (203.075176ms)
+✔ F38: lvn can run a second time (speed with lvn again before rotate, on regex-nfa) (4263.710693ms)
+
+codex
+The full suite has also reached and passed both F36 and F38. The post-build baseline rerun and remaining suite files are still running; no corpus differences appeared in the first comparison.
+exec
+/usr/bin/zsh -lc 'tail -8 /tmp/irwb042-suites2.log
+ls /tmp/irwb042-baseline-final.exit /tmp/irwb042-suites2.exit' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ exited 2 in 4740ms:
+✔ IRWB-004 F4: small jobs stay on the calling thread (44.950304ms)
+✔ P2.6: O2 on Blend makes the book's six revisions, each checked against r0 (332.446405ms)
+✔ P2.6: pipelines are deterministic: the same input gives the same revisions (436.3836ms)
+✔ P2.4: the deliberately wrong pass is rejected with a counterexample; nothing is published (66.159276ms)
+✔ P2.4: a false preservation claim is caught (Compiler Workbench's lvn claimed loops) (75.418554ms)
+✔ P2.4: transactions enforce declared write kinds and reasons for removals (18.000603ms)
+✔ P2.6: corpus parity (subset) (3510.353897ms)
+✔ P2.6: O2 as a Strategy IR plan gives the same revisions as the pipeline runner (480.863597ms)
+ls: cannot access '/tmp/irwb042-baseline-final.exit': No such file or directory
+ls: cannot access '/tmp/irwb042-suites2.exit': No such file or directory
+
+exec
+/usr/bin/zsh -lc "cat >> ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/01-implementation-diary.md <<'EOF'
+
+## 2. Verification
+
+"'`npm run build` and `npm run check` passed. The unrestricted `node --test tests/typed/d2-defects.test.mjs` passed F36 and F38; F37 remains the existing todo (its lower-bound assertion still fails). The first corpus baseline check printed `no differences`; repeated after build to ensure the rebuilt sources were used. The requested non-GPU suites were run with two workers.
+EOF
+cat >> ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/02-final-report.md <<'"'EOF'
+
+## Verification
+
+- "'`npm run build` and `npm run check`: passed.
+- `node --test tests/typed/d2-defects.test.mjs`: F36 and F38 pass; F37 is the pre-existing todo (2 pass, 0 fail, 1 todo).
+- The corpus baseline comparison printed `no differences`; no project differences or instruction increases to explain.
+- No framework or workbench files changed, so the site build was not required.
+
+F37 is outside this ticket. No requested assertion was weakened.
+EOF' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 5126ms:
+exec
+/usr/bin/zsh -lc 'cat /tmp/irwb042-baseline-final.log
+ls /tmp/irwb042-baseline-final.exit /tmp/irwb042-suites2.exit
+tail -6 /tmp/irwb042-suites2.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 4605ms:
+ls: cannot access '/tmp/irwb042-baseline-final.exit': No such file or directory
+ls: cannot access '/tmp/irwb042-suites2.exit': No such file or directory
+✔ B2: binopW at 32 bits is the evaluator's binop (boundary values crossed, every i32 operator) (110.908751ms)
+✔ B2: every table rule has recorded evidence for its current version, and it says sound (4.019955ms)
+✔ B2: the fast methods, re-run, agree with the recorded evidence (2554.073811ms)
+✔ B2: deliberately unsound rules are rejected, each with a counterexample or a structural reason (6.786365ms)
+✔ B2: x + (-0) -> x passes the meaning check's f32 edge values and is refuted by NaN payloads (32.903246ms)
+✔ workbench: the rules listing fits 72 columns and shows every rule with its evidence (11.162373ms)
+
+exec
+/usr/bin/zsh -lc 'tail -10 /tmp/irwb042-suites2.log
+cat /tmp/irwb042-baseline-final.log
+ls /tmp/irwb042-baseline-final.exit /tmp/irwb042-suites2.exit' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ exited 2 in 5781ms:
+✔ the workbench opens the project and runs the exploration script on a fresh copy (4528.447965ms)
+✔ B1: the tables give the hand-written passes' revisions, edits and correspondences (subset) (8983.30667ms)
+✔ B1: the comparison sees a one-rule difference (a rule with another note changes the revision) (857.806613ms)
+✔ B1: the tables are data: names, text, 27 simplify and 40 fold rules, patterns convertible to the framework (2.192619ms)
+✔ B2: binopW at 32 bits is the evaluator's binop (boundary values crossed, every i32 operator) (110.908751ms)
+✔ B2: every table rule has recorded evidence for its current version, and it says sound (4.019955ms)
+✔ B2: the fast methods, re-run, agree with the recorded evidence (2554.073811ms)
+✔ B2: deliberately unsound rules are rejected, each with a counterexample or a structural reason (6.786365ms)
+✔ B2: x + (-0) -> x passes the meaning check's f32 edge values and is refuted by NaN payloads (32.903246ms)
+✔ workbench: the rules listing fits 72 columns and shows every rule with its evidence (11.162373ms)
+ls: cannot access '/tmp/irwb042-baseline-final.exit': No such file or directory
+ls: cannot access '/tmp/irwb042-suites2.exit': No such file or directory
+
+codex
+The post-build checks are progressing without reported failures so far. I’ve recorded the implementation and the known F37 todo in the ticket; I’m waiting for the final suite totals and baseline result.
+exec
+/usr/bin/zsh -lc 'cat /tmp/irwb042-baseline-final.log
+ls /tmp/irwb042-baseline-final.exit /tmp/irwb042-suites2.exit
+tail -8 /tmp/irwb042-suites2.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 7449ms:
+ls: cannot access '/tmp/irwb042-baseline-final.exit': No such file or directory
+ls: cannot access '/tmp/irwb042-suites2.exit': No such file or directory
+✔ strategies: chooseBest picks O2 for Blend by instructions; the winner is published with its provenance (1127.443375ms)
+✔ strategies: the objective decides; ties break by candidate name, as the decision records (581.020442ms)
+✔ strategies: a candidate whose pass breaks the contract is a rejected alternative, not a failure (325.997729ms)
+✔ user passes: the builder makes framework passes held to the same rules (230.544117ms)
+✔ strategies are data: JSON round trip, project strategy files, repeat until stable (177.830422ms)
+✔ strategies: per-function search chooses a chain for each function, each checked (443.083618ms)
+✔ strategies: a run that hits the step limit costs the limit, not NaN (57.048811ms)
+✔ pipelines: O2+ is O2 then subst, and removes the loop copy O2 leaves in Checksum (303.700582ms)
+
+exec
+/usr/bin/zsh -lc 'ls /tmp/irwb042-baseline-final.exit /tmp/irwb042-suites2.exit
+ tail -8 /tmp/irwb042-suites2.log
+ cat /tmp/irwb042-baseline-final.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 6300ms:
+ls: cannot access '/tmp/irwb042-baseline-final.exit': No such file or directory
+ls: cannot access '/tmp/irwb042-suites2.exit': No such file or directory
+✔ strategies: chooseBest picks O2 for Blend by instructions; the winner is published with its provenance (1127.443375ms)
+✔ strategies: the objective decides; ties break by candidate name, as the decision records (581.020442ms)
+✔ strategies: a candidate whose pass breaks the contract is a rejected alternative, not a failure (325.997729ms)
+✔ user passes: the builder makes framework passes held to the same rules (230.544117ms)
+✔ strategies are data: JSON round trip, project strategy files, repeat until stable (177.830422ms)
+✔ strategies: per-function search chooses a chain for each function, each checked (443.083618ms)
+✔ strategies: a run that hits the step limit costs the limit, not NaN (57.048811ms)
+✔ pipelines: O2+ is O2 then subst, and removes the loop copy O2 leaves in Checksum (303.700582ms)
+
+exec
+/usr/bin/zsh -lc 'cat /tmp/irwb042-baseline-final.log
+ls /tmp/irwb042-baseline-final.exit /tmp/irwb042-suites2.exit
+tail -10 /tmp/irwb042-suites2.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 5210ms:
+no differences from /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/various/baselines/main.json
+timing: inline on attention 0.527 -> 1.682 ms per application
+/tmp/irwb042-baseline-final.exit
+/tmp/irwb042-suites2.exit
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/tests/typed/d2-defects.test.mjs:62:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+exec
+/usr/bin/zsh -lc "rg '"'^ℹ (tests|suites|pass|fail|cancelled|skipped|todo|duration)'"' /tmp/irwb042-suites2.log
+cat /tmp/irwb042-suites2.exit /tmp/irwb042-baseline-final.exit
+rg '"'^✖'"' /tmp/irwb042-suites2.log
+git status --short" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 3977ms:
+ℹ tests 500
+ℹ suites 0
+ℹ pass 491
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 3
+ℹ todo 6
+ℹ duration_ms 333314.697407
+0
+0
+✖ failing tests:
+ M ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/01-implementation-diary.md
+ M ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/02-final-report.md
+ M ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/tasks.md
+
+codex
+The post-build baseline check also reports `no differences`. The requested non-GPU suites finished with 491 passes, no failures, 3 skips, and 6 existing todos.
+exec
+/usr/bin/zsh -lc "cat >> ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/02-final-report.md <<'EOF'
+- "'`node --test --test-concurrency=2` over all requested test files excluding `*-gpu.test.mjs`: 500 tests, 491 pass, 0 fail, 3 skipped, 6 todo. Exit 0.
+- Post-build baseline rerun: `no differences` (exit 0).
+EOF
+cat >> ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/01-implementation-diary.md <<'"'EOF'
+
+The post-build baseline rerun also printed "'`no differences` and exited 0. The bounded non-GPU suites exited 0: 500 tests, 491 pass, 0 fail, 3 skipped, 6 todo. Code checkpoint: `b306597`.
+EOF
+git diff --check
+git add ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects
+git commit -m '"'IRWB-042-A: record verification results'
+git status --short
+git rev-parse HEAD" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 3503ms:
+fatal: Unable to create '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/worktrees/v7-f36-tl-irwb-042-a/index.lock': Read-only file system
+fatal: Unable to create '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/worktrees/v7-f36-tl-irwb-042-a/index.lock': Read-only file system
+ M ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/01-implementation-diary.md
+ M ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/02-final-report.md
+ M ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/tasks.md
+b306597f21136bc5de9b4cfcab6706077addb5f2
+
+exec
+/usr/bin/zsh -lc "git add ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects
+git commit -m 'IRWB-042-A: record verification results'
+git status --short
+git rev-parse HEAD" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a
+ succeeded in 2893ms:
+[v7-f36-tl/irwb-042-a a9b983f] IRWB-042-A: record verification results
+ 3 files changed, 23 insertions(+), 1 deletion(-)
+a9b983f77d666a412569aee10192bbacb9b5d327
+
+codex
+Fixed F36 and F38 and committed the changes. The working tree is clean.
+
+- [src/typed/passes.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/src/typed/passes.ts): BCE compares SSA names; LVN discards cached values removed by a rewrite.
+- [tests/typed/d2-defects.test.mjs](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/tests/typed/d2-defects.test.mjs): activated the F36 and F38 regression tests without weakening their assertions.
+- [Ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/index.md): contains the diary and [final report](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/02-final-report.md).
+
+Both named regression tests pass. The post-build baseline check printed **`no differences`**. The requested non-GPU suites completed with **491 passed, 0 failed, 3 skipped, and 6 todo**. `npm run build` and `npm run check` passed.
+
+F37 remains an unrelated existing todo. No framework or workbench files changed, so the site build was not required.
+
+Last commit: `a9b983f77d666a412569aee10192bbacb9b5d327`.
+tokens used
+73,111
+Fixed F36 and F38 and committed the changes. The working tree is clean.
+
+- [src/typed/passes.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/src/typed/passes.ts): BCE compares SSA names; LVN discards cached values removed by a rewrite.
+- [tests/typed/d2-defects.test.mjs](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/tests/typed/d2-defects.test.mjs): activated the F36 and F38 regression tests without weakening their assertions.
+- [Ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/index.md): contains the diary and [final report](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-tl-irwb-042-a/ttmp/2026/11/27/IRWB-042-A--typed-bce-and-lvn-defects/reference/02-final-report.md).
+
+Both named regression tests pass. The post-build baseline check printed **`no differences`**. The requested non-GPU suites completed with **491 passed, 0 failed, 3 skipped, and 6 todo**. `npm run build` and `npm run check` passed.
+
+F37 remains an unrelated existing todo. No framework or workbench files changed, so the site build was not required.
+
+Last commit: `a9b983f77d666a412569aee10192bbacb9b5d327`.

@@ -1,0 +1,11 @@
+Implemented F34 and committed it as `692c34e86487ac4c56a81fad9741ba7e51c94c41`.
+
+- [analysis-manager.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f34-tl-irwb-040-a/src/framework/contracts/analysis-manager.ts): records assurance derived from invariant evidence.
+- [differential.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f34-tl-irwb-040-a/src/framework/contracts/differential.ts): recognizes sampled, exhaustive and exact methods; unknown evidence remains generically `checked`.
+- [types.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f34-tl-irwb-040-a/src/framework/contracts/types.ts): adds sampled and exact assurance values.
+- [r3-defects.test.mjs](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f34-tl-irwb-040-a/tests/framework/r3-defects.test.mjs): removes F34’s todo and asserts the recorded labels.
+- [Ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f34-tl-irwb-040-a/ttmp/2026/11/27/IRWB-040-A--honest-evidence/index.md), [diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f34-tl-irwb-040-a/ttmp/2026/11/27/IRWB-040-A--honest-evidence/reference/01-diary.md), and [report](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f34-tl-irwb-040-a/ttmp/2026/11/27/IRWB-040-A--honest-evidence/reference/02-report.md): document the change and validation.
+
+The F34 test passed, and the baseline check printed **“no differences.”** The sandboxed non-GPU suite reported 66 passing and 4 failing test files; all four failing files passed on unsandboxed rerun, with 15 individual tests passing and one existing skip. The aggregate runner reported file-level counts, so it did not expose individual todo counts. `npm run build`, `npm run check`, and the site build passed.
+
+No requested work was left out. `differential.ts` already failed Prettier before the change and was left in its existing style.

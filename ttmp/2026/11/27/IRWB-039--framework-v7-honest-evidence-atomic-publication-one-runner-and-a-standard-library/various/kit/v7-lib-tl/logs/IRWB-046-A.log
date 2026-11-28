@@ -1,0 +1,2191 @@
+Reading additional input from stdin...
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+model: gpt-6.1-terra
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git]
+reasoning effort: low
+reasoning summaries: none
+session id: 01a21f5b-afac-7201-8085-805f5708f587
+--------
+user
+You are working in a git worktree of the IR Workbench repository (TypeScript, Node 24). It compiles two languages on one IR framework (`src/framework/`: `core`, `ir`, `contracts`, `passes`, `dataflow`, `strategy`):
+- **Typed,** a small statically typed language compiled to 32-bit RISC-V (`src/typed/`; the corpus in `corpus/projects/`);
+- **Tix,** an index-notation tensor language compiled to CUDA (`src/tensor/`; its corpus in `corpus/tensor/`).
+
+Every optimization is a checked pass: a meaning contract compares a pass's output with its input on generated cases, and every edit carries a correspondence back to the IR before it. The framework is being refactored in small steps (ticket `ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/`, design doc `design-doc/01-...md`). Your step is one of them.
+
+Your ticket is IRWB-046-A. This is a **framework addition**, in one session of up to two hours. Create your ticket with docmgr under `ttmp/2026/11/27/`, keep a short diary, and end with a short report in the ticket.
+
+## Your task: start a standard library of compiler algorithms, with liveness
+The refactor (design doc, "Phase 2") adds `src/stdlib/`: pure, synchronous implementations of standard compiler algorithms over small shape interfaces, never over a domain's types, usable by any domain. Admission rule: a named algorithm or law, at least two clients, and an executable test.
+
+The first primitive is **liveness** (backward gen/kill dataflow over a control-flow graph). The register allocator and the copy coalescer each carry the same hand-written liveness sweep, line for line: `intervals` in `src/typed/backend/regalloc.ts` (around line 85) and the block at the start of `src/typed/backend/coalesce.ts` (around line 32).
+
+1. **Lay out `src/stdlib/`** so later primitives (dominators and loops, lattices and a fixpoint solver, SSA construction, affine forms) have an obvious place, with an index. Keep it to what liveness needs now plus the directory convention; list the later modules as one line each.
+2. **Write the liveness primitive** over a minimal interface (blocks, successors, per-block uses and definitions). A known trap: a block that no path from the entry reaches. R3 found that the machine liveness of `regalloc.ts` and the framework's entry-reachable solver disagree on such a block. The case: block 0 jumps to the join; block 1, which nothing reaches, also jumps to the join; the join uses registers 64 and 65. The machine code gives block 1 the live-out set {64, 65}; an entry-reachable solver gives {}. Make the scope explicit in the interface.
+3. **Make both clients use it** and delete their copies.
+
+Write a short design first (the interface, the scope decision, the layout), commit it, then implement.
+
+## Acceptance (all of these, checked on your last commit)
+- **The tests you add:** a test of the liveness primitive including a block that no path from the entry reaches (state which scope your primitive uses for it and why), and a test that fails if any module under `src/stdlib/` imports from `src/framework/`, `src/typed/` or `src/tensor/`. The existing `tests/typed/` backend tests must pass unchanged.
+- **The baselines:** `node ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/scripts/02-baselines.mjs check` (after `npm run build`) prints `no differences`. It compares RV32 image hashes, instruction counts and edit records for every corpus project under r0, O2 and `speed`, and the CUDA source and `optimizeTix` revisions for every Tix program. This step must not change them: the register allocator and the coalescer must produce byte-identical images.
+- **The suites:** `tests/typed/*.test.mjs`, `tests/framework/*.test.mjs`, `tests/workbench/*.test.mjs`, and `tests/tensor/*.test.mjs` except the `*-gpu.test.mjs` files, all pass, apart from the `todo` tests of other steps.
+- `npm run check` (tsc) is clean, and `node tools/build-site.mjs` builds if you changed `src/framework/` or `src/workbench/`.
+
+## Repository facts
+- **Build and test:** build with `npm run build` (`tsc`, into `dist/`). Tests are `node --test tests/<dir>/<name>.test.mjs` and import from `../../dist/...`; on Node 24, pass files, not a bare directory. Do not run the full suite (`npm test`) and do not run the `*-gpu.test.mjs` files (there is no GPU here): other agents share this machine. Prettier: 110 columns, single quotes; `npm run format:check` covers `src/**/*.ts`; run Prettier only on files that were formatted before you changed them.
+- **Tests of the correct behaviour already exist.** `tests/framework/r3-defects.test.mjs`, `tests/tensor/r3-tix-in-plans.test.mjs` and `tests/typed/d2-defects.test.mjs` hold one `todo` test per refactor step. Your step's test is named in the acceptance above: make it pass and remove its `todo` option in the same commit. Do not weaken a test's assertions; if you believe one is wrong, say so in your report and leave it.
+- **Scope:** a new `src/stdlib/`, `src/typed/backend/` for the two clients, and tests. Not `src/framework/` or `src/tensor/`.
+- **Scripts:** put every probe and temporary program you write in your ticket's `scripts/` directory, numbered (`01-name.mjs`), and commit them.
+- **Sandboxed sessions:** a test that spawns `node` can fail with EPERM. Request escalation for that command.
+- **Commits:** commit on your current branch with messages starting `IRWB-046-A:`, as you go, so that your last commit always holds working code. Do not push.
+- **Never use `git stash`:** every worktree of this repository shares one stash stack with other agents' worktrees. To set work aside, make a temporary commit.
+- **Outside your worktree,** use nothing.
+
+## Final message
+- the ticket and report paths;
+- what you changed, file by file, in one line each;
+- the acceptance results: the test, the baselines check output, the suites' pass/fail counts;
+- anything you left out or believe is wrong in the brief or the test;
+- the last commit hash.
+codex
+I’ll inspect the existing liveness implementations and the Phase 2 design, then create the ticket and commit a short design before changing code. I’ll keep the implementation within the requested directories and run the specified acceptance checks.
+exec
+/usr/bin/zsh -lc 'cat /home/manuel/.codex/skills/docmgr/SKILL.md' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 497ms:
+---
+description: 'Documentation management with the `docmgr` CLI: create and work in ticket workspaces (`ttmp/...`), add documents, relate code/files to docs, manage tasks/changelogs/metadata/vocabulary, and search/validate docs. Use when a user mentions `docmgr`, ticket docs, `docmgr doc relate`, `docmgr doc search`, YAML frontmatter validation, or asks to turn ad-hoc markdown into a structured, searchable knowledge base.'
+metadata:
+    title: Docmgr
+    topics:
+        - imported-skill
+    what_for: 'Documentation management with the `docmgr` CLI: create and work in ticket workspaces (`ttmp/...`), add documents, relate code/files to docs, manage tasks/changelogs/metadata/vocabulary, and search/validate docs. Use when a user mentions `docmgr`, ticket docs, `docmgr doc relate`, `docmgr doc search`, YAML frontmatter validation, or asks to turn ad-hoc markdown into a structured, searchable knowledge base.'
+    when_to_use: Use when working with Docmgr.
+name: docmgr
+---
+
+# Docmgr
+
+## Overview
+
+Use `docmgr` to keep documentation organized into ticket workspaces, with consistent metadata and bidirectional links between code/files and docs.
+
+## Quick Start
+
+### Shell safety: never paste unquoted backticks
+
+Bash/zsh treat backticks as command substitution. If you see a path rendered as `` `ttmp/.../doc.md` ``:
+- Prefer removing the backticks: `ttmp/.../doc.md`
+- Or quote the whole argument: ``'`ttmp/.../doc.md`'``
+
+### First-time setup (one-time)
+
+```bash
+docmgr status --summary-only
+docmgr init --seed-vocabulary
+docmgr vocab list
+```
+
+### Create a ticket
+
+```bash
+docmgr ticket create-ticket \
+  --ticket TICKET-ID \
+  --title "Descriptive Title" \
+  --topics topic1,topic2
+```
+
+### Add a document + relate files immediately
+
+```bash
+docmgr doc add --ticket TICKET-ID --doc-type analysis --title "Document Title"
+docmgr doc relate --ticket TICKET-ID \
+  --file-note "/abs/path/to/file.go:Why this file matters"
+```
+
+## Core Conventions (strict)
+
+- Use `docmgr doc relate` (not `docmgr relate`).
+- Do not pass `--doc-type` to `doc relate`; target either `--ticket TICKET-ID` (ticket index) or `--doc PATH` (specific doc).
+- Always format related files as `--file-note "path:reason"` (colon separator, not dash).
+- Prefer absolute paths in `--file-note` for clarity and copy/paste safety.
+- Prefer "subdocument-first" linking: relate most files to the focused subdoc, keep `index.md` as the overview.
+- Keep "RelatedFiles" tight (roughly 3-7 per ticket, not 20+).
+- Store any ad-hoc scripts you create for a ticket in that ticket's `scripts/` directory under `ttmp/.../scripts` so they are tracked. Name scripts with a numerical prefix (`01-...`, `02-...`) to preserve execution order and trace investigation steps.
+- Every active ticket should have a **diary**. On resume, read its latest relevant checkpoint and current files; expand earlier steps when needed rather than automatically rereading the entire history. An explicit detailed-diary request uses investigation mode from the diary skill.
+- Keep one authoritative current-state source per fact. A milestone receipt can own task/history effects while the diary owns reasoning; do not duplicate the same progress paragraph across every projection.
+
+## Milestones and compact resume
+
+A verified binary with `milestone record` can consolidate task/history bookkeeping and `ticket resume` can derive the current checkpoint. Check command availability once for an unfamiliar binary; this repository's implemented contract uses Glazed v1.3.6, including `--with-glaze-output --output json`. Follow installed help if that output API changes. Older binaries require the existing task/changelog workflow; never invoke a proposed API from a design sketch as though installed.
+
+Read [milestone commands and safety](references/milestones.md) when using these operations. A receipt is not proof of the underlying claim and does not replace a requested diary. Retry interrupted operations using the same ID/request; do not bypass conflicts or overwrite human edits.
+
+## Common Workflows
+
+### Get oriented on an existing ticket
+
+```bash
+docmgr ticket list --ticket TICKET-ID
+docmgr doc list --ticket TICKET-ID
+docmgr task list --ticket TICKET-ID
+docmgr vocab list
+```
+
+### Task bookkeeping
+
+```bash
+docmgr task add --ticket TICKET-ID --text "New task"
+docmgr task check --ticket TICKET-ID --id 1,2
+```
+
+### Changelog update (what + why + related files)
+
+```bash
+docmgr changelog update --ticket TICKET-ID \
+  --entry "What changed and why" \
+  --file-note "/abs/path/to/file.go:Reason"
+```
+
+### Search
+
+```bash
+docmgr doc search --query "search term"
+docmgr doc search --query "term" --topics backend --doc-type design-doc
+docmgr doc search --file path/to/file.go
+docmgr doc search --dir path/to/dir/
+```
+
+### Validate / hygiene
+
+```bash
+docmgr doctor --ticket TICKET-ID --stale-after 30
+docmgr validate frontmatter --doc path/to/doc.md --suggest-fixes
+```
+
+## Vocabulary
+
+If a `doctor` warning indicates an unknown topic/doc-type/category, add it to the vocabulary (or ignore if it's intentionally out-of-vocab):
+
+```bash
+docmgr vocab add --category topics --slug my-topic --description "Description"
+```
+
+## Reference
+
+Load `references/docmgr.md` for the full (long-form) docmgr workflow, command reference, and best practices.
+
+codex
+I’m using the docmgr skill to create the ticket and keep the design, diary, and report together.
+exec
+/usr/bin/zsh -lc "git status --short && rg --files -g 'AGENTS.md' -g 'package.json' -g '*liveness*' -g '*r3-defects*' -g '*d2-defects*' -g '01-*.md' ttmp/2026/11/27/IRWB-039* src tests ." in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+exec
+/usr/bin/zsh -lc 'docmgr ticket create-ticket --help' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+exec
+/usr/bin/zsh -lc "sed -n '1,240p' src/typed/backend/regalloc.ts && sed -n '1,200p' src/typed/backend/coalesce.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 1242ms:
+/**
+ * Register allocation by linear scan: liveness over the machine code (per block, then per instruction), one
+ * interval per virtual register, and a scan in start order that gives each interval a free register that does
+ * not clash, or spills. A port of Compiler Workbench's backend.js `machineBlocks`, `intervals` and `allocate`.
+ *
+ * The pools: `t0`-`t4` and, in leaf functions, `a0`-`a7` (caller-saved: a call may destroy them), and `s1`-`s11`
+ * (callee-saved: a function that uses one must restore it). `t5` and `t6` are kept back as spill scratch; `s0`,
+ * `sp`, `ra`, `gp` and `tp` are never allocated. An interval that spans a call must be in a callee-saved register,
+ * or spilled.
+ *
+ * f32 values are a second class with its own pools: `ft0`-`ft9` and, in leaf functions, `fa0`-`fa7` (caller-saved),
+ * and `fs0`-`fs11` (callee-saved); `ft10` and `ft11` are its spill scratch. The two classes are scanned separately:
+ * an interval only ever receives a register of its own class, and the options apply to each class.
+ */
+import type { BackendOptions } from './options.js';
+import {
+  ARGS,
+  CALLEE,
+  CALLER,
+  F_ARGS,
+  F_CALLEE,
+  F_CALLER,
+  isBranch,
+  isTerminal,
+  type MInsn,
+} from './encode.js';
+
+export const usesOf = (m: MInsn): number[] =>
+  [m.rs1, m.rs2].filter((r): r is number => r !== undefined && r >= 64);
+export const defsOf = (m: MInsn): number[] =>
+  m.rd !== undefined && m.rd >= 64 && m.op !== 'label' ? [m.rd] : [];
+
+export interface MachineBlock {
+  readonly start: number;
+  end: number;
+  readonly labels: string[];
+  readonly succ: number[];
+}
+
+/** Basic blocks of machine code: a label or the instruction after a branch or terminal starts one. */
+export function machineBlocks(code: readonly MInsn[]): MachineBlock[] {
+  const blocks: MachineBlock[] = [],
+    at = new Map<string, number>();
+  let cur: MachineBlock | null = null;
+  code.forEach((m, i) => {
+    if (m.op === 'label' || !cur) {
+      cur = { start: i, end: i, labels: [], succ: [] };
+      blocks.push(cur);
+    }
+    if (m.op === 'label') {
+      cur.labels.push(m.name!);
+      at.set(m.name!, blocks.length - 1);
+    }
+    cur.end = i;
+    if (isBranch(m.op) || isTerminal(m.op)) cur = null;
+  });
+  blocks.forEach((b, k) => {
+    const last = code[b.end];
+    if (isBranch(last.op)) b.succ.push(at.get(last.target!)!);
+    if (last.op === 'j') b.succ.push(at.get(last.target!)!);
+    if (!isTerminal(last.op) && k + 1 < blocks.length) b.succ.push(k + 1);
+  });
+  return blocks;
+}
+
+export interface Interval {
+  readonly reg: number;
+  start: number;
+  end: number;
+  uses: number;
+  crossesCall: boolean;
+}
+
+export interface Intervals {
+  /** Sorted by start, then register. */
+  readonly list: Interval[];
+  readonly blocks: MachineBlock[];
+  readonly liveOut: Set<number>[];
+}
+
+/**
+ * One interval per virtual register, from its first definition or use to its last, stretched over whole blocks
+ * where it is live in (to the block's start) or live out (to just past its end).
+ */
+export function intervals(code: readonly MInsn[]): Intervals {
+  const blocks = machineBlocks(code);
+  const use = blocks.map(() => new Set<number>()),
+    def = blocks.map(() => new Set<number>());
+  blocks.forEach((b, k) => {
+    for (let i = b.start; i <= b.end; i++) {
+      for (const r of usesOf(code[i])) if (!def[k].has(r)) use[k].add(r);
+      for (const r of defsOf(code[i])) def[k].add(r);
+    }
+  });
+  const IN = blocks.map(() => new Set<number>()),
+    OUT = blocks.map(() => new Set<number>());
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (let k = blocks.length - 1; k >= 0; k--) {
+      const out = new Set<number>();
+      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
+      const inn = new Set(use[k]);
+      for (const r of out) if (!def[k].has(r)) inn.add(r);
+      if (inn.size !== IN[k].size || out.size !== OUT[k].size) {
+        IN[k] = inn;
+        OUT[k] = out;
+        changed = true;
+      }
+    }
+  }
+  const iv = new Map<number, Interval>();
+  const touch = (r: number, i: number) => {
+    const x = iv.get(r);
+    if (!x) iv.set(r, { reg: r, start: i, end: i, uses: 1, crossesCall: false });
+    else {
+      x.start = Math.min(x.start, i);
+      x.end = Math.max(x.end, i);
+      x.uses++;
+    }
+  };
+  blocks.forEach((b, k) => {
+    for (const r of IN[k]) touch(r, b.start);
+    for (const r of OUT[k]) touch(r, b.end + 0.5);
+    for (let i = b.start; i <= b.end; i++) {
+      for (const r of usesOf(code[i])) touch(r, i);
+      for (const r of defsOf(code[i])) touch(r, i);
+    }
+  });
+  const calls = code.map((m, i) => (m.op === 'call' ? i : -1)).filter(i => i >= 0);
+  for (const x of iv.values()) x.crossesCall = calls.some(c => x.start < c && x.end > c);
+  return {
+    list: [...iv.values()].sort((a, b) => a.start - b.start || a.reg - b.reg),
+    blocks,
+    liveOut: OUT,
+  };
+}
+
+export interface Allocation {
+  /** Virtual register -> physical register. */
+  readonly assign: Map<number, number>;
+  /** Virtual registers that live in stack slots, in the order they were spilled. */
+  readonly spilled: Set<number>;
+  readonly intervals: readonly Interval[];
+}
+
+/**
+ * Where the physical registers `tracked` (at most 31) are occupied: for each, a prefix count over the instructions
+ * of the positions where it is live in or written. A call reads its argument registers (`uses`) and writes every
+ * tracked register (they are caller-saved); a return reads its result registers; the parameters are live from the
+ * entry until their copies. Liveness is computed over the machine blocks, as for virtual registers.
+ */
+export function physicalOccupancy(
+  code: readonly MInsn[],
+  tracked: readonly number[],
+): { occupied(r: number, from: number, to: number): boolean; liveOut(r: number, at: number): boolean } {
+  const bit = new Map(tracked.map((r, i) => [r, 1 << i]));
+  const all = (1 << tracked.length) - 1;
+  const n = code.length;
+  const use = new Int32Array(n),
+    def = new Int32Array(n);
+  code.forEach((m, i) => {
+    let u = 0;
+    for (const r of [m.rs1, m.rs2, ...(m.uses ?? [])]) if (r !== undefined && bit.has(r)) u |= bit.get(r)!;
+    use[i] = u;
+    def[i] =
+      m.op === 'call' ? all : m.op !== 'label' && m.rd !== undefined && bit.has(m.rd) ? bit.get(m.rd)! : 0;
+  });
+  const blocks = machineBlocks(code);
+  const bUse = blocks.map(b => {
+      let u = 0,
+        d = 0;
+      for (let i = b.start; i <= b.end; i++) {
+        u |= use[i] & ~d;
+        d |= def[i];
+      }
+      return [u, d];
+    }),
+    IN = new Int32Array(blocks.length),
+    OUT = new Int32Array(blocks.length);
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (let k = blocks.length - 1; k >= 0; k--) {
+      let out = 0;
+      for (const s of blocks[k].succ) out |= IN[s];
+      const inn = bUse[k][0] | (out & ~bUse[k][1]);
+      if (inn !== IN[k] || out !== OUT[k]) {
+        IN[k] = inn;
+        OUT[k] = out;
+        changed = true;
+      }
+    }
+  }
+  const liveIn = new Int32Array(n),
+    liveAfter = new Int32Array(n);
+  blocks.forEach((b, k) => {
+    let live = OUT[k];
+    for (let i = b.end; i >= b.start; i--) {
+      liveAfter[i] = live;
+      live = (live & ~def[i]) | use[i];
+      liveIn[i] = live;
+    }
+  });
+  // prefix counts of the occupied positions (live in or written) per tracked register
+  const prefix = tracked.map((r, j) => {
+    const p = new Int32Array(n + 1);
+    for (let i = 0; i < n; i++) p[i + 1] = p[i] + (((liveIn[i] | def[i]) >> j) & 1);
+    return p;
+  });
+  const index = new Map(tracked.map((r, j) => [r, j]));
+  return {
+    // whether r is occupied at some position p with from <= p <= to
+    occupied: (r, from, to) => {
+      const p = prefix[index.get(r)!];
+      return to >= from && p[Math.min(n, to + 1)] - p[Math.max(0, from)] > 0;
+    },
+    liveOut: (r, at) => ((liveAfter[at] >> index.get(r)!) & 1) === 1,
+  };
+}
+
+/** A register class's pools: caller-saved, the argument registers (leaf functions only), callee-saved. */
+interface ClassPools {
+  readonly caller: readonly number[];
+  readonly args: readonly number[];
+  readonly callee: readonly number[];
+}
+const X_POOLS: ClassPools = { caller: CALLER, args: ARGS, callee: CALLEE };
+const F_POOLS: ClassPools = { caller: F_CALLER, args: F_ARGS, callee: F_CALLEE };
+
+/**
+ * Linear scan, one register class at a time. `fregs` names the virtual registers of class f; every other virtual
+ * register is of class x.
+ */
+export function allocate(
+  code: readonly MInsn[],
+  hintsIn: ReadonlyMap<number, number>,
+  o: BackendOptions,
+  leaf: boolean,
+  fregs: ReadonlySet<number> = new Set(),
+): Allocation {
+  const { list } = intervals(code);
+/**
+ * Copy coalescing (IRWB-003): a copy `rd <- rs` between two virtual registers of one class disappears when the
+ * two can share a register, that is when they do not interfere (Chaitin): neither is defined at a point where the
+ * other is live afterwards, except by a copy between them, after which both hold the same value (and, IRWB-034-G,
+ * by a copy from a register the other was copied from earlier in the block, with neither changed since).
+ *
+ *   live-after per instruction, backwards over the machine blocks (as the allocator computes liveness)
+ *   edges:  r -- q  for each definition of r with q of r's class live after it, unless the definition copies q
+ *   copies, hottest block first: if find(rd) and find(rs) have no edge between them, merge them
+ *   rename every virtual register to its representative; a copy that became `r <- r` is dropped
+ *
+ * Runs between selection and allocation, on the selected code. Copies from or to a physical register
+ * (parameters, call results, return values) are left to the allocator's hints. Merging lengthens intervals,
+ * which under linear scan can cost a callee-saved register or a spill, so the caller compares estimates.
+ */
+import { machineBlocks, usesOf, defsOf } from './regalloc.js';
+import type { MInsn } from './encode.js';
+import type { Frequencies } from './frequency.js';
+import type { Selection } from './select.js';
+
+export interface Coalesced {
+  readonly sel: Selection;
+  /** How many copies were removed. */
+  readonly removed: number;
+}
+
+export function coalesceCopies(sel: Selection, fr: Frequencies | null = null): Coalesced {
+  const code = sel.code;
+  const cls = (r: number) => (sel.fregs.has(r) ? 'f' : 'x');
+  const isCopy = (m: MInsn) =>
+    m.mv && m.rd !== undefined && m.rs1 !== undefined && m.rd >= 64 && m.rs1 >= 64 && m.rd !== m.rs1;
+  // liveness per block, then per instruction backwards
+  const blocks = machineBlocks(code);
+  const use = blocks.map(() => new Set<number>()),
+    def = blocks.map(() => new Set<number>());
+  blocks.forEach((b, k) => {
+    for (let i = b.start; i <= b.end; i++) {
+      for (const r of usesOf(code[i])) if (!def[k].has(r)) use[k].add(r);
+      for (const r of defsOf(code[i])) def[k].add(r);
+    }
+  });
+  const IN = blocks.map(() => new Set<number>()),
+    OUT = blocks.map(() => new Set<number>());
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (let k = blocks.length - 1; k >= 0; k--) {
+      const out = new Set<number>();
+      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
+      const inn = new Set(use[k]);
+      for (const r of out) if (!def[k].has(r)) inn.add(r);
+      if (inn.size !== IN[k].size || out.size !== OUT[k].size) {
+        IN[k] = inn;
+        OUT[k] = out;
+        changed = true;
+      }
+    }
+  }
+  // IRWB-034-G: at a copy `rd <- rs`, the registers that an earlier copy in the block set from the same rs, with
+  // neither side redefined since, hold the value rd receives. The definition does not make them interfere with rd
+  // (the argument of the copy exception itself), so `a <- s; b <- s` can end up as one register.
+  const sameAsSource = new Map<number, Set<number>>();
+  for (const b of blocks) {
+    const copyOf = new Map<number, number>();
+    for (let i = b.start; i <= b.end; i++) {
+      const m = code[i];
+      if (isCopy(m)) {
+        const same = [...copyOf].filter(([, s]) => s === m.rs1).map(([q]) => q);
+        if (same.length) sameAsSource.set(i, new Set(same));
+      }
+      for (const r of defsOf(m)) {
+        copyOf.delete(r);
+        for (const [q, s] of copyOf) if (s === r) copyOf.delete(q);
+      }
+      if (isCopy(m)) copyOf.set(m.rd!, m.rs1!);
+    }
+  }
+  const adj = new Map<number, Set<number>>();
+  const edge = (a: number, b: number) => {
+    if (!adj.has(a)) adj.set(a, new Set());
+    if (!adj.has(b)) adj.set(b, new Set());
+    adj.get(a)!.add(b);
+    adj.get(b)!.add(a);
+  };
+  blocks.forEach((b, k) => {
+    const live = new Set(OUT[k]);
+    for (let i = b.end; i >= b.start; i--) {
+      const m = code[i];
+      for (const r of defsOf(m)) {
+        const copy = isCopy(m),
+          same = copy ? sameAsSource.get(i) : undefined;
+        for (const q of live)
+          if (q !== r && cls(q) === cls(r) && !(copy && (q === m.rs1 || same?.has(q)))) edge(r, q);
+        live.delete(r);
+      }
+      for (const r of usesOf(m)) live.add(r);
+    }
+  });
+  // the block frequency of each instruction, for the order of the candidates
+  const weight: number[] = [];
+  let w = 1;
+  for (const m of code) {
+    if (m.op === 'label' && fr) {
+      if (m.name === 'exit') w = 1;
+      else if (fr.block.has(m.name!)) w = fr.block.get(m.name!)!;
+    }
+    weight.push(w);
+  }
+  const candidates = code
+    .map((m, i) => ({ m, i }))
+    .filter(({ m }) => isCopy(m) && cls(m.rd!) === cls(m.rs1!))
+    .sort((a, b) => weight[b.i] - weight[a.i] || a.i - b.i);
+  // union-find; the representative keeps the union of its members' edges (by member id)
+  const parent = new Map<number, number>();
+  const find = (r: number): number => {
+    let x = r;
+    while (parent.has(x)) x = parent.get(x)!;
+    let y = r;
+    while (parent.has(y)) {
+      const n = parent.get(y)!;
+      parent.set(y, x);
+      y = n;
+    }
+    return x;
+  };
+  const members = new Map<number, number[]>();
+  const membersOf = (r: number) => members.get(r) ?? [r];
+  const interferes = (a: number, b: number) => {
+    const [small, big] = membersOf(a).length <= membersOf(b).length ? [a, b] : [b, a];
+    for (const x of membersOf(small)) for (const y of adj.get(x) ?? []) if (find(y) === big) return true;
+    return false;
+  };
+  const hints = new Map(sel.hints);
+  for (const { m } of candidates) {
+    const a = find(m.rd!),
+      b = find(m.rs1!);
+    if (a === b || interferes(a, b)) continue;
+    // the lower register stays the representative, so the result does not depend on hash order
+    const [rep, other] = a < b ? [a, b] : [b, a];
+    parent.set(other, rep);
+    members.set(rep, [...membersOf(rep), ...membersOf(other)]);
+    members.delete(other);
+    if (!hints.has(rep) && hints.has(other)) hints.set(rep, hints.get(other)!);
+  }
+  const ren = (r: number | undefined) => (r === undefined || r < 64 ? r : find(r));
+  let removed = 0;
+  const out: MInsn[] = [];
+  for (const m of code) {
+    const n: MInsn = { ...m };
+    if (m.op !== 'label') {
+      if (m.rd !== undefined) n.rd = ren(m.rd);
+      if (m.rs1 !== undefined) n.rs1 = ren(m.rs1);
+      if (m.rs2 !== undefined) n.rs2 = ren(m.rs2);
+    }
+    if (n.mv && n.rd !== undefined && n.rd >= 64 && n.rd === n.rs1) {
+      removed++;
+      continue;
+    }
+    out.push(n);
+  }
+  const outHints = new Map<number, number>();
+  for (const [r, p] of hints) if (!outHints.has(find(r))) outHints.set(find(r), p);
+  return {
+    sel: {
+      ...sel,
+      code: out,
+      hints: outHints,
+      localReg: sel.localReg.map(r => find(r)),
+    },
+    removed,
+  };
+}
+
+ succeeded in 1245ms:
+
+  # create - Create a new ticket workspace under the docs root                
+                                                                              
+  Creates a new ticket workspace directory with the standard structure.       
+                                                                              
+  Examples:                                                                   
+                                                                              
+  # Create a ticket (default root + default date-based path template)         
+                                                                              
+  docmgr ticket create --ticket MEN-3475 --title "Chat API cleanup" --topics  
+  chat,llm-                                                                   
+  workflow                                                                    
+                                                                              
+  # Create with multiple topics                                               
+                                                                              
+  docmgr ticket create --ticket MEN-8888 --title "WebSocket reconnection plan" --
+  topics chat,backend,websocket                                               
+                                                                              
+  # Create under a custom path template (relative to --root)                  
+                                                                              
+  docmgr ticket create --ticket MEN-9999 --title "Scratch ticket for          
+  experiments"  --                                                            
+  root ttmp --path-template "examples/{{TICKET}}--{{SLUG}}"                   
+                                                                              
+  For more help, run: docmgr help create                                      
+                                                                              
+  Run docmgr help --ui to open the interactive help TUI.                      
+                                                                              
+  ## Usage:                                                                   
+                                                                              
+  docmgr ticket create [flags]                                                
+                                                                              
+  ## Aliases:                                                                 
+                                                                              
+  create, create-ticket                                                       
+                                                                              
+  ## Flags:                                                                   
+                                                                              
+                   --force    Force overwrite of existing files - <bool>      
+                -h, --help    help for create                                 
+           --path-template    Template for ticket directory relative to root  
+  (placeholders: {{YYYY}}, {{MM}}, {{DD}}, {{DATE}}, {{TICKET}}, {{SLUG}},    
+  {{TITLE}}) - <string> (default "{{YYYY}}/{{MM}}/{{DD}}/{{TICKET}}--         
+  {{SLUG}}")                                                                  
+                    --root    Root directory for docs (defaults to 'ttmp' or .
+  ttmp.yaml root) - <string> (default "ttmp")                                 
+                  --ticket    Ticket identifier (e.g., MEN-3475) - <string>   
+                   --title    Ticket title - <string>                         
+                  --topics    Comma-separated list of topics - <stringList>   
+       --with-glaze-output    Switch this run to Glaze structured output      
+               --long-help    Show long help                                  
+                                                                              
+  Use docmgr ticket create --help --long-help for information about all flags.
+
+
+ succeeded in 1380ms:
+./ttmp/2026/11/26/IRWB-024--framework-and-tensor-fixes-f14-f19-f20/reference/01-implementation-diary.md
+./ttmp/2026/11/26/IRWB-011--sketch-image-level-contracts-for-float-freedom-tolerance-contracts-judged-on-rendered-frames/design-doc/01-sketch-guide-image-level-contracts-for-float-freedom.md
+./ttmp/2026/11/26/IRWB-011--sketch-image-level-contracts-for-float-freedom-tolerance-contracts-judged-on-rendered-frames/log/01-sketch-guide-diary.md
+./ttmp/2026/11/26/IRWB-016--f32-dsp-corpus-playground/design-doc/01-f32-dsp-corpus-playground.md
+./ttmp/2026/11/26/IRWB-016--f32-dsp-corpus-playground/log/01-diary.md
+./ttmp/2026/11/26/IRWB-020-B--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-implementation-diary.md
+./ttmp/2026/11/26/IRWB-020-B--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-semantics-and-checked-tensor-rewrites.md
+./ttmp/2026/11/26/IRWB-015--thompson-regex-matcher/design-doc/01-thompson-regex-matcher-corpus-design.md
+./ttmp/2026/11/26/IRWB-015--thompson-regex-matcher/log/01-diary.md
+./ttmp/2026/11/26/IRWB-029-D--checked-fusion-of-tix-kernels-on-the-gpu/reference/01-implementation-diary.md
+tests/framework/r3-defects.test.mjs
+./ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor/design-doc/01-lz-style-compression-corpus-project.md
+./ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor/log/01-design-diary.md
+./ttmp/2026/11/26/IRWB-028--typed-side-fixes-f2-to-f6/reference/01-diary.md
+tests/typed/d2-defects.test.mjs
+./ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md
+./ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md
+./ttmp/2026/11/26/IRWB-010--sketch-rewrite-search-on-ssa-and-verified-rules-rule-discovery-equality-saturation-a-window-superoptimizer/design-doc/01-sketch-guide-rewrite-search-on-ssa-and-verified-rules.md
+./ttmp/2026/11/26/IRWB-029-D--checked-fusion-of-tix-kernels-on-the-gpu/design-doc/01-checked-fusion-of-tix-statements-into-cuda-kernels.md
+./ttmp/2026/11/26/IRWB-010--sketch-rewrite-search-on-ssa-and-verified-rules-rule-discovery-equality-saturation-a-window-superoptimizer/log/01-sketch-guide-diary.md
+./ttmp/2026/11/26/IRWB-012--bytecode-vm/design-doc/01-a-stack-machine-bytecode-vm-for-specialization.md
+./ttmp/2026/11/26/IRWB-012--bytecode-vm/log/01-design-diary.md
+./ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/log/01-diary.md
+./ttmp/2026/11/26/IRWB-007--specializing-candela-on-its-scene-data-partial-evaluation-over-constant-memory/design-doc/01-intern-guide-specializing-candela-on-its-scene-data-partial-evaluation-over-constant-memory.md
+./ttmp/2026/11/26/IRWB-007--specializing-candela-on-its-scene-data-partial-evaluation-over-constant-memory/log/01-scene-data-specialization-diary.md
+./ttmp/2026/11/26/IRWB-009--a-function-incremental-framework-analyses-per-function-part-a-lazy-projection-a-persistent-store-and-demand-driven-queries/design-doc/01-intern-guide-a-function-incremental-framework-for-the-ir-workbench.md
+./ttmp/2026/11/26/IRWB-009--a-function-incremental-framework-analyses-per-function-part-a-lazy-projection-a-persistent-store-and-demand-driven-queries/log/01-irwb-009-diary.md
+./ttmp/2026/11/24/IRWB-001--ir-workbench/sources/compiler-workbench-projects/src/book/01-welcome.md
+./ttmp/2026/11/26/IRWB-013--sha-256-and-chacha20/design-doc/01-sha-256-and-chacha20-corpus-project.md
+./ttmp/2026/11/26/IRWB-013--sha-256-and-chacha20/log/01-design-diary.md
+./ttmp/2026/11/27/IRWB-034-G--why-speed-makes-the-bytecode-vm-slower-instruction-attribution-and-a-fix/reference/01-implementation-diary.md
+./ttmp/2026/11/27/IRWB-034-G--why-speed-makes-the-bytecode-vm-slower-instruction-attribution-and-a-fix/design-doc/01-step-attribution-of-executed-instructions-and-a-per-header-loop-for-licm.md
+./ttmp/2026/11/27/IRWB-036-F--specializing-the-bytecode-vm-on-its-bytecode-a-first-futamura-projection/reference/01-final-report-specializing-the-bytecode-vm.md
+./ttmp/2026/11/27/IRWB-036-F--specializing-the-bytecode-vm-on-its-bytecode-a-first-futamura-projection/design-doc/01-specializing-the-bytecode-vm-on-its-bytecode.md
+./ttmp/2026/11/27/IRWB-036-F--specializing-the-bytecode-vm-on-its-bytecode-a-first-futamura-projection/log/01-implementation-diary.md
+./ttmp/2026/11/27/IRWB-031--f23-check-correspondence-entity-lists-against-the-artifacts/reference/01-implementation-diary.md
+./ttmp/2026/11/27/IRWB-030-E--fusion-that-is-never-slower-parallel-terms-serial-fold-and-a-cost-gate/reference/01-implementation-diary.md
+./ttmp/2026/11/27/IRWB-037-G--missed-optimizations-found-from-provenance-hot-instructions-with-no-rule-new-verified-rules/reference/01-implementation-diary.md
+./ttmp/2026/11/27/IRWB-030-E--fusion-that-is-never-slower-parallel-terms-serial-fold-and-a-cost-gate/design-doc/01-parallel-terms-with-a-serial-fold-and-a-launch-time-gate-for-fusion.md
+./ttmp/2026/11/27/IRWB-037-G--missed-optimizations-found-from-provenance-hot-instructions-with-no-rule-new-verified-rules/design-doc/01-hot-shapes-from-provenance-and-three-pass-changes-branch-threading-guard-facts-copies.md
+./ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/reference/01-diary.md
+./ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/design-doc/01-the-v7-refactor-plan-phases-decision-points-and-who-does-what.md
+./ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/diary/01-implementation-diary.md
+./ttmp/2026/11/27/IRWB-035-G--what-share-of-the-optimizer-s-edits-are-local-value-rewrites/reference/01-diary.md
+./ttmp/2026/11/27/IRWB-035-G--what-share-of-the-optimizer-s-edits-are-local-value-rewrites/design-doc/01-design-classifying-the-optimizer-s-edits-as-local-value-rewrites-structural-edits-or-other.md
+./ttmp/2026/11/27/IRWB-033-D--a-schedule-ir-and-exact-tiled-contractions-through-it/reference/01-implementation-diary.md
+./ttmp/2026/11/27/IRWB-033-D--a-schedule-ir-and-exact-tiled-contractions-through-it/design-doc/01-a-schedule-ir-between-tix-and-cuda-and-exact-tiled-contractions.md
+./ttmp/2026/11/25/IRWB-004--cheap-experiments-cached-origin-outcomes-functions-as-the-unit-of-change-workers-and-a-worker-for-the-workbench/design-doc/01-intern-guide-cheap-experiments-in-the-ir-workbench.md
+./ttmp/2026/11/25/IRWB-004--cheap-experiments-cached-origin-outcomes-functions-as-the-unit-of-change-workers-and-a-worker-for-the-workbench/log/01-irwb-004-diary.md
+./ttmp/2026/11/26/IRWB-008--exact-checking-for-edits-that-cite-verified-rules-and-version-2-of-the-meaning-check-as-the-standard-for-new-pipelines/design-doc/01-intern-guide-exact-checking-for-edits-that-cite-verified-rules-and-version-2-of-the-meaning-check-for-new-pipelines.md
+./ttmp/2026/11/26/IRWB-008--exact-checking-for-edits-that-cite-verified-rules-and-version-2-of-the-meaning-check-as-the-standard-for-new-pipelines/log/01-exact-checking-diary.md
+ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/reference/01-diary.md
+ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/design-doc/01-the-v7-refactor-plan-phases-decision-points-and-who-does-what.md
+./ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/log/01-diary.md
+./ttmp/2026/11/26/IRWB-017--chess-search-corpus-project/design-doc/01-port-the-typed-chess-engine-into-the-optimization-corpus.md
+./ttmp/2026/11/26/IRWB-017--chess-search-corpus-project/log/01-diary.md
+./ttmp/2026/11/24/IRWB-001--ir-workbench/log/01-diary.md
+./ttmp/2026/11/24/IRWB-002--research-agenda-compiler-techniques-and-frameworks-for-the-ir-workbench/design-doc/01-intern-guide-and-research-agenda-the-ir-workbench-as-it-is-and-the-compiler-techniques-and-frameworks-to-build-next.md
+./ttmp/2026/11/24/IRWB-002--research-agenda-compiler-techniques-and-frameworks-for-the-ir-workbench/log/01-research-agenda-diary.md
+./package.json
+./ttmp/2026/11/25/IRWB-005--gate-strength-a-mutation-score-for-the-meaning-contract-and-stronger-case-generation/design-doc/01-intern-guide-how-strong-is-the-meaning-contract-and-how-to-make-it-stronger.md
+./ttmp/2026/11/25/IRWB-005--gate-strength-a-mutation-score-for-the-meaning-contract-and-stronger-case-generation/log/01-gate-strength-diary.md
+./tests/framework/r3-defects.test.mjs
+./ttmp/2026/11/25/IRWB-003--closing-the-speed-gap-inlining-copy-coalescing-float-constants-in-registers-loop-rotation/design-doc/01-intern-guide-closing-the-speed-gap-with-inlining-copy-coalescing-constants-in-registers-and-loop-rotation.md
+./ttmp/2026/11/25/IRWB-003--closing-the-speed-gap-inlining-copy-coalescing-float-constants-in-registers-loop-rotation/log/01-speed-gap-diary.md
+./ttmp/2026/11/25/IRWB-006--rewrite-rules-as-verified-data-and-a-single-assignment-view-of-typed-blocks/design-doc/01-intern-guide-rewrite-rules-as-verified-data-and-a-single-assignment-view-of-typed-blocks.md
+./ttmp/2026/11/25/IRWB-006--rewrite-rules-as-verified-data-and-a-single-assignment-view-of-typed-blocks/log/01-implementation-diary.md
+./tests/typed/d2-defects.test.mjs
+./corpus/book/01-welcome.md
+./ttmp/2026/11/24/IRWB-001--ir-workbench/design-doc/01-combining-ir-workbench-v6-and-compiler-workbench.md
+./ttmp/2026/11/24/IRWB-001--ir-workbench/analysis/01-ir-workbench-v6-import-analysis.md
+./ttmp/2026/11/24/IRWB-001--ir-workbench/sources/ir-source-workbench-v6/package.json
+./ttmp/2026/11/24/IRWB-001--ir-workbench/sources/ir-source-workbench-v6/docs/guide-parts/01-foundations.md
+
+exec
+/usr/bin/zsh -lc "rg -n -i 'liveness|stdlib|phase 2' tests/framework/r3-defects.test.mjs tests/typed/d2-defects.test.mjs ttmp/2026/11/27/IRWB-039*/design-doc/*.md" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+exec
+/usr/bin/zsh -lc "rg --files -g AGENTS.md -g '"'!ttmp/**'"' -g '"'!node_modules/**'"' && cat package.json" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+exec
+/usr/bin/zsh -lc "docmgr ticket create-ticket --ticket IRWB-046-A --title 'Standard library liveness' --topics compiler --path-template '2026/11/27/{{TICKET}}--{{SLUG}}' && docmgr doc add --ticket IRWB-046-A --doc-type design-doc --title 'Liveness design' && docmgr doc add --ticket IRWB-046-A --doc-type reference --title 'Diary' && docmgr doc add --ticket IRWB-046-A --doc-type reference --title 'Final report'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ exited 1 in 641ms:
+ succeeded in 755ms:
+ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/design-doc/01-the-v7-refactor-plan-phases-decision-points-and-who-does-what.md:41:  subgraph P2["Phase 2: standard library (parallel track)"]
+ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/design-doc/01-the-v7-refactor-plan-phases-decision-points-and-who-does-what.md:42:    L0["src/stdlib skeleton + admission test"] --> L1["liveness: regalloc + coalesce"]
+ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/design-doc/01-the-v7-refactor-plan-phases-decision-points-and-who-does-what.md:104:## Phase 2: the standard library
+ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/design-doc/01-the-v7-refactor-plan-phases-decision-points-and-who-does-what.md:109:- **2a. Skeleton.** `src/stdlib/` with the layering D proposed (`graph lattice num` use nothing; `ssa flow` use them; `pe affine term` above; `check measure` on top), an index, and a test that fails if a library module imports `src/framework`, `src/typed` or `src/tensor`.
+ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/design-doc/01-the-v7-refactor-plan-phases-decision-points-and-who-does-what.md:110:- **2b. Liveness first.** Two clients in one compiler (`backend/regalloc.ts:85`, `backend/coalesce.ts:32`), exact sets to compare, and a known trap: an unreachable predecessor of a reachable join (B's probe 08), so the primitive takes an explicit scope (all blocks, or entry-reachable). Acceptance: byte-identical images.
+
+ succeeded in 3926ms:
+created IRWB-046-A at ttmp/2026/11/27/IRWB-046-A--standard-library-liveness (9 dirs, 4 files)
+created ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/design-doc/01-liveness-design.md
+created ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/01-diary.md
+created ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/02-final-report.md
+
+exec
+/usr/bin/zsh -lc "rg -n -i 'liveness|stdlib|046' tests" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+exec
+/usr/bin/zsh -lc "git status --short && rg --files -g AGENTS.md -g '"'!ttmp/**'"' -g '"'!node_modules/**'"'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+exec
+/usr/bin/zsh -lc 'cat ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/design-doc/01-liveness-design.md && cat tsconfig.json && cat package.json' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 685ms:
+---
+Title: Liveness design
+Ticket: IRWB-046-A
+Status: active
+Topics:
+    - compiler
+DocType: design-doc
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: ""
+LastUpdated: 2026-11-27T18:34:16.403783772-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Liveness design
+
+## Executive Summary
+
+<!-- Provide a high-level overview of the design proposal -->
+
+## Problem Statement
+
+<!-- Describe the problem this design addresses -->
+
+## Proposed Solution
+
+<!-- Describe the proposed solution in detail -->
+
+## Design Decisions
+
+<!-- Document key design decisions and rationale -->
+
+## Alternatives Considered
+
+<!-- List alternative approaches that were considered and why they were rejected -->
+
+## Implementation Plan
+
+<!-- Outline the steps to implement this design -->
+
+## Open Questions
+
+<!-- List any unresolved questions or concerns -->
+
+## References
+
+<!-- Link to related documents, RFCs, or external resources -->
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"]
+}
+{
+  "name": "compiler-workbench",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An inspectable compiler workbench: the IR Workbench v6 framework extended for a complete Typed -> RV32 compiler",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "build:site": "node tools/build-site.mjs",
+    "serve:site": "node tools/serve-site.mjs",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "test": "npm run build && node --test \"tests/**/*.test.mjs\"",
+    "test:only": "node --test \"tests/**/*.test.mjs\""
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "esbuild": "0.25.12",
+    "prettier": "3.6.2",
+    "typescript": "5.9.3"
+  }
+}
+
+ succeeded in 710ms:
+tests/tensor/fixtures/cublas-product/main.cu:4:#include <cstdlib>
+tests/workbench/strategies.test.mjs:119:  assert.deepEqual(c.analyses.map(a => a.name), ['cfg', 'dominators', 'loops', 'liveness', 'reaching', 'ranges']);
+tests/workbench/strategies.test.mjs:125:  assert.match(wb.source.definition('typed.liveness').text, /typed\.liveness/);
+tests/framework/ext-e4.test.mjs:52:const liveness = dataflow({
+tests/framework/ext-e4.test.mjs:53:  id: 'test.liveness', version: '1', description: 'live variables', input: FlowIR, adapter: flowAdapter,
+tests/framework/ext-e4.test.mjs:76:test('E4: the backward set lattice solves liveness around a loop', () => {
+tests/framework/ext-e4.test.mjs:78:  const r = liveness.solveArtifact(art);
+tests/framework/ext-e4.test.mjs:79:  const sol = liveness.decode(r, 'fn');
+tests/framework/ext-e4.test.mjs:108:  const a = await manager.analyse(liveness, r0);
+tests/framework/ext-e4.test.mjs:109:  const again = await manager.analyse(liveness, r0);
+tests/framework/ext-e4.test.mjs:118:  const record0 = await manager.analyse(liveness, r0);
+tests/framework/ext-e4.test.mjs:119:  // Change one statement's constant. liveness declares it reads every stmt.* entity, so its transfer must be
+tests/framework/ext-e4.test.mjs:126:  await assert.rejects(manager.preserve(liveness, r0, r1, corr), /touches what test.liveness reads/);
+tests/framework/ext-e4.test.mjs:128:  const readsOnlyBlocks = dataflow({ ...liveness.spec, id: 'test.blocks-only', reads: { entities: ['block'], relations: ['succ'] } });
+tests/typed/mutate.test.mjs:27:  const st = storeOf(p.head.value), live = (await p.manager.analyse(ANALYSES.liveness, p.head)).value;
+tests/typed/strategies.test.mjs:52:    .preserves('cfg', 'dominators', 'loops', 'liveness', 'reaching')
+tests/typed/evaluate-analyses.test.mjs:56:test('P2.3: Blend facts: one loop with a preheader, liveness, reaching definitions, ranges', async () => {
+tests/typed/evaluate-analyses.test.mjs:65:  const lv = A.liveView((await m.analyse(A.livenessAnalysis, r0)).value, st, 'blend');
+tests/typed/passes.test.mjs:39:  assert.deepEqual([removal.to, removal.because], [[], ['fact:liveness(blend)@r4']]);
+tests/typed/pe.test.mjs:37:  const live = liveView((await p.manager.analyse(ANALYSES.liveness, p.origin)).value, st, 'runVm');
+
+ exited 1 in 985ms:
+?? ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/
+
+exec
+/usr/bin/zsh -lc 'cat tests/framework/r3-defects.test.mjs && cat tests/typed/d2-defects.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 385ms:
+// IRWB-039 phase 1a: the R3 synthesis probes (ttmp/2026/11/26/IRWB-019-.../various/r3-synthesis/scripts/01-04) as
+// tests of the CORRECT behaviour. Each is marked `todo` with the BACKLOG item that fixes it; the fix removes the
+// `todo` in the same commit. A todo test that passes is reported by node as such: that is the signal to remove it.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+const C = await import('../../dist/framework/contracts/index.js');
+const { assuranceOf } = await import('../../dist/framework/contracts/differential.js');
+const { applyPass, applyNativePassSync, definePass, semanticCorrespondence } = await import(
+  '../../dist/framework/passes/index.js'
+);
+const { IRStore } = await import('../../dist/framework/ir/index.js');
+const { compileTix, optimizeTix } = await import('../../dist/tensor/index.js');
+const { inlinePass } = await import('../../dist/tensor/passes.js');
+const { meaningGate } = await import('../../dist/tensor/contract.js');
+const { TixIR } = await import('../../dist/tensor/ir.js');
+
+const desc = 'r3 defect test';
+
+// ---------- F34 (probe 01): a sampled check and an exhaustive one must not record the same assurance ----------
+test(
+  'F34: sampled and exhaustive checks record different assurance; unknown evidence is never exact',
+  { todo: 'F34' },
+  async () => {
+    const Fn = C.defineIR({ id: 'r3.fn', version: '1', description: desc, validate() {} });
+    const table = { id: x => x, buggy: x => (x % 2 ? x : x | 1) }; // wrong on every even input
+    const sampled = C.differential({
+      id: 'r3.sampled',
+      version: '1',
+      description: desc,
+      inputs: { baseline: Fn, subject: Fn },
+      baseline: 'baseline',
+      subject: 'subject',
+      count: 5,
+      seed: 1,
+      cases: () => [1, 3, 5, 7, 9],
+      run: (_side, art, x) => table[art.value](x),
+      compare: (a, b) => a === b,
+    });
+    const exhaustive = C.defineInvariant({
+      id: 'r3.exhaustive',
+      version: '1',
+      description: desc,
+      inputs: { baseline: Fn, subject: Fn },
+      check: (_ctx, { baseline, subject }) => {
+        for (let x = 0; x < 256; x++)
+          if (table[baseline.value](x) !== table[subject.value](x)) return { ok: false, reason: `x=${x}` };
+        return { ok: true, evidence: { method: 'exhaustive', domain: 'u8', cases: 256 } };
+      },
+    });
+    const m = new C.AnalysisManager();
+    const a = await m.checkInvariant(sampled, {
+      baseline: C.createArtifact(Fn, 'f', 'id'),
+      subject: C.createArtifact(Fn, 'f', 'buggy'),
+    });
+    const b = await m.checkInvariant(exhaustive, {
+      baseline: C.createArtifact(Fn, 'f', 'id'),
+      subject: C.createArtifact(Fn, 'g', 'id'),
+    });
+    assert.notDeepEqual(
+      a.assurance,
+      b.assurance,
+      'a 5-case sample and a 256-case exhaustion record the same assurance',
+    );
+    assert.notEqual(assuranceOf(undefined), 'checked-exact', 'no evidence must not count as exact');
+    assert.notEqual(
+      assuranceOf({ method: 'typo' }),
+      'checked-exact',
+      'an unknown method must not count as exact',
+    );
+  },
+);
+
+// ---------- F33 (probe 03): nothing about a rejected candidate is published ----------
+test('F33: a candidate the contract rejects does not become a store head', { todo: 'F33' }, async () => {
+  const p = compileTix('fn f(x:f32[N]):f32[N] { y[i] = x[i] * 2; z[i] = y[i] + 1; return z; }');
+  const no = C.defineInvariant({
+    id: 'r3.no',
+    version: '1',
+    description: desc,
+    inputs: { output: TixIR },
+    check: () => ({ ok: false, reason: 'rejects every candidate' }),
+  });
+  const rejecting = C.defineTransformation({
+    id: 'r3.rejecting',
+    version: '1',
+    description: desc,
+    inputs: { input: TixIR },
+    outputs: { output: TixIR },
+    ensures: [{ invariant: no, bindings: { output: { from: 'outputs', port: 'output' } } }],
+  });
+  const store = new IRStore();
+  await assert.rejects(
+    applyPass(inlinePass, p.current, {
+      manager: new C.AnalysisManager(),
+      store,
+      outputId: 'candidate',
+      contract: rejecting,
+    }),
+    { code: 'contractRejected' },
+  );
+  let head;
+  try {
+    head = store.head('candidate');
+  } catch {
+    head = undefined;
+  }
+  assert.equal(head, undefined, 'the rejected candidate is the head of the caller-supplied store');
+});
+
+test(
+  'F33: no accepted execution or fact survives a later preservation failure',
+  { todo: 'F33' },
+  async () => {
+    const p = compileTix('fn f(x:f32[N]):f32[N] { y[i] = x[i] * 2; z[i] = y[i] + 1; return z; }');
+    const candidate = optimizeTix(p, ['inline']).program.current;
+    const count = C.defineAnalysis({
+      id: 'r3.count',
+      version: '1',
+      description: desc,
+      input: TixIR,
+      output: C.Integer,
+      run: (_c, a) => a.value.functions[0].statements.length,
+    });
+    const one = C.defineAnalysis({
+      id: 'r3.one',
+      version: '1',
+      description: desc,
+      input: TixIR,
+      output: C.Check,
+      run: (_c, a) => ({ ok: a.value.functions[0].statements.length === 1 }),
+    });
+    const property = C.defineProperty({
+      id: 'r3.single-statement',
+      version: '1',
+      description: desc,
+      subject: TixIR,
+      check: one,
+    });
+    const establishes = C.defineTransformation({
+      id: 'r3.establishes',
+      version: '1',
+      description: desc,
+      inputs: { input: TixIR },
+      outputs: { output: TixIR },
+      establishes: [{ property, subject: { from: 'outputs', port: 'output' } }],
+    });
+    const m = new C.AnalysisManager();
+    const falseClaim = definePass({
+      ...inlinePass,
+      id: 'r3.false-claim',
+      contract: establishes,
+      preserves: [count],
+    });
+    await assert.rejects(applyPass(falseClaim, p.current, { manager: m, auditPreservation: true }), {
+      code: 'preserveViolated',
+    });
+    assert.equal(m.properties(candidate).length, 0, 'a fact about the rejected candidate is visible');
+    assert.notEqual(
+      m.snapshot().executions.at(-1)?.status,
+      'accepted',
+      'the rejected application is recorded as accepted',
+    );
+  },
+);
+
+// ---------- F35 (probe 04): a required mapping must cover what it claims, and be consistent with the diff ----------
+test(
+  'F35: zero mapping groups and a false group are rejected; the honest mapping is accepted',
+  { todo: 'F35' },
+  async () => {
+    const q = compileTix('fn f(x:f32[N,N]):f32[N,N] { p[i,j] = x[i,j] + 1; y[i,j] = p[j,i]; return y; }');
+    const inline = applyNativePassSync(inlinePass, q.current, meaningGate(q.origin, 'exact'));
+    const mappingOnly = C.defineTransformation({
+      id: 'r3.mapping',
+      version: '1',
+      description: desc,
+      inputs: { input: TixIR },
+      outputs: { output: TixIR },
+      correspondence: [{ id: 'entities', from: 'input', to: 'output', relation: 'generic-ir-edit' }],
+    });
+    const lists = {
+      sourceEntities: TixIR.entities(q.current.value),
+      targetEntities: TixIR.entities(inline.artifact.value),
+    };
+    const verify = entities =>
+      new C.AnalysisManager().verifyTransformation(
+        { input: q.current },
+        { output: inline.artifact },
+        mappingOnly,
+        [{ ...semanticCorrespondence(inline.correspondence), ...lists, entities }],
+      );
+    const src = re => lists.sourceEntities.filter(e => re.test(e)),
+      dst = re => lists.targetEntities.filter(e => re.test(e));
+    await verify([{ from: src(/\/(p|y)$/), to: dst(/\/y$/) }]); // honest: p and y were merged into y
+    await assert.rejects(verify([]), 'zero mapping groups were accepted');
+    await assert.rejects(
+      verify([{ from: src(/\/y$/), to: [] }]),
+      'a group saying the surviving y was deleted was accepted',
+    );
+  },
+);
+// IRWB-039 phase 1a: three defects IRWB-037-G (D2) found and left unchanged, as tests of the CORRECT behaviour
+// (BACKLOG F36-F38; IRWB-037-G scripts/13 and 14). Remove `todo` in the fixing commit.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { installVendor } from '../../tools/node-vendor.mjs';
+import { projectFiles } from '../../tools/corpus.mjs';
+
+await installVendor();
+const { Program } = await import('../../dist/typed/program.js');
+const { projectSource } = await import('../../dist/typed/project.js');
+const { storeOf } = await import('../../dist/typed/ir.js');
+const { PIPELINES } = await import('../../dist/typed/passes.js');
+
+test(
+  'F36: bce keeps a bounds check when the index is reassigned between the guard and the check',
+  { todo: 'F36' },
+  async () => {
+    // the only assignment to i lies between `i < buf.length` and `buf.charCodeAt(i)`, and reaches both: the sets of
+    // reaching definitions are equal, the values are not
+    const source = `
+function walk(buf: buffer, c: bool): i32 {
+    let i = 0;
+    let s = 0;
+    while (i < buf.length) {
+        if (c) {
+            i = i + 1;
+        }
+        s = s + buf.charCodeAt(i);
+        if (s > 1000) {
+            break;
+        }
+    }
+    return s;
+}`;
+    const p = Program.fromProject(
+      projectSource('bce-probe', {
+        'main.typed': source,
+        'project.json': JSON.stringify({
+          inputs: { walk: { buf: { buffer: [1, 4], cell: [400, 600] }, c: { bool: true } } },
+        }),
+      }),
+    );
+    assert.equal(p.status, 'ok');
+    await p.apply('cfg');
+    await p.apply('simplify');
+    // today bce removes the check and only the meaning check rejects the pass (16 of 40 cases disagree)
+    await assert.doesNotReject(p.apply('bce'), 'bce produced a candidate the meaning check rejects');
+  },
+);
+
+test(
+  'F37: typed.ranges keeps an outer loop counter non-negative under an inner loop',
+  { todo: 'F37' },
+  async () => {
+    const p = Program.fromProject(projectSource('chess-search', projectFiles('chess-search')));
+    for (const pass of PIPELINES.speed.slice(0, PIPELINES.speed.indexOf('strength')))
+      await p.apply(pass, { count: 3 });
+    const f = storeOf(p.head.value).fn('chessPseudoMoves');
+    const dense = String(f.locals.findIndex(l => l.name === 'dense'));
+    const ranges = (await p.fact('ranges', 'chessPseudoMoves')).value;
+    // dense counts 0..63; today its interval at the block of `dense / 8` is [-2^31, 63]
+    const [lo] = ranges.in['bb:chessPseudoMoves.3'][dense];
+    assert.ok(lo >= 0, `dense's lower bound is ${lo}`);
+  },
+);
+
+test(
+  'F38: lvn can run a second time (speed with lvn again before rotate, on regex-nfa)',
+  { todo: 'F38' },
+  async () => {
+    const p = Program.fromProject(projectSource('regex-nfa', projectFiles('regex-nfa')));
+    const speed = [...PIPELINES.speed];
+    speed.splice(speed.indexOf('rotate'), 0, 'lvn');
+    const r = await p.pipeline(speed, { count: 3 });
+    assert.deepEqual(
+      r.steps.filter(s => s.rejected).map(s => s.pass),
+      [],
+    );
+  },
+);
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/design-doc/01-liveness-design.md')
+s=p.read_text().split('# Liveness design')[0] + '''# Liveness design
+
+The supported input is a finite ordered array of blocks, each with successor indices into that array and finite sets of upward-exposed uses and definitions. Values can be any set keys. The synchronous primitive returns live-in and live-out sets aligned with the input order. It computes the least solution of "'`out[b] = union(in[s])` and `in[b] = use[b] union (out[b] - def[b])` by reverse sweeps.
+
+Scope is **all supplied blocks**, including unreachable blocks: callers supply precisely the graph to analyze. An entry-reachable solver is the simplest alternative, but would change both existing machine clients on an unreachable predecessor of a reachable join. There is no entry argument; a caller wanting reachable-only results can supply that subgraph itself.
+
+Put this algorithm in `src/stdlib/flow/liveness.ts`, exported by `src/stdlib/index.ts`. The dependency boundary is enforced by an executable import test. Both clients retain their existing instruction-to-use/def extraction, and use the same primitive; this avoids introducing a domain-specific API into the library. A generic lattice solver is an alternative, but adds machinery unnecessary for this extraction.
+
+## Later
+
+- `graph/`: dominators and loops.
+- `lattice/`: lattices and a fixpoint solver.
+- `ssa/`: SSA construction.
+- `affine/`: affine forms.
+'"'''
+p.write_text(s)
+p=Path('ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/01-diary.md')
+s=p.read_text().split('# Diary')[0]+'# Diary\\n\\n- Inspected both identical sweeps and the Phase 2 plan. Chose all supplied blocks to preserve machine behavior, including unreachable predecessors.\\n- Created the design before implementation.\\n'; p.write_text(s)
+PY
+ git add ttmp/2026/11/27/IRWB-046-A--standard-library-liveness && git commit -m 'IRWB-046-A: design standard library liveness'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ exited 128 in 670ms:
+fatal: Unable to create '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/worktrees/v7-lib-tl-irwb-046-a/index.lock': Read-only file system
+
+codex
+The two sweeps are identical, and both analyze every machine block. The design therefore makes all supplied blocks the explicit scope; the entry-reachable alternative would change the unreachable-predecessor case. The design is written, and I’m resolving a worktree Git lock restriction before committing it.
+exec
+/usr/bin/zsh -lc "git add ttmp/2026/11/27/IRWB-046-A--standard-library-liveness && git commit -m 'IRWB-046-A: design standard library liveness'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 1439ms:
+[v7-lib-tl/irwb-046-a 235e10a] IRWB-046-A: design standard library liveness
+ 7 files changed, 171 insertions(+)
+ create mode 100644 ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/README.md
+ create mode 100644 ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/changelog.md
+ create mode 100644 ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/design-doc/01-liveness-design.md
+ create mode 100644 ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/index.md
+ create mode 100644 ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/01-diary.md
+ create mode 100644 ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/02-final-report.md
+ create mode 100644 ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/tasks.md
+
+exec
+/usr/bin/zsh -lc "mkdir -p src/stdlib/flow tests/stdlib
+cat > src/stdlib/flow/liveness.ts <<'EOF'
+/** A finite graph of blocks, with successors expressed as indices into the supplied array. */
+export interface LivenessBlock<T> {
+  readonly successors: readonly number[];
+  /** Values used before their first definition in this block. */
+  readonly uses: ReadonlySet<T>;
+  readonly definitions: ReadonlySet<T>;
+}
+
+/** Least backward gen/kill solution over all supplied blocks, including unreachable blocks. */
+export function liveness<T>(blocks: readonly LivenessBlock<T>[]): { liveIn: Set<T>[]; liveOut: Set<T>[] } {
+  const liveIn = blocks.map(() => new Set<T>()),
+    liveOut = blocks.map(() => new Set<T>());
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (let k = blocks.length - 1; k >= 0; k--) {
+      const out = new Set<T>();
+      for (const s of blocks[k].successors) for (const value of liveIn[s]) out.add(value);
+      const inn = new Set(blocks[k].uses);
+      for (const value of out) if ("'!blocks[k].definitions.has(value)) inn.add(value);
+      if (inn.size !== liveIn[k].size || out.size !== liveOut[k].size) {
+        liveIn[k] = inn;
+        liveOut[k] = out;
+        changed = true;
+      }
+    }
+  }
+  return { liveIn, liveOut };
+}
+EOF
+cat > src/stdlib/index.ts <<'"'EOF'
+/** Domain-independent compiler algorithms. */
+export { liveness, type LivenessBlock } from './flow/liveness.js';
+EOF
+python3 - <<'PY'
+from pathlib import Path
+for name in ['regalloc','coalesce']:
+ p=Path('src/typed/backend/'+name+'.ts'); s=p.read_text(); pos=s.index('import '); s=s[:pos]+\"import { liveness } from '../../stdlib/index.js';\\n\"+s[pos:]
+ start=s.index('  const IN = blocks.map(() => new Set<number>()),',s.index('export function '+('intervals' if name=='regalloc' else 'coalesceCopies')))
+ end=s.index('  const iv =',start) if name=='regalloc' else s.index('  // IRWB-034-G:',start)
+ s=s[:start]+'''  const { liveIn: IN, liveOut: OUT } = liveness(
+    blocks.map((b, k) => ({ successors: b.succ, uses: use[k], definitions: def[k] })),
+  );
+'''.replace('liveIn: IN, liveOut: OUT','liveOut: OUT' if name=='coalesce' else 'liveIn: IN, liveOut: OUT')+s[end:]; p.write_text(s)
+PY
+cat > tests/stdlib/liveness.test.mjs <<'EOF'
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { liveness } from '../../dist/stdlib/index.js';
+
+const block = (successors, uses = [], definitions = []) => ({
+  successors, uses: new Set(uses), definitions: new Set(definitions),
+});
+
+test('liveness solves all blocks, including an unreachable predecessor and a loop', () => {
+  // Block 1 has no path from entry 0; it still flows to the join, as machine liveness requires.
+  const result = liveness([
+    block([2]), block([2]), block([3], [64, 65]), block([2], [66], [65]),
+  ]);
+  assert.deepEqual(result.liveOut.map(s => [...s].sort()), [[64, 65, 66], [64, 65, 66], [64, 66], [64, 65, 66]]);
+  assert.deepEqual(result.liveIn.map(s => [...s].sort()), [[64, 65, 66], [64, 65, 66], [64, 65, 66], [64, 66]]);
+  assert.deepEqual(liveness([]), { liveIn: [], liveOut: [] });
+});
+EOF
+cat > tests/stdlib/dependencies.test.mjs <<'EOF'
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import ts from 'typescript';
+
+async function files(dir) {
+  const entries = await readdir(dir, { withFileTypes: true });
+  return (await Promise.all(entries.map(e => e.isDirectory() ? files(path.join(dir, e.name)) : [path.join(dir, e.name)]))).flat();
+}
+
+test('stdlib does not depend on framework or language domains', async () => {
+  const root = path.resolve('src');
+  for (const file of await files(path.join(root, 'stdlib'))) {
+    if ("'!/'"\\.[cm]?[jt]sx?"'$/.test(file)) continue;
+    const source = ts.createSourceFile(file, await readFile(file, '"'utf8'), ts.ScriptTarget.Latest, true);
+    function visit(node) {
+      let specifier;
+      if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier) specifier = node.moduleSpecifier;
+      if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) specifier = node.moduleReference.expression;
+      if (ts.isCallExpression(node) && (node.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(node.expression) && node.expression.text === 'require'))) specifier = node.arguments[0];
+      if (specifier && ts.isStringLiteralLike(specifier)) {
+        const target = specifier.text.startsWith('.') ? path.resolve(path.dirname(file), specifier.text) : path.resolve(root, specifier.text.replace(/"'^src'"\\//, ''));
+        for (const forbidden of ['framework', 'typed', 'tensor']) {
+          const dir = path.join(root, forbidden);
+          assert.ok(target "'!== dir && !target.startsWith(dir + path.sep), `${file} imports ${specifier.text}`);
+        }
+      }
+      ts.forEachChild(node, visit);
+    }
+    visit(source);
+  }
+});
+EOF
+npm run build && node --test tests/stdlib/*.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 10739ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ tests/stdlib/dependencies.test.mjs (465.696254ms)
+✔ tests/stdlib/liveness.test.mjs (83.975553ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 476.963277
+
+codex
+The shared primitive now preserves the original reverse-sweep ordering and analyzes every supplied block. Its new tests pass, including the unreachable predecessor and a loop; I also found no existing IRWB-046-A todo test in the three named defect files, so there is no matching todo to remove.
+exec
+/usr/bin/zsh -lc 'node ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/scripts/02-baselines.mjs check' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/*.test.mjs tests/framework/*.test.mjs tests/workbench/*.test.mjs ${${(f)$(rg --files tests/tensor -g '"'*.test.mjs' -g '"'!*-gpu.test.mjs'"')}[@]}" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+exec
+/usr/bin/zsh -lc 'npm run check && npx prettier --check src/stdlib/index.ts src/stdlib/flow/liveness.ts src/typed/backend/regalloc.ts src/typed/backend/coalesce.ts' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+exec
+/usr/bin/zsh -lc "git diff --stat && git diff -- src/typed/backend/regalloc.ts src/typed/backend/coalesce.ts && rg -n 'todo|stdlib|liveness' tests/tensor/r3-tix-in-plans.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 4492ms:
+ src/typed/backend/coalesce.ts | 20 ++++----------------
+ src/typed/backend/regalloc.ts | 20 ++++----------------
+ 2 files changed, 8 insertions(+), 32 deletions(-)
+diff --git a/src/typed/backend/coalesce.ts b/src/typed/backend/coalesce.ts
+index cce32ee..32b5b3c 100644
+--- a/src/typed/backend/coalesce.ts
++++ b/src/typed/backend/coalesce.ts
+@@ -13,6 +13,7 @@
+  * (parameters, call results, return values) are left to the allocator's hints. Merging lengthens intervals,
+  * which under linear scan can cost a callee-saved register or a spill, so the caller compares estimates.
+  */
++import { liveness } from '../../stdlib/index.js';
+ import { machineBlocks, usesOf, defsOf } from './regalloc.js';
+ import type { MInsn } from './encode.js';
+ import type { Frequencies } from './frequency.js';
+@@ -39,22 +40,9 @@ export function coalesceCopies(sel: Selection, fr: Frequencies | null = null): C
+       for (const r of defsOf(code[i])) def[k].add(r);
+     }
+   });
+-  const IN = blocks.map(() => new Set<number>()),
+-    OUT = blocks.map(() => new Set<number>());
+-  for (let changed = true; changed; ) {
+-    changed = false;
+-    for (let k = blocks.length - 1; k >= 0; k--) {
+-      const out = new Set<number>();
+-      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
+-      const inn = new Set(use[k]);
+-      for (const r of out) if (!def[k].has(r)) inn.add(r);
+-      if (inn.size !== IN[k].size || out.size !== OUT[k].size) {
+-        IN[k] = inn;
+-        OUT[k] = out;
+-        changed = true;
+-      }
+-    }
+-  }
++  const { liveOut: OUT } = liveness(
++    blocks.map((b, k) => ({ successors: b.succ, uses: use[k], definitions: def[k] })),
++  );
+   // IRWB-034-G: at a copy `rd <- rs`, the registers that an earlier copy in the block set from the same rs, with
+   // neither side redefined since, hold the value rd receives. The definition does not make them interfere with rd
+   // (the argument of the copy exception itself), so `a <- s; b <- s` can end up as one register.
+diff --git a/src/typed/backend/regalloc.ts b/src/typed/backend/regalloc.ts
+index 23831b9..5dfed13 100644
+--- a/src/typed/backend/regalloc.ts
++++ b/src/typed/backend/regalloc.ts
+@@ -12,6 +12,7 @@
+  * and `fs0`-`fs11` (callee-saved); `ft10` and `ft11` are its spill scratch. The two classes are scanned separately:
+  * an interval only ever receives a register of its own class, and the options apply to each class.
+  */
++import { liveness } from '../../stdlib/index.js';
+ import type { BackendOptions } from './options.js';
+ import {
+   ARGS,
+@@ -92,22 +93,9 @@ export function intervals(code: readonly MInsn[]): Intervals {
+       for (const r of defsOf(code[i])) def[k].add(r);
+     }
+   });
+-  const IN = blocks.map(() => new Set<number>()),
+-    OUT = blocks.map(() => new Set<number>());
+-  for (let changed = true; changed; ) {
+-    changed = false;
+-    for (let k = blocks.length - 1; k >= 0; k--) {
+-      const out = new Set<number>();
+-      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
+-      const inn = new Set(use[k]);
+-      for (const r of out) if (!def[k].has(r)) inn.add(r);
+-      if (inn.size !== IN[k].size || out.size !== OUT[k].size) {
+-        IN[k] = inn;
+-        OUT[k] = out;
+-        changed = true;
+-      }
+-    }
+-  }
++  const { liveIn: IN, liveOut: OUT } = liveness(
++    blocks.map((b, k) => ({ successors: b.succ, uses: use[k], definitions: def[k] })),
++  );
+   const iv = new Map<number, Interval>();
+   const touch = (r: number, i: number) => {
+     const x = iv.get(r);
+5:// by its name), and `optimizeTix` runs its sequence as a plan of these. Remove `todo` in the fixing commit.
+25:  { todo: 'F27' },
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('tests/stdlib/liveness.test.mjs'); s=p.read_text(); pos=s.index(\"test('liveness solves\")
+s=s[:pos]+'''test('an unreachable predecessor of a reachable join has the join live out', () => {
+  const result = liveness([block([2]), block([2]), block([], [64, 65])]);
+  assert.deepEqual(result.liveOut[1], new Set([64, 65]));
+});
+
+'''+s[pos:];p.write_text(s)
+PY
+node --test tests/stdlib/*.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 8061ms:
+✔ tests/stdlib/dependencies.test.mjs (1949.968983ms)
+✔ tests/stdlib/liveness.test.mjs (386.693403ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2007.552596
+
+ succeeded in 43328ms:
+
+> compiler-workbench@0.1.0 check
+> tsc -p tsconfig.json --noEmit
+
+Checking formatting...
+All matched files use Prettier code style!
+
+codex
+The exact three-block case now has its own test: the unreachable block’s live-out set is `{64, 65}`. The baseline comparison and requested non-GPU suites are running; the implementation and focused tests have built successfully.
+exec
+/usr/bin/zsh -lc "git status --short && sed -n '1,130p' ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/02-final-report.md && node --version" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 2673ms:
+ M src/typed/backend/coalesce.ts
+ M src/typed/backend/regalloc.ts
+?? src/stdlib/
+?? tests/stdlib/
+---
+Title: Final report
+Ticket: IRWB-046-A
+Status: active
+Topics:
+    - compiler
+DocType: reference
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: ""
+LastUpdated: 2026-11-27T18:34:18.500808967-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Final report
+
+## Goal
+
+<!-- What is the purpose of this reference document? -->
+
+## Context
+
+<!-- Provide background context needed to use this reference -->
+
+## Quick Reference
+
+<!-- Provide copy/paste-ready content, API contracts, or quick-look tables -->
+
+## Usage Examples
+
+<!-- Show how to use this reference in practice -->
+
+## Related
+
+<!-- Link to related documents or resources -->
+v24.18.0
+
+codex
+TypeScript checking and formatting checks are clean. The full requested checks are computationally heavier than the focused tests and are still running; the existing backend test file has already passed unchanged.
+exec
+/usr/bin/zsh -lc "ps -eo pid,etime,pcpu,stat,args | rg '(02-baselines|node --test|tests/typed|tsc)' | head -30" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 2953ms:
+      1       00:02  1.0 Ss   codex-linux-sandbox --sandbox-policy-cwd /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a --command-cwd /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a --permission-profile {"type":"managed","file_system":{"type":"restricted","entries":[{"path":{"type":"special","value":{"kind":"root"}},"access":"read"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a"},"access":"write"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git"},"access":"write"},{"path":{"type":"special","value":{"kind":"slash_tmp"}},"access":"write"},{"path":{"type":"special","value":{"kind":"tmpdir"}},"access":"write"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/.git"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/.git"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/.agents"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/.agents"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/.codex"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/.codex"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/.aws"},"access":"read","missing_path_behavior":"skip"},{"path":{"type":"path","path":"/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/.aws"},"access":"read","missing_path_behavior":"skip"}]},"network":"restricted"} --apply-seccomp-then-exec -- /usr/bin/zsh -c __CODEX_SNAPSHOT_OVERRIDE_SET_0="${CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS+x}" __CODEX_SNAPSHOT_OVERRIDE_0="${CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS-}" __CODEX_SNAPSHOT_OVERRIDE_SET_1="${CODEX_PERMISSION_PROFILE+x}" __CODEX_SNAPSHOT_OVERRIDE_1="${CODEX_PERMISSION_PROFILE-}" __CODEX_SNAPSHOT_OVERRIDE_SET_2="${CODEX_PLUGIN_METRICS_OUTPUT+x}" __CODEX_SNAPSHOT_OVERRIDE_2="${CODEX_PLUGIN_METRICS_OUTPUT-}" __CODEX_SNAPSHOT_OVERRIDE_SET_3="${CODEX_SESSION_ID+x}" __CODEX_SNAPSHOT_OVERRIDE_3="${CODEX_SESSION_ID-}" __CODEX_SNAPSHOT_OVERRIDE_SET_4="${CODEX_THREAD_ID+x}" __CODEX_SNAPSHOT_OVERRIDE_4="${CODEX_THREAD_ID-}" __CODEX_SNAPSHOT_OVERRIDE_SET_5="${CODEX_TOOL_CALL_ID+x}" __CODEX_SNAPSHOT_OVERRIDE_5="${CODEX_TOOL_CALL_ID-}" __CODEX_SNAPSHOT_OVERRIDE_SET_6="${CODEX_VERSION+x}" __CODEX_SNAPSHOT_OVERRIDE_6="${CODEX_VERSION-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_0="${ALL_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_0="${ALL_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_1="${BUNDLE_HTTPS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_1="${BUNDLE_HTTPS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_2="${BUNDLE_HTTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_2="${BUNDLE_HTTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_3="${BUNDLE_NO_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_3="${BUNDLE_NO_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_4="${BUNDLE_SSL_CA_CERT+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_4="${BUNDLE_SSL_CA_CERT-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_5="${CARGO_HTTP_CAINFO+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_5="${CARGO_HTTP_CAINFO-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_6="${CODEX_CA_CERTIFICATE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_6="${CODEX_CA_CERTIFICATE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_7="${CODEX_NETWORK_ALLOW_LOCAL_BINDING+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_7="${CODEX_NETWORK_ALLOW_LOCAL_BINDING-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_8="${CODEX_NETWORK_PROXY_ACTIVE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_8="${CODEX_NETWORK_PROXY_ACTIVE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_9="${CODEX_NETWORK_PROXY_ATTRIBUTION+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_9="${CODEX_NETWORK_PROXY_ATTRIBUTION-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_10="${CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_10="${CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_11="${CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_11="${CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_12="${CURL_CA_BUNDLE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_12="${CURL_CA_BUNDLE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_13="${DOCKER_HTTPS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_13="${DOCKER_HTTPS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_14="${DOCKER_HTTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_14="${DOCKER_HTTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_15="${ELECTRON_GET_USE_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_15="${ELECTRON_GET_USE_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_16="${FTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_16="${FTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_17="${GIT_SSL_CAINFO+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_17="${GIT_SSL_CAINFO-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_18="${HTTPS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_18="${HTTPS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_19="${HTTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_19="${HTTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_20="${NODE_EXTRA_CA_CERTS+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_20="${NODE_EXTRA_CA_CERTS-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_21="${NODE_USE_ENV_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_21="${NODE_USE_ENV_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_22="${NO_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_22="${NO_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_23="${NPM_CONFIG_CAFILE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_23="${NPM_CONFIG_CAFILE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_24="${NPM_CONFIG_HTTPS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_24="${NPM_CONFIG_HTTPS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_25="${NPM_CONFIG_HTTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_25="${NPM_CONFIG_HTTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_26="${NPM_CONFIG_NOPROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_26="${NPM_CONFIG_NOPROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_27="${NPM_CONFIG_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_27="${NPM_CONFIG_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_28="${PIP_CERT+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_28="${PIP_CERT-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_29="${PIP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_29="${PIP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_30="${REQUESTS_CA_BUNDLE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_30="${REQUESTS_CA_BUNDLE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_31="${SSL_CERT_FILE+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_31="${SSL_CERT_FILE-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_32="${WSS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_32="${WSS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_33="${WS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_33="${WS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_34="${YARN_HTTPS_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_34="${YARN_HTTPS_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_35="${YARN_HTTP_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_35="${YARN_HTTP_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_36="${YARN_NO_PROXY+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_36="${YARN_NO_PROXY-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_37="${all_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_37="${all_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_38="${ftp_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_38="${ftp_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_39="${http_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_39="${http_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_40="${https_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_40="${https_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_41="${no_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_41="${no_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_42="${npm_config_cafile+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_42="${npm_config_cafile-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_43="${npm_config_http_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_43="${npm_config_http_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_44="${npm_config_https_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_44="${npm_config_https_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_45="${npm_config_noproxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_45="${npm_config_noproxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_46="${npm_config_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_46="${npm_config_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_47="${ws_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_47="${ws_proxy-}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_48="${wss_proxy+x}" __CODEX_SNAPSHOT_PROXY_OVERRIDE_48="${wss_proxy-}" __CODEX_SNAPSHOT_PROXY_ENV_SET="${CODEX_NETWORK_PROXY_ACTIVE+x}"  if . '/home/manuel/.codex/shell_snapshots/01a21f5b-afac-7201-8085-805f5708f587.1795822432231598503.sh' >/dev/null 2>&1; then :; fi  if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_0}" ]; then   if [ -z "${CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS+x}" ] || [ "${CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS-}" != "${__CODEX_SNAPSHOT_OVERRIDE_0}" ]; then export CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS="${__CODEX_SNAPSHOT_OVERRIDE_0}"; else export CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS; fi else builtin unset CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS 2>/dev/null || command unset CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_0 __CODEX_SNAPSHOT_OVERRIDE_0 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_0 __CODEX_SNAPSHOT_OVERRIDE_0 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_1}" ]; then   if [ -z "${CODEX_PERMISSION_PROFILE+x}" ] || [ "${CODEX_PERMISSION_PROFILE-}" != "${__CODEX_SNAPSHOT_OVERRIDE_1}" ]; then export CODEX_PERMISSION_PROFILE="${__CODEX_SNAPSHOT_OVERRIDE_1}"; else export CODEX_PERMISSION_PROFILE; fi else builtin unset CODEX_PERMISSION_PROFILE 2>/dev/null || command unset CODEX_PERMISSION_PROFILE; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_1 __CODEX_SNAPSHOT_OVERRIDE_1 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_1 __CODEX_SNAPSHOT_OVERRIDE_1 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_2}" ]; then   if [ -z "${CODEX_PLUGIN_METRICS_OUTPUT+x}" ] || [ "${CODEX_PLUGIN_METRICS_OUTPUT-}" != "${__CODEX_SNAPSHOT_OVERRIDE_2}" ]; then export CODEX_PLUGIN_METRICS_OUTPUT="${__CODEX_SNAPSHOT_OVERRIDE_2}"; else export CODEX_PLUGIN_METRICS_OUTPUT; fi else builtin unset CODEX_PLUGIN_METRICS_OUTPUT 2>/dev/null || command unset CODEX_PLUGIN_METRICS_OUTPUT; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_2 __CODEX_SNAPSHOT_OVERRIDE_2 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_2 __CODEX_SNAPSHOT_OVERRIDE_2 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_3}" ]; then   if [ -z "${CODEX_SESSION_ID+x}" ] || [ "${CODEX_SESSION_ID-}" != "${__CODEX_SNAPSHOT_OVERRIDE_3}" ]; then export CODEX_SESSION_ID="${__CODEX_SNAPSHOT_OVERRIDE_3}"; else export CODEX_SESSION_ID; fi else builtin unset CODEX_SESSION_ID 2>/dev/null || command unset CODEX_SESSION_ID; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_3 __CODEX_SNAPSHOT_OVERRIDE_3 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_3 __CODEX_SNAPSHOT_OVERRIDE_3 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_4}" ]; then   if [ -z "${CODEX_THREAD_ID+x}" ] || [ "${CODEX_THREAD_ID-}" != "${__CODEX_SNAPSHOT_OVERRIDE_4}" ]; then export CODEX_THREAD_ID="${__CODEX_SNAPSHOT_OVERRIDE_4}"; else export CODEX_THREAD_ID; fi else builtin unset CODEX_THREAD_ID 2>/dev/null || command unset CODEX_THREAD_ID; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_4 __CODEX_SNAPSHOT_OVERRIDE_4 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_4 __CODEX_SNAPSHOT_OVERRIDE_4 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_5}" ]; then   if [ -z "${CODEX_TOOL_CALL_ID+x}" ] || [ "${CODEX_TOOL_CALL_ID-}" != "${__CODEX_SNAPSHOT_OVERRIDE_5}" ]; then export CODEX_TOOL_CALL_ID="${__CODEX_SNAPSHOT_OVERRIDE_5}"; else export CODEX_TOOL_CALL_ID; fi else builtin unset CODEX_TOOL_CALL_ID 2>/dev/null || command unset CODEX_TOOL_CALL_ID; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_5 __CODEX_SNAPSHOT_OVERRIDE_5 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_5 __CODEX_SNAPSHOT_OVERRIDE_5 if [ -n "${__CODEX_SNAPSHOT_OVERRIDE_SET_6}" ]; then   if [ -z "${CODEX_VERSION+x}" ] || [ "${CODEX_VERSION-}" != "${__CODEX_SNAPSHOT_OVERRIDE_6}" ]; then export CODEX_VERSION="${__CODEX_SNAPSHOT_OVERRIDE_6}"; else export CODEX_VERSION; fi else builtin unset CODEX_VERSION 2>/dev/null || command unset CODEX_VERSION; fi builtin unset __CODEX_SNAPSHOT_OVERRIDE_SET_6 __CODEX_SNAPSHOT_OVERRIDE_6 2>/dev/null || command unset __CODEX_SNAPSHOT_OVERRIDE_SET_6 __CODEX_SNAPSHOT_OVERRIDE_6 if [ -n "$__CODEX_SNAPSHOT_PROXY_ENV_SET" ] || [ -n "${CODEX_NETWORK_PROXY_ACTIVE+x}" ]; then if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_0}" ]; then   if [ -z "${ALL_PROXY+x}" ] || [ "${ALL_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_0}" ]; then export ALL_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_0}"; else export ALL_PROXY; fi else builtin unset ALL_PROXY 2>/dev/null || command unset ALL_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_0 __CODEX_SNAPSHOT_PROXY_OVERRIDE_0 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_0 __CODEX_SNAPSHOT_PROXY_OVERRIDE_0 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_1}" ]; then   if [ -z "${BUNDLE_HTTPS_PROXY+x}" ] || [ "${BUNDLE_HTTPS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_1}" ]; then export BUNDLE_HTTPS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_1}"; else export BUNDLE_HTTPS_PROXY; fi else builtin unset BUNDLE_HTTPS_PROXY 2>/dev/null || command unset BUNDLE_HTTPS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_1 __CODEX_SNAPSHOT_PROXY_OVERRIDE_1 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_1 __CODEX_SNAPSHOT_PROXY_OVERRIDE_1 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_2}" ]; then   if [ -z "${BUNDLE_HTTP_PROXY+x}" ] || [ "${BUNDLE_HTTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_2}" ]; then export BUNDLE_HTTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_2}"; else export BUNDLE_HTTP_PROXY; fi else builtin unset BUNDLE_HTTP_PROXY 2>/dev/null || command unset BUNDLE_HTTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_2 __CODEX_SNAPSHOT_PROXY_OVERRIDE_2 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_2 __CODEX_SNAPSHOT_PROXY_OVERRIDE_2 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_3}" ]; then   if [ -z "${BUNDLE_NO_PROXY+x}" ] || [ "${BUNDLE_NO_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_3}" ]; then export BUNDLE_NO_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_3}"; else export BUNDLE_NO_PROXY; fi else builtin unset BUNDLE_NO_PROXY 2>/dev/null || command unset BUNDLE_NO_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_3 __CODEX_SNAPSHOT_PROXY_OVERRIDE_3 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_3 __CODEX_SNAPSHOT_PROXY_OVERRIDE_3 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_4}" ]; then   if [ -z "${BUNDLE_SSL_CA_CERT+x}" ] || [ "${BUNDLE_SSL_CA_CERT-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_4}" ]; then export BUNDLE_SSL_CA_CERT="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_4}"; else export BUNDLE_SSL_CA_CERT; fi else builtin unset BUNDLE_SSL_CA_CERT 2>/dev/null || command unset BUNDLE_SSL_CA_CERT; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_4 __CODEX_SNAPSHOT_PROXY_OVERRIDE_4 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_4 __CODEX_SNAPSHOT_PROXY_OVERRIDE_4 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_5}" ]; then   if [ -z "${CARGO_HTTP_CAINFO+x}" ] || [ "${CARGO_HTTP_CAINFO-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_5}" ]; then export CARGO_HTTP_CAINFO="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_5}"; else export CARGO_HTTP_CAINFO; fi else builtin unset CARGO_HTTP_CAINFO 2>/dev/null || command unset CARGO_HTTP_CAINFO; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_5 __CODEX_SNAPSHOT_PROXY_OVERRIDE_5 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_5 __CODEX_SNAPSHOT_PROXY_OVERRIDE_5 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_6}" ]; then   if [ -z "${CODEX_CA_CERTIFICATE+x}" ] || [ "${CODEX_CA_CERTIFICATE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_6}" ]; then export CODEX_CA_CERTIFICATE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_6}"; else export CODEX_CA_CERTIFICATE; fi else builtin unset CODEX_CA_CERTIFICATE 2>/dev/null || command unset CODEX_CA_CERTIFICATE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_6 __CODEX_SNAPSHOT_PROXY_OVERRIDE_6 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_6 __CODEX_SNAPSHOT_PROXY_OVERRIDE_6 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_7}" ]; then   if [ -z "${CODEX_NETWORK_ALLOW_LOCAL_BINDING+x}" ] || [ "${CODEX_NETWORK_ALLOW_LOCAL_BINDING-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_7}" ]; then export CODEX_NETWORK_ALLOW_LOCAL_BINDING="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_7}"; else export CODEX_NETWORK_ALLOW_LOCAL_BINDING; fi else builtin unset CODEX_NETWORK_ALLOW_LOCAL_BINDING 2>/dev/null || command unset CODEX_NETWORK_ALLOW_LOCAL_BINDING; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_7 __CODEX_SNAPSHOT_PROXY_OVERRIDE_7 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_7 __CODEX_SNAPSHOT_PROXY_OVERRIDE_7 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_8}" ]; then   if [ -z "${CODEX_NETWORK_PROXY_ACTIVE+x}" ] || [ "${CODEX_NETWORK_PROXY_ACTIVE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_8}" ]; then export CODEX_NETWORK_PROXY_ACTIVE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_8}"; else export CODEX_NETWORK_PROXY_ACTIVE; fi else builtin unset CODEX_NETWORK_PROXY_ACTIVE 2>/dev/null || command unset CODEX_NETWORK_PROXY_ACTIVE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_8 __CODEX_SNAPSHOT_PROXY_OVERRIDE_8 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_8 __CODEX_SNAPSHOT_PROXY_OVERRIDE_8 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_9}" ]; then   if [ -z "${CODEX_NETWORK_PROXY_ATTRIBUTION+x}" ] || [ "${CODEX_NETWORK_PROXY_ATTRIBUTION-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_9}" ]; then export CODEX_NETWORK_PROXY_ATTRIBUTION="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_9}"; else export CODEX_NETWORK_PROXY_ATTRIBUTION; fi else builtin unset CODEX_NETWORK_PROXY_ATTRIBUTION 2>/dev/null || command unset CODEX_NETWORK_PROXY_ATTRIBUTION; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_9 __CODEX_SNAPSHOT_PROXY_OVERRIDE_9 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_9 __CODEX_SNAPSHOT_PROXY_OVERRIDE_9 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_10}" ]; then   if [ -z "${CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS+x}" ] || [ "${CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_10}" ]; then export CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_10}"; else export CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS; fi else builtin unset CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS 2>/dev/null || command unset CODEX_NETWORK_PROXY_BROKERED_CREDENTIALS; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_10 __CODEX_SNAPSHOT_PROXY_OVERRIDE_10 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_10 __CODEX_SNAPSHOT_PROXY_OVERRIDE_10 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_11}" ]; then   if [ -z "${CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE+x}" ] || [ "${CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_11}" ]; then export CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_11}"; else export CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE; fi else builtin unset CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE 2>/dev/null || command unset CODEX_NETWORK_PROXY_CREDENTIAL_BROKER_ACTIVE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_11 __CODEX_SNAPSHOT_PROXY_OVERRIDE_11 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_11 __CODEX_SNAPSHOT_PROXY_OVERRIDE_11 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_12}" ]; then   if [ -z "${CURL_CA_BUNDLE+x}" ] || [ "${CURL_CA_BUNDLE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_12}" ]; then export CURL_CA_BUNDLE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_12}"; else export CURL_CA_BUNDLE; fi else builtin unset CURL_CA_BUNDLE 2>/dev/null || command unset CURL_CA_BUNDLE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_12 __CODEX_SNAPSHOT_PROXY_OVERRIDE_12 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_12 __CODEX_SNAPSHOT_PROXY_OVERRIDE_12 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_13}" ]; then   if [ -z "${DOCKER_HTTPS_PROXY+x}" ] || [ "${DOCKER_HTTPS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_13}" ]; then export DOCKER_HTTPS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_13}"; else export DOCKER_HTTPS_PROXY; fi else builtin unset DOCKER_HTTPS_PROXY 2>/dev/null || command unset DOCKER_HTTPS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_13 __CODEX_SNAPSHOT_PROXY_OVERRIDE_13 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_13 __CODEX_SNAPSHOT_PROXY_OVERRIDE_13 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_14}" ]; then   if [ -z "${DOCKER_HTTP_PROXY+x}" ] || [ "${DOCKER_HTTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_14}" ]; then export DOCKER_HTTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_14}"; else export DOCKER_HTTP_PROXY; fi else builtin unset DOCKER_HTTP_PROXY 2>/dev/null || command unset DOCKER_HTTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_14 __CODEX_SNAPSHOT_PROXY_OVERRIDE_14 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_14 __CODEX_SNAPSHOT_PROXY_OVERRIDE_14 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_15}" ]; then   if [ -z "${ELECTRON_GET_USE_PROXY+x}" ] || [ "${ELECTRON_GET_USE_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_15}" ]; then export ELECTRON_GET_USE_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_15}"; else export ELECTRON_GET_USE_PROXY; fi else builtin unset ELECTRON_GET_USE_PROXY 2>/dev/null || command unset ELECTRON_GET_USE_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_15 __CODEX_SNAPSHOT_PROXY_OVERRIDE_15 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_15 __CODEX_SNAPSHOT_PROXY_OVERRIDE_15 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_16}" ]; then   if [ -z "${FTP_PROXY+x}" ] || [ "${FTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_16}" ]; then export FTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_16}"; else export FTP_PROXY; fi else builtin unset FTP_PROXY 2>/dev/null || command unset FTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_16 __CODEX_SNAPSHOT_PROXY_OVERRIDE_16 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_16 __CODEX_SNAPSHOT_PROXY_OVERRIDE_16 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_17}" ]; then   if [ -z "${GIT_SSL_CAINFO+x}" ] || [ "${GIT_SSL_CAINFO-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_17}" ]; then export GIT_SSL_CAINFO="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_17}"; else export GIT_SSL_CAINFO; fi else builtin unset GIT_SSL_CAINFO 2>/dev/null || command unset GIT_SSL_CAINFO; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_17 __CODEX_SNAPSHOT_PROXY_OVERRIDE_17 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_17 __CODEX_SNAPSHOT_PROXY_OVERRIDE_17 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_18}" ]; then   if [ -z "${HTTPS_PROXY+x}" ] || [ "${HTTPS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_18}" ]; then export HTTPS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_18}"; else export HTTPS_PROXY; fi else builtin unset HTTPS_PROXY 2>/dev/null || command unset HTTPS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_18 __CODEX_SNAPSHOT_PROXY_OVERRIDE_18 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_18 __CODEX_SNAPSHOT_PROXY_OVERRIDE_18 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_19}" ]; then   if [ -z "${HTTP_PROXY+x}" ] || [ "${HTTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_19}" ]; then export HTTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_19}"; else export HTTP_PROXY; fi else builtin unset HTTP_PROXY 2>/dev/null || command unset HTTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_19 __CODEX_SNAPSHOT_PROXY_OVERRIDE_19 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_19 __CODEX_SNAPSHOT_PROXY_OVERRIDE_19 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_20}" ]; then   if [ -z "${NODE_EXTRA_CA_CERTS+x}" ] || [ "${NODE_EXTRA_CA_CERTS-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_20}" ]; then export NODE_EXTRA_CA_CERTS="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_20}"; else export NODE_EXTRA_CA_CERTS; fi else builtin unset NODE_EXTRA_CA_CERTS 2>/dev/null || command unset NODE_EXTRA_CA_CERTS; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_20 __CODEX_SNAPSHOT_PROXY_OVERRIDE_20 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_20 __CODEX_SNAPSHOT_PROXY_OVERRIDE_20 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_21}" ]; then   if [ -z "${NODE_USE_ENV_PROXY+x}" ] || [ "${NODE_USE_ENV_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_21}" ]; then export NODE_USE_ENV_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_21}"; else export NODE_USE_ENV_PROXY; fi else builtin unset NODE_USE_ENV_PROXY 2>/dev/null || command unset NODE_USE_ENV_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_21 __CODEX_SNAPSHOT_PROXY_OVERRIDE_21 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_21 __CODEX_SNAPSHOT_PROXY_OVERRIDE_21 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_22}" ]; then   if [ -z "${NO_PROXY+x}" ] || [ "${NO_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_22}" ]; then export NO_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_22}"; else export NO_PROXY; fi else builtin unset NO_PROXY 2>/dev/null || command unset NO_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_22 __CODEX_SNAPSHOT_PROXY_OVERRIDE_22 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_22 __CODEX_SNAPSHOT_PROXY_OVERRIDE_22 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_23}" ]; then   if [ -z "${NPM_CONFIG_CAFILE+x}" ] || [ "${NPM_CONFIG_CAFILE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_23}" ]; then export NPM_CONFIG_CAFILE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_23}"; else export NPM_CONFIG_CAFILE; fi else builtin unset NPM_CONFIG_CAFILE 2>/dev/null || command unset NPM_CONFIG_CAFILE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_23 __CODEX_SNAPSHOT_PROXY_OVERRIDE_23 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_23 __CODEX_SNAPSHOT_PROXY_OVERRIDE_23 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_24}" ]; then   if [ -z "${NPM_CONFIG_HTTPS_PROXY+x}" ] || [ "${NPM_CONFIG_HTTPS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_24}" ]; then export NPM_CONFIG_HTTPS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_24}"; else export NPM_CONFIG_HTTPS_PROXY; fi else builtin unset NPM_CONFIG_HTTPS_PROXY 2>/dev/null || command unset NPM_CONFIG_HTTPS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_24 __CODEX_SNAPSHOT_PROXY_OVERRIDE_24 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_24 __CODEX_SNAPSHOT_PROXY_OVERRIDE_24 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_25}" ]; then   if [ -z "${NPM_CONFIG_HTTP_PROXY+x}" ] || [ "${NPM_CONFIG_HTTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_25}" ]; then export NPM_CONFIG_HTTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_25}"; else export NPM_CONFIG_HTTP_PROXY; fi else builtin unset NPM_CONFIG_HTTP_PROXY 2>/dev/null || command unset NPM_CONFIG_HTTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_25 __CODEX_SNAPSHOT_PROXY_OVERRIDE_25 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_25 __CODEX_SNAPSHOT_PROXY_OVERRIDE_25 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_26}" ]; then   if [ -z "${NPM_CONFIG_NOPROXY+x}" ] || [ "${NPM_CONFIG_NOPROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_26}" ]; then export NPM_CONFIG_NOPROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_26}"; else export NPM_CONFIG_NOPROXY; fi else builtin unset NPM_CONFIG_NOPROXY 2>/dev/null || command unset NPM_CONFIG_NOPROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_26 __CODEX_SNAPSHOT_PROXY_OVERRIDE_26 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_26 __CODEX_SNAPSHOT_PROXY_OVERRIDE_26 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_27}" ]; then   if [ -z "${NPM_CONFIG_PROXY+x}" ] || [ "${NPM_CONFIG_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_27}" ]; then export NPM_CONFIG_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_27}"; else export NPM_CONFIG_PROXY; fi else builtin unset NPM_CONFIG_PROXY 2>/dev/null || command unset NPM_CONFIG_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_27 __CODEX_SNAPSHOT_PROXY_OVERRIDE_27 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_27 __CODEX_SNAPSHOT_PROXY_OVERRIDE_27 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_28}" ]; then   if [ -z "${PIP_CERT+x}" ] || [ "${PIP_CERT-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_28}" ]; then export PIP_CERT="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_28}"; else export PIP_CERT; fi else builtin unset PIP_CERT 2>/dev/null || command unset PIP_CERT; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_28 __CODEX_SNAPSHOT_PROXY_OVERRIDE_28 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_28 __CODEX_SNAPSHOT_PROXY_OVERRIDE_28 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_29}" ]; then   if [ -z "${PIP_PROXY+x}" ] || [ "${PIP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_29}" ]; then export PIP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_29}"; else export PIP_PROXY; fi else builtin unset PIP_PROXY 2>/dev/null || command unset PIP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_29 __CODEX_SNAPSHOT_PROXY_OVERRIDE_29 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_29 __CODEX_SNAPSHOT_PROXY_OVERRIDE_29 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_30}" ]; then   if [ -z "${REQUESTS_CA_BUNDLE+x}" ] || [ "${REQUESTS_CA_BUNDLE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_30}" ]; then export REQUESTS_CA_BUNDLE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_30}"; else export REQUESTS_CA_BUNDLE; fi else builtin unset REQUESTS_CA_BUNDLE 2>/dev/null || command unset REQUESTS_CA_BUNDLE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_30 __CODEX_SNAPSHOT_PROXY_OVERRIDE_30 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_30 __CODEX_SNAPSHOT_PROXY_OVERRIDE_30 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_31}" ]; then   if [ -z "${SSL_CERT_FILE+x}" ] || [ "${SSL_CERT_FILE-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_31}" ]; then export SSL_CERT_FILE="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_31}"; else export SSL_CERT_FILE; fi else builtin unset SSL_CERT_FILE 2>/dev/null || command unset SSL_CERT_FILE; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_31 __CODEX_SNAPSHOT_PROXY_OVERRIDE_31 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_31 __CODEX_SNAPSHOT_PROXY_OVERRIDE_31 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_32}" ]; then   if [ -z "${WSS_PROXY+x}" ] || [ "${WSS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_32}" ]; then export WSS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_32}"; else export WSS_PROXY; fi else builtin unset WSS_PROXY 2>/dev/null || command unset WSS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_32 __CODEX_SNAPSHOT_PROXY_OVERRIDE_32 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_32 __CODEX_SNAPSHOT_PROXY_OVERRIDE_32 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_33}" ]; then   if [ -z "${WS_PROXY+x}" ] || [ "${WS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_33}" ]; then export WS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_33}"; else export WS_PROXY; fi else builtin unset WS_PROXY 2>/dev/null || command unset WS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_33 __CODEX_SNAPSHOT_PROXY_OVERRIDE_33 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_33 __CODEX_SNAPSHOT_PROXY_OVERRIDE_33 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_34}" ]; then   if [ -z "${YARN_HTTPS_PROXY+x}" ] || [ "${YARN_HTTPS_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_34}" ]; then export YARN_HTTPS_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_34}"; else export YARN_HTTPS_PROXY; fi else builtin unset YARN_HTTPS_PROXY 2>/dev/null || command unset YARN_HTTPS_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_34 __CODEX_SNAPSHOT_PROXY_OVERRIDE_34 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_34 __CODEX_SNAPSHOT_PROXY_OVERRIDE_34 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_35}" ]; then   if [ -z "${YARN_HTTP_PROXY+x}" ] || [ "${YARN_HTTP_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_35}" ]; then export YARN_HTTP_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_35}"; else export YARN_HTTP_PROXY; fi else builtin unset YARN_HTTP_PROXY 2>/dev/null || command unset YARN_HTTP_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_35 __CODEX_SNAPSHOT_PROXY_OVERRIDE_35 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_35 __CODEX_SNAPSHOT_PROXY_OVERRIDE_35 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_36}" ]; then   if [ -z "${YARN_NO_PROXY+x}" ] || [ "${YARN_NO_PROXY-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_36}" ]; then export YARN_NO_PROXY="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_36}"; else export YARN_NO_PROXY; fi else builtin unset YARN_NO_PROXY 2>/dev/null || command unset YARN_NO_PROXY; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_36 __CODEX_SNAPSHOT_PROXY_OVERRIDE_36 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_36 __CODEX_SNAPSHOT_PROXY_OVERRIDE_36 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_37}" ]; then   if [ -z "${all_proxy+x}" ] || [ "${all_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_37}" ]; then export all_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_37}"; else export all_proxy; fi else builtin unset all_proxy 2>/dev/null || command unset all_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_37 __CODEX_SNAPSHOT_PROXY_OVERRIDE_37 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_37 __CODEX_SNAPSHOT_PROXY_OVERRIDE_37 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_38}" ]; then   if [ -z "${ftp_proxy+x}" ] || [ "${ftp_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_38}" ]; then export ftp_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_38}"; else export ftp_proxy; fi else builtin unset ftp_proxy 2>/dev/null || command unset ftp_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_38 __CODEX_SNAPSHOT_PROXY_OVERRIDE_38 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_38 __CODEX_SNAPSHOT_PROXY_OVERRIDE_38 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_39}" ]; then   if [ -z "${http_proxy+x}" ] || [ "${http_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_39}" ]; then export http_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_39}"; else export http_proxy; fi else builtin unset http_proxy 2>/dev/null || command unset http_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_39 __CODEX_SNAPSHOT_PROXY_OVERRIDE_39 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_39 __CODEX_SNAPSHOT_PROXY_OVERRIDE_39 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_40}" ]; then   if [ -z "${https_proxy+x}" ] || [ "${https_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_40}" ]; then export https_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_40}"; else export https_proxy; fi else builtin unset https_proxy 2>/dev/null || command unset https_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_40 __CODEX_SNAPSHOT_PROXY_OVERRIDE_40 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_40 __CODEX_SNAPSHOT_PROXY_OVERRIDE_40 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_41}" ]; then   if [ -z "${no_proxy+x}" ] || [ "${no_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_41}" ]; then export no_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_41}"; else export no_proxy; fi else builtin unset no_proxy 2>/dev/null || command unset no_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_41 __CODEX_SNAPSHOT_PROXY_OVERRIDE_41 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_41 __CODEX_SNAPSHOT_PROXY_OVERRIDE_41 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_42}" ]; then   if [ -z "${npm_config_cafile+x}" ] || [ "${npm_config_cafile-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_42}" ]; then export npm_config_cafile="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_42}"; else export npm_config_cafile; fi else builtin unset npm_config_cafile 2>/dev/null || command unset npm_config_cafile; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_42 __CODEX_SNAPSHOT_PROXY_OVERRIDE_42 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_42 __CODEX_SNAPSHOT_PROXY_OVERRIDE_42 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_43}" ]; then   if [ -z "${npm_config_http_proxy+x}" ] || [ "${npm_config_http_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_43}" ]; then export npm_config_http_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_43}"; else export npm_config_http_proxy; fi else builtin unset npm_config_http_proxy 2>/dev/null || command unset npm_config_http_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_43 __CODEX_SNAPSHOT_PROXY_OVERRIDE_43 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_43 __CODEX_SNAPSHOT_PROXY_OVERRIDE_43 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_44}" ]; then   if [ -z "${npm_config_https_proxy+x}" ] || [ "${npm_config_https_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_44}" ]; then export npm_config_https_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_44}"; else export npm_config_https_proxy; fi else builtin unset npm_config_https_proxy 2>/dev/null || command unset npm_config_https_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_44 __CODEX_SNAPSHOT_PROXY_OVERRIDE_44 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_44 __CODEX_SNAPSHOT_PROXY_OVERRIDE_44 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_45}" ]; then   if [ -z "${npm_config_noproxy+x}" ] || [ "${npm_config_noproxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_45}" ]; then export npm_config_noproxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_45}"; else export npm_config_noproxy; fi else builtin unset npm_config_noproxy 2>/dev/null || command unset npm_config_noproxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_45 __CODEX_SNAPSHOT_PROXY_OVERRIDE_45 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_45 __CODEX_SNAPSHOT_PROXY_OVERRIDE_45 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_46}" ]; then   if [ -z "${npm_config_proxy+x}" ] || [ "${npm_config_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_46}" ]; then export npm_config_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_46}"; else export npm_config_proxy; fi else builtin unset npm_config_proxy 2>/dev/null || command unset npm_config_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_46 __CODEX_SNAPSHOT_PROXY_OVERRIDE_46 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_46 __CODEX_SNAPSHOT_PROXY_OVERRIDE_46 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_47}" ]; then   if [ -z "${ws_proxy+x}" ] || [ "${ws_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_47}" ]; then export ws_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_47}"; else export ws_proxy; fi else builtin unset ws_proxy 2>/dev/null || command unset ws_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_47 __CODEX_SNAPSHOT_PROXY_OVERRIDE_47 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_47 __CODEX_SNAPSHOT_PROXY_OVERRIDE_47 if [ -n "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_48}" ]; then   if [ -z "${wss_proxy+x}" ] || [ "${wss_proxy-}" != "${__CODEX_SNAPSHOT_PROXY_OVERRIDE_48}" ]; then export wss_proxy="${__CODEX_SNAPSHOT_PROXY_OVERRIDE_48}"; else export wss_proxy; fi else builtin unset wss_proxy 2>/dev/null || command unset wss_proxy; fi builtin unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_48 __CODEX_SNAPSHOT_PROXY_OVERRIDE_48 2>/dev/null || command unset __CODEX_SNAPSHOT_PROXY_OVERRIDE_SET_48 __CODEX_SNAPSHOT_PROXY_OVERRIDE_48 fi if [ -n "${PATH:-}" ]; then export PATH='/home/manuel/.local/share/pnpm/global/5/.pnpm/@openai+codex@0.172.0-linux-x64/node_modules/@openai/codex/vendor/x86_64-unknown-linux-musl/codex-path':"$PATH"; else export PATH='/home/manuel/.local/share/pnpm/global/5/.pnpm/@openai+codex@0.172.0-linux-x64/node_modules/@openai/codex/vendor/x86_64-unknown-linux-musl/codex-path'; fi  exec '/usr/bin/zsh' -c 'ps -eo pid,etime,pcpu,stat,args | rg '"'"'(02-baselines|node --test|tests/typed|tsc)'"'"' | head -30'
+      2       00:02 10.2 S    /usr/bin/zsh -c ps -eo pid,etime,pcpu,stat,args | rg '(02-baselines|node --test|tests/typed|tsc)' | head -30
+    390       00:00  0.0 R    rg (02-baselines|node --test|tests/typed|tsc)
+    391       00:00  0.0 R    /usr/bin/zsh -c ps -eo pid,etime,pcpu,stat,args | rg '(02-baselines|node --test|tests/typed|tsc)' | head -30
+
+ exited 130 in 139507ms:
+✔ tests/framework/conformance.test.mjs (1752.170569ms)
+✔ tests/framework/contracts.test.mjs (534.197803ms)
+✔ tests/framework/core-review.test.mjs (286.677832ms)
+✔ tests/framework/core.test.mjs (236.719733ms)
+✔ tests/framework/correspondence-entities.test.mjs (284.469648ms)
+✔ tests/framework/ext-e1-e2.test.mjs (352.831117ms)
+✔ tests/framework/ext-e3-e6.test.mjs (601.807158ms)
+✔ tests/framework/ext-e4.test.mjs (231.210855ms)
+✔ tests/framework/ext-e5.test.mjs (357.520536ms)
+✔ tests/framework/identity-caches.test.mjs (3285.327273ms)
+✔ tests/framework/ir-examples.test.mjs (2624.488353ms)
+✔ tests/framework/ir-foundation.test.mjs (499.643185ms)
+✔ tests/framework/ir-review.test.mjs (483.710247ms)
+✔ tests/framework/ir-rewriting.test.mjs (949.843606ms)
+✔ tests/framework/layering.test.mjs (404.769973ms)
+✔ tests/framework/native-pass-sync.test.mjs (396.856467ms)
+✔ tests/framework/pass-policy.test.mjs (526.316416ms)
+✔ tests/framework/r3-defects.test.mjs (408.174638ms)
+✔ tests/framework/run-extensions.test.mjs (328.863277ms)
+✔ tests/framework/scoped.test.mjs (373.950859ms)
+✔ tests/framework/strategy.test.mjs (502.556976ms)
+✔ tests/typed/attribute.test.mjs (9359.784296ms)
+✔ tests/typed/audit.test.mjs (1464.330048ms)
+✔ tests/typed/backend.test.mjs (56565.831492ms)
+✔ tests/typed/bcm.test.mjs (1826.906953ms)
+✔ tests/typed/bytecode-vm.test.mjs (16551.895946ms)
+
+exec
+/usr/bin/zsh -lc 'node --test --test-concurrency=2 tests/typed/*.test.mjs tests/framework/*.test.mjs tests/workbench/*.test.mjs ${${(f)$(rg --files tests/tensor -g '"'*.test.mjs' -g '"'!*-gpu.test.mjs'"')}[@]}" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+2026-11-27T23:38:01.012101Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 21802
+codex
+I restarted the suite with a two-worker limit to reduce load on the shared machine. The baseline comparison continues separately, and the framework tests are progressing.
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('tests/stdlib/dependencies.test.mjs');s=p.read_text();s=s.replace(\"      if (ts.isCallExpression(node)\",\"      if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)) specifier = node.argument.literal;\\n      if (ts.isCallExpression(node)\");p.write_text(s)
+PY
+node --test tests/stdlib/*.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 6090ms:
+✔ tests/stdlib/dependencies.test.mjs (1852.939154ms)
+✔ tests/stdlib/liveness.test.mjs (314.387397ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1902.880859
+
+codex
+The framework tests and unchanged backend test have passed in the limited-worker run. The baseline script has not reported its result yet; it compares the complete Typed and Tix corpora.
+exec
+/usr/bin/zsh -lc "sed -n '1,180p' ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/scripts/02-baselines.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 2705ms:
+#!/usr/bin/env node
+// IRWB-039 phase 1a: baselines every refactor step must leave unchanged (or state, in its report, why it changed).
+//   node 02-baselines.mjs write [out.json]     record, default ../various/baselines/main.json
+//   node 02-baselines.mjs check [base.json]    recompute in this checkout and print every difference (exit 1 if any)
+// Run from any directory; it measures the checkout it lives in (needs `npm run build` first), or ROOT=<checkout>.
+// Recorded:
+//   typed:  per corpus project and pipeline (r0, O2, speed): SHA-256 of the RV32 image, its byte size, RV32
+//           instructions at the agents' seed (10 cases, seed 7) and a held-out seed (20, 1103), and edit records
+//           per pass (the census);
+//   tensor: per corpus/tensor program and function: SHA-256 of the CUDA source, fused and unfused; the revision of
+//           optimizeTix with ['inline'] and with ['inline', 'split-sum'];
+//   timing: milliseconds per pass application of Tix inline on attention (informational, never compared).
+import { createHash } from 'node:crypto';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const root = resolve(process.env.ROOT ?? resolve(here, '../../../../../..'));
+const imp = p => import(pathToFileURL(resolve(root, p)).href);
+const sha = x => createHash('sha256').update(typeof x === 'string' ? x : JSON.stringify(x)).digest('hex').slice(0, 16);
+const [mode = 'check', file = resolve(here, '../various/baselines/main.json')] = process.argv.slice(2);
+
+const { installVendor } = await imp('tools/node-vendor.mjs');
+await installVendor();
+const { projectIds, projectFiles } = await imp('tools/corpus.mjs');
+const { projectSource } = await imp('dist/typed/project.js');
+const { Program } = await imp('dist/typed/program.js');
+const { measure } = await imp('dist/typed/strategies.js');
+const { lowerToImage } = await imp('dist/typed/backend/index.js');
+const T = await imp('dist/tensor/index.js');
+
+const out = { typed: {}, tensor: {}, timing: {} };
+for (const id of projectIds()) {
+  const row = {};
+  for (const pipe of ['r0', 'O2', 'speed']) {
+    try {
+      const p = Program.fromProject(projectSource(id, projectFiles(id)));
+      const census = {};
+      if (pipe !== 'r0') {
+        await p.pipeline(pipe);
+        for (const r of p.revisions.slice(1)) census[r.pass] = (census[r.pass] ?? 0) + (r.edits?.length ?? 0);
+      }
+      const image = lowerToImage(p.artifact()).image.value;
+      const m = s => measure(p, p.artifact(), s).instructions;
+      row[pipe] = { image: sha(image), bytes: image.bytes?.length ?? image.code?.length ?? null,
+        instructions: m({ count: 10, seed: 7 }), heldout: m({ count: 20, seed: 1103 }), census };
+    } catch (e) {
+      row[pipe] = { error: String(e.message).slice(0, 200) };
+    }
+  }
+  out.typed[id] = row;
+}
+const tdir = resolve(root, 'corpus/tensor');
+for (const name of readdirSync(tdir)) {
+  const p = T.compileTix(readFileSync(resolve(tdir, name, 'main.tix'), 'utf8'));
+  const row = { functions: {} };
+  for (const f of p.current.value.functions) {
+    const fused = T.cudaSource(p, f.name), unfused = T.cudaSource(p, f.name, { fuse: false });
+    row.functions[f.name] = { fused: sha(fused), unfused: sha(unfused) };
+  }
+  row.inline = T.optimizeTix(p, ['inline']).program.current.revision;
+  row.inlineSplit = T.optimizeTix(p, ['inline', 'split-sum']).program.current.revision;
+  out.tensor[name] = row;
+}
+{
+  const { applyNativePassSync } = await imp('dist/framework/passes/index.js');
+  const { inlinePass } = await imp('dist/tensor/passes.js');
+  const p = T.compileTix(readFileSync(resolve(tdir, 'attention', 'main.tix'), 'utf8'));
+  const t0 = performance.now();
+  for (let i = 0; i < 50; i++) applyNativePassSync(inlinePass, p.current, () => ({ ok: true }));
+  out.timing.inlineAttentionMs = +((performance.now() - t0) / 50).toFixed(3);
+}
+
+if (mode === 'write') {
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, JSON.stringify(out, null, 1));
+  const n = Object.keys(out.typed).length, errs = Object.values(out.typed).flatMap(r => Object.values(r)).filter(v => v.error).length;
+  console.log(`wrote ${file}: ${n} typed projects (${errs} errors), ${Object.keys(out.tensor).length} Tix programs, inline ${out.timing.inlineAttentionMs} ms`);
+} else {
+  const base = JSON.parse(readFileSync(file, 'utf8'));
+  const diffs = [];
+  const walk = (a, b, path) => {
+    if (path[0] === 'timing') return;
+    if (a && b && typeof a === 'object' && typeof b === 'object') {
+      for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) walk(a[k], b[k], [...path, k]);
+    } else if (JSON.stringify(a) !== JSON.stringify(b)) diffs.push(`${path.join('.')}: ${JSON.stringify(a)} -> ${JSON.stringify(b)}`);
+  };
+  walk(base, out, []);
+  console.log(diffs.length ? diffs.join('\n') : 'no differences from ' + file);
+  console.log(`timing: inline on attention ${base.timing.inlineAttentionMs} -> ${out.timing.inlineAttentionMs} ms per application`);
+  process.exit(diffs.length ? 1 : 0);
+}
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/02-final-report.md'); s=p.read_text().split('# Final report')[0]+'''# Final report
+
+Added a pure, synchronous liveness algorithm over finite block arrays, and replaced the allocator and coalescer sweeps with it. The result covers all supplied blocks, including unreachable predecessors, preserving the machine semantics and iteration order. Tests cover the specified unreachable graph, a loop, and the library dependency boundary.
+
+The sweep duplicates the general dataflow framework's fixpoint concept: the requested standard-library boundary prohibits framework dependencies, and the existing framework solver uses entry reachability, unlike these clients. A reusable domain-independent lattice solver is deferred as planned.
+
+The brief refers to a pre-existing todo for this step in the three defect files, but none names liveness or IRWB-046-A; no unrelated todo was changed. Physical-register bitset liveness was left untouched because this step specifies the two set-based clients.
+
+## Later
+
+- Dominators and loops.
+- Lattices and a fixpoint solver.
+- SSA construction.
+- Affine forms.
+''';p.write_text(s)
+p=Path('ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/01-diary.md');p.write_text(p.read_text()+'- Committed the design, extracted the original sweep into a domain-independent interface, and switched both clients. Added exact unreachable-predecessor, loop, and dependency tests.\\n- Build, focused tests, TypeScript checking and formatting passed. Started the requested corpus baseline and non-GPU suites.\\n')
+PY" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 3037ms:
+codex
+The report records one discrepancy in the brief: the named defect files contain no liveness or IRWB-046-A todo, so I left their unrelated todos intact. The shared algorithm deliberately covers all blocks; the framework’s existing dataflow solver has a different reachability scope and cannot be imported across the requested library boundary.
+codex
+The slower Typed corpus tests are still running; `candela.test.mjs` has also passed. No source changes have been needed since the focused checks.
+exec
+/usr/bin/zsh -lc "git add src/stdlib src/typed/backend/regalloc.ts src/typed/backend/coalesce.ts tests/stdlib ttmp/2026/11/27/IRWB-046-A--standard-library-liveness && git commit -m 'IRWB-046-A: share machine liveness through standard library'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 2317ms:
+[v7-lib-tl/irwb-046-a 6babc88] IRWB-046-A: share machine liveness through standard library
+ 8 files changed, 104 insertions(+), 47 deletions(-)
+ create mode 100644 src/stdlib/flow/liveness.ts
+ create mode 100644 src/stdlib/index.ts
+ create mode 100644 tests/stdlib/dependencies.test.mjs
+ create mode 100644 tests/stdlib/liveness.test.mjs
+
+ succeeded in 352147ms:
+no differences from /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/various/baselines/main.json
+timing: inline on attention 0.527 -> 3.516 ms per application
+
+codex
+The baseline check completed with **“no differences”**, including the RV32 images and Tix outputs. The implementation is committed; I’m waiting for the remaining non-GPU suite results before recording the final report.
+codex
+The baseline comparison passed without differences. The suite is still working through the longer Typed tests with concurrency capped at two; there are no reported failures so far.
+exec
+/usr/bin/zsh -lc "rg --files tests/typed -g '*.test.mjs' | sort" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 2186ms:
+tests/typed/attribute.test.mjs
+tests/typed/audit.test.mjs
+tests/typed/backend.test.mjs
+tests/typed/bcm.test.mjs
+tests/typed/bytecode-vm.test.mjs
+tests/typed/candela.test.mjs
+tests/typed/chess-search.test.mjs
+tests/typed/d2-defects.test.mjs
+tests/typed/dfe.test.mjs
+tests/typed/edit-classes.test.mjs
+tests/typed/evaluate-analyses.test.mjs
+tests/typed/f32-backend.test.mjs
+tests/typed/f32-dsp.test.mjs
+tests/typed/f32.test.mjs
+tests/typed/facts-check.test.mjs
+tests/typed/format.test.mjs
+tests/typed/guards.test.mjs
+tests/typed/ingest.test.mjs
+tests/typed/inline.test.mjs
+tests/typed/lz-roundtrip.test.mjs
+tests/typed/meaning-memo.test.mjs
+tests/typed/missed.test.mjs
+tests/typed/mutate.test.mjs
+tests/typed/parallel.test.mjs
+tests/typed/passes.test.mjs
+tests/typed/pe.test.mjs
+tests/typed/program.test.mjs
+tests/typed/project-meta.test.mjs
+tests/typed/reference-check.test.mjs
+tests/typed/regex-nfa.test.mjs
+tests/typed/rules.test.mjs
+tests/typed/sha-chacha.test.mjs
+tests/typed/specialize.test.mjs
+tests/typed/speed.test.mjs
+tests/typed/ssa.test.mjs
+tests/typed/strategies.test.mjs
+tests/typed/tape.test.mjs
+
+codex
+The baseline passed, and the suite has advanced through the long chess and floating-point tests. One existing formatting test reported a failure; I’m inspecting it while the remaining tests run.
+exec
+/usr/bin/zsh -lc 'node --test --test-reporter=spec tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ exited 1 in 3795ms:
+✖ tests/typed/format.test.mjs (1128.288614ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1184.13318
+
+✖ failing tests:
+
+test at tests/typed/format.test.mjs:1:1
+✖ tests/typed/format.test.mjs (1128.288614ms)
+  'test failed'
+
+exec
+/usr/bin/zsh -lc 'node tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ exited 1 in 3421ms:
+✔ format: JSON keeps what fits on one line, breaks the rest, and round-trips (12.457737ms)
+✔ format: prose wraps without changing blocks; lists keep their items (5.956271ms)
+✖ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (359.76894ms)
+✔ format: strategy presets and plans fit TILE_WIDTH (43.155441ms)
+✔ format: already wrapped list continuations remain indented and idempotent (0.617475ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 451.121361
+
+✖ failing tests:
+
+test at tests/typed/format.test.mjs:33:1
+✖ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (359.76894ms)
+  <ref *1> Error: spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node EPERM
+      at Object.spawnSync (node:internal/child_process:1143:20)
+      at spawnSync (node:child_process:911:24)
+      at execFileSync (node:child_process:954:15)
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/tests/typed/format.test.mjs:44:3)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    path: '/home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    spawnargs: [ 'tools/format-corpus.mjs', '--check' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, <Buffer >, <Buffer > ],
+    pid: 395,
+    stdout: <Buffer >,
+    stderr: <Buffer >
+  }
+
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 2887ms:
+✔ format: JSON keeps what fits on one line, breaks the rest, and round-trips (7.064714ms)
+✔ format: prose wraps without changing blocks; lists keep their items (1.76242ms)
+✔ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (311.346768ms)
+✔ format: strategy presets and plans fit TILE_WIDTH (66.857542ms)
+✔ format: already wrapped list continuations remain indented and idempotent (0.684633ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 872.085695
+
+codex
+The formatting failure was the anticipated sandbox `EPERM` when the test spawned Node. It passes all five tests when rerun with the requested escalation. A second test file has reported a failure, which I’m checking for the same cause.
+exec
+/usr/bin/zsh -lc 'node tests/typed/reference-check.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ exited 1 in 2935ms:
+✖ reference check selects projects and rejects unknown ids (543.142738ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 634.465511
+
+✖ failing tests:
+
+test at tests/typed/reference-check.test.mjs:5:1
+✖ reference check selects projects and rejects unknown ids (543.142738ms)
+  SyntaxError: Unexpected end of JSON input
+      at JSON.parse (<anonymous>)
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/tests/typed/reference-check.test.mjs:8:21)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.start (node:internal/test_runner/test:1191:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+
+exec
+/usr/bin/zsh -lc 'cat tests/typed/reference-check.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 2216ms:
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+
+test('reference check selects projects and rejects unknown ids', () => {
+  const selected = spawnSync(process.execPath, ['tools/reference-check.mjs', 'blend'], { encoding: 'utf8' });
+  assert.equal(selected.status, 0, selected.stderr);
+  assert.equal(JSON.parse(selected.stdout.split('\n')[0]).functions, 1);
+  const unknown = spawnSync(process.execPath, ['tools/reference-check.mjs', 'no-such-project'], {
+    encoding: 'utf8',
+  });
+  assert.notEqual(unknown.status, 0);
+  assert.match(unknown.stderr, /no-such-project/);
+});
+
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/reference-check.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 3146ms:
+✔ reference check selects projects and rejects unknown ids (808.807198ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1007.303183
+
+ exited 1 in 397258ms:
+✔ tests/framework/conformance.test.mjs (1889.112145ms)
+✔ tests/framework/contracts.test.mjs (537.141129ms)
+✔ tests/framework/core-review.test.mjs (340.786923ms)
+✔ tests/framework/core.test.mjs (407.52138ms)
+✔ tests/framework/correspondence-entities.test.mjs (386.044809ms)
+✔ tests/framework/ext-e1-e2.test.mjs (265.624821ms)
+✔ tests/framework/ext-e3-e6.test.mjs (550.655809ms)
+✔ tests/framework/ext-e4.test.mjs (372.43951ms)
+✔ tests/framework/ext-e5.test.mjs (362.637212ms)
+✔ tests/framework/identity-caches.test.mjs (3803.959875ms)
+✔ tests/framework/ir-examples.test.mjs (2694.359253ms)
+✔ tests/framework/ir-foundation.test.mjs (614.397731ms)
+✔ tests/framework/ir-review.test.mjs (550.151503ms)
+✔ tests/framework/ir-rewriting.test.mjs (940.778618ms)
+✔ tests/framework/layering.test.mjs (407.49923ms)
+✔ tests/framework/native-pass-sync.test.mjs (323.95847ms)
+✔ tests/framework/pass-policy.test.mjs (463.148411ms)
+✔ tests/framework/r3-defects.test.mjs (771.334242ms)
+✔ tests/framework/run-extensions.test.mjs (193.113844ms)
+✔ tests/framework/scoped.test.mjs (518.825571ms)
+✔ tests/framework/strategy.test.mjs (609.857788ms)
+✔ tests/typed/attribute.test.mjs (10058.633057ms)
+✔ tests/typed/audit.test.mjs (1892.48752ms)
+✔ tests/typed/backend.test.mjs (40460.853626ms)
+✔ tests/typed/bcm.test.mjs (2537.253121ms)
+✔ tests/typed/bytecode-vm.test.mjs (12621.89524ms)
+✔ tests/typed/candela.test.mjs (93947.476763ms)
+✔ tests/typed/chess-search.test.mjs (241605.173923ms)
+✔ tests/typed/d2-defects.test.mjs (46686.076554ms)
+✔ tests/typed/dfe.test.mjs (861.077317ms)
+✔ tests/typed/edit-classes.test.mjs (4405.179242ms)
+✔ tests/typed/evaluate-analyses.test.mjs (7090.053047ms)
+✔ tests/typed/f32-backend.test.mjs (61526.994237ms)
+✔ tests/typed/f32-dsp.test.mjs (20667.240919ms)
+✔ tests/typed/f32.test.mjs (6837.923176ms)
+✔ tests/typed/facts-check.test.mjs (1690.682416ms)
+✖ tests/typed/format.test.mjs (653.756577ms)
+✔ tests/typed/guards.test.mjs (2447.980144ms)
+✔ tests/typed/ingest.test.mjs (2379.741773ms)
+✔ tests/typed/inline.test.mjs (4362.119831ms)
+✔ tests/typed/lz-roundtrip.test.mjs (19968.298089ms)
+✔ tests/typed/meaning-memo.test.mjs (1259.691944ms)
+✔ tests/typed/missed.test.mjs (16970.367958ms)
+✔ tests/typed/mutate.test.mjs (16181.612006ms)
+✔ tests/typed/parallel.test.mjs (5608.846651ms)
+✔ tests/typed/passes.test.mjs (7272.927204ms)
+✔ tests/typed/pe.test.mjs (6452.372609ms)
+✔ tests/typed/program.test.mjs (2553.164584ms)
+✔ tests/typed/project-meta.test.mjs (946.392343ms)
+✖ tests/typed/reference-check.test.mjs (625.880615ms)
+✔ tests/typed/regex-nfa.test.mjs (13285.954427ms)
+✔ tests/typed/rules.test.mjs (16124.718115ms)
+✔ tests/typed/sha-chacha.test.mjs (30577.225358ms)
+✔ tests/typed/specialize.test.mjs (1230.648135ms)
+✔ tests/typed/speed.test.mjs (5051.748748ms)
+✔ tests/typed/ssa.test.mjs (7230.018469ms)
+✔ tests/typed/strategies.test.mjs (3369.762582ms)
+✔ tests/typed/tape.test.mjs (31400.928577ms)
+✖ tests/workbench/candela.test.mjs (8557.319682ms)
+✔ tests/workbench/scripts.test.mjs (1805.59779ms)
+✖ tests/workbench/site.test.mjs (1783.574765ms)
+✔ tests/workbench/strategies.test.mjs (2403.1726ms)
+✔ tests/workbench/wb.test.mjs (1248.326965ms)
+ℹ tests 63
+ℹ suites 0
+ℹ pass 59
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 394302.046853
+
+✖ failing tests:
+
+test at tests/typed/format.test.mjs:1:1
+✖ tests/typed/format.test.mjs (653.756577ms)
+  'test failed'
+
+test at tests/typed/reference-check.test.mjs:1:1
+✖ tests/typed/reference-check.test.mjs (625.880615ms)
+  'test failed'
+
+test at tests/workbench/candela.test.mjs:1:1
+✖ tests/workbench/candela.test.mjs (8557.319682ms)
+  'test failed'
+
+test at tests/workbench/site.test.mjs:1:1
+✖ tests/workbench/site.test.mjs (1783.574765ms)
+  'test failed'
+
+codex
+The second failure also came from a test that spawns Node; its escalated rerun passes. The remaining suite continues, and I’ll report the initial sandbox failures alongside the successful reruns.
+exec
+/usr/bin/zsh -lc 'node tests/workbench/candela.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+exec
+/usr/bin/zsh -lc 'node tests/workbench/site.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+exec
+/usr/bin/zsh -lc 'node --test --test-concurrency=2 tests/tensor/*.test.mjs~tests/tensor/*-gpu.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ exited 1 in 1659ms:
+zsh:1: no matches found: tests/tensor/*.test.mjs~tests/tensor/*-gpu.test.mjs
+
+ exited 1 in 2987ms:
+✖ build:site writes the page, the bundle, the styles and the checked vendor scripts (982.623772ms)
+✖ the reference, the divergences and the book are wrapped at 72 columns (145.636038ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1142.06547
+
+✖ failing tests:
+
+test at tests/workbench/site.test.mjs:12:1
+✖ build:site writes the page, the bundle, the styles and the checked vendor scripts (982.623772ms)
+  <ref *1> Error: spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node EPERM
+      at Object.spawnSync (node:internal/child_process:1143:20)
+      at spawnSync (node:child_process:911:24)
+      at execFileSync (node:child_process:954:15)
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/tests/workbench/site.test.mjs:14:15)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.start (node:internal/test_runner/test:1191:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    path: '/home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    spawnargs: [ '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/tools/build-site.mjs', 'dist/site-test' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, <Buffer >, <Buffer > ],
+    pid: 395,
+    stdout: <Buffer >,
+    stderr: <Buffer >
+  }
+
+test at tests/workbench/site.test.mjs:28:1
+✖ the reference, the divergences and the book are wrapped at 72 columns (145.636038ms)
+  <ref *1> Error: spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node EPERM
+      at Object.spawnSync (node:internal/child_process:1143:20)
+      at spawnSync (node:child_process:911:24)
+      at execFileSync (node:child_process:954:15)
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/tests/workbench/site.test.mjs:29:15)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    path: '/home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    spawnargs: [ '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/tools/format-docs.mjs', '--check' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, <Buffer >, <Buffer > ],
+    pid: 413,
+    stdout: <Buffer >,
+    stderr: <Buffer >
+  }
+
+ exited 1 in 9162ms:
+✖ the site bundles Candela and the reference compiler as checked, lazily loaded scripts (1117.42603ms)
+✔ the Candela project: its files in app.json order, the same source as tools/candela.mjs, narrow text (7.122112ms)
+✔ renderProgressive: one span per row at stride 1, one per pixel otherwise, as renderScene (4.315398ms)
+✔ renderProgressive: pass p renders frame 0, then p + 1, and colour is summed as f32 (1.005308ms)
+✔ renderProgressive stops when asked, and keeps what it rendered (1.573705ms)
+✔ compareFrames counts differing bits, and compares the colour sums only over the same passes (4.206491ms)
+✔ B-01 at stride 32: the emulator and the evaluator at r0 give the same floats (6090.792863ms)
+﹣ Candela opens as a project: ingested from the tape, check inputs derived (IRWB_FULL=1) (0.497659ms) # SKIP
+ℹ tests 8
+ℹ suites 0
+ℹ pass 6
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 7240.93779
+
+✖ failing tests:
+
+test at tests/workbench/candela.test.mjs:24:1
+✖ the site bundles Candela and the reference compiler as checked, lazily loaded scripts (1117.42603ms)
+  <ref *1> Error: spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node EPERM
+      at Object.spawnSync (node:internal/child_process:1143:20)
+      at spawnSync (node:child_process:911:24)
+      at execFileSync (node:child_process:954:15)
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/tests/workbench/candela.test.mjs:27:15)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.start (node:internal/test_runner/test:1191:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    path: '/home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    spawnargs: [ '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/tools/build-site.mjs', 'dist/site-candela-test' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, <Buffer >, <Buffer > ],
+    pid: 395,
+    stdout: <Buffer >,
+    stderr: <Buffer >
+  }
+
+exec
+/usr/bin/zsh -lc 'node --test tests/workbench/candela.test.mjs tests/workbench/site.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+exec
+/usr/bin/bash -lc "mapfile -t tensor_tests < <(rg --files tests/tensor -g '*.test.mjs' -g '"'!*-gpu.test.mjs'"'); node --test --test-concurrency=2 \""'${tensor_tests[@]}"' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+codex
+The Typed, framework, and workbench run finished with four file-level failures; two have already passed on escalated rerun, and the site failure also shows `EPERM`. I found the original shell expansion omitted the tensor files, so I’ve started those explicitly and am rerunning the two workbench files outside the sandbox.
+ succeeded in 14513ms:
+✔ tests/tensor/corpus.test.mjs (550.161011ms)
+✔ tests/tensor/cuda.test.mjs (13732.512676ms)
+✔ tests/tensor/fusion.test.mjs (3148.676913ms)
+✔ tests/tensor/language.test.mjs (402.279779ms)
+✔ tests/tensor/passes.test.mjs (687.58282ms)
+✔ tests/tensor/r3-tix-in-plans.test.mjs (252.892387ms)
+✔ tests/tensor/schedule.test.mjs (4946.537458ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13768.986944
+
+ succeeded in 15289ms:
+✔ the site bundles Candela and the reference compiler as checked, lazily loaded scripts (1470.423901ms)
+✔ the Candela project: its files in app.json order, the same source as tools/candela.mjs, narrow text (4.205187ms)
+✔ renderProgressive: one span per row at stride 1, one per pixel otherwise, as renderScene (4.702094ms)
+✔ renderProgressive: pass p renders frame 0, then p + 1, and colour is summed as f32 (1.374567ms)
+✔ renderProgressive stops when asked, and keeps what it rendered (1.297666ms)
+✔ compareFrames counts differing bits, and compares the colour sums only over the same passes (2.263363ms)
+✔ B-01 at stride 32: the emulator and the evaluator at r0 give the same floats (11398.071103ms)
+﹣ Candela opens as a project: ingested from the tape, check inputs derived (IRWB_FULL=1) (0.445044ms) # SKIP
+✔ build:site writes the page, the bundle, the styles and the checked vendor scripts (1467.516158ms)
+✔ the reference, the divergences and the book are wrapped at 72 columns (228.875324ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 13438.381958
+
+codex
+All seven non-GPU tensor test files passed. The two workbench files also pass outside the sandbox, confirming all four initial failures were caused by child-process restrictions.
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/02-final-report.md');p.write_text(p.read_text()+'''\\n## Verification\\n\\n- "'`npm run build`, `npm run check`, and Prettier checks for changed TypeScript files passed.'"\\n- New stdlib tests: 2 test files passed, 0 failed, including the exact unreachable predecessor.\\n- Baseline check: "'`no differences` (RV32 and Tix corpus records).'"\\n- Requested suites: 70 test files passed, 0 failed after reruns (63 Typed/framework/workbench files and 7 non-GPU tensor files). The initial sandbox run passed 59 of 63 files; four spawned Node and failed under sandbox restrictions. All four passed when rerun with escalation. Node's sandboxed runner reported file-level counts, so these are file counts, not individual test counts. The escalated workbench rerun included one pre-existing skipped test. Existing unrelated todo tests remain.\\n- "'`node tools/build-site.mjs` was exercised successfully by the escalated workbench tests; no framework or workbench source changed.'"\\n''')
+p=Path('ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/01-diary.md');p.write_text(p.read_text()+'- Baselines reported no differences. The non-GPU suites passed across 70 files after rerunning four Node-spawning files outside the sandbox; their initial sandbox failures were EPERM-related.\\n')
+PY
+git add ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/01-diary.md ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/02-final-report.md && git commit -m 'IRWB-046-A: record verification results' && git status --short && git rev-parse HEAD" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a
+ succeeded in 3253ms:
+[v7-lib-tl/irwb-046-a 56dc2cf] IRWB-046-A: record verification results
+ 2 files changed, 9 insertions(+)
+56dc2cf81e669de32713d642d4bb067007764b31
+
+codex
+Implemented and committed the shared liveness primitive. It analyzes **all supplied blocks**, including unreachable predecessors, preserving the two machine clients’ existing behavior.
+
+The [ticket](ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/index.md) contains the [design](ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/design-doc/01-liveness-design.md), [diary](ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/01-diary.md), and [final report](ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/02-final-report.md).
+
+Changed files:
+
+- [liveness.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/src/stdlib/flow/liveness.ts) — adds the domain-independent backward gen/kill solver.
+- [index.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/src/stdlib/index.ts) — exports the primitive and interface.
+- [regalloc.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/src/typed/backend/regalloc.ts) — uses the shared solver for intervals.
+- [coalesce.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/src/typed/backend/coalesce.ts) — uses the shared solver for interference analysis.
+- [liveness.test.mjs](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/tests/stdlib/liveness.test.mjs) — tests the specified unreachable predecessor and a loop.
+- [dependencies.test.mjs](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/tests/stdlib/dependencies.test.mjs) — checks the stdlib import boundary.
+
+Verification passed: the new test files passed; the baseline check printed **“no differences”**; and all 70 requested non-GPU suite files passed after reruns. The initial sandbox run had four file failures from Node subprocess restrictions; all four passed outside the sandbox. These are file-level counts; the workbench rerun also had one existing skipped test. `npm run build`, `npm run check`, and formatting checks passed.
+
+The named defect files contain no liveness or IRWB-046-A todo to remove, so their unrelated todos remain. Later standard-library modules and physical-register bitset liveness were left outside this step.
+
+Last commit: `56dc2cf81e669de32713d642d4bb067007764b31`.
+tokens used
+78,474
+Implemented and committed the shared liveness primitive. It analyzes **all supplied blocks**, including unreachable predecessors, preserving the two machine clients’ existing behavior.
+
+The [ticket](ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/index.md) contains the [design](ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/design-doc/01-liveness-design.md), [diary](ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/01-diary.md), and [final report](ttmp/2026/11/27/IRWB-046-A--standard-library-liveness/reference/02-final-report.md).
+
+Changed files:
+
+- [liveness.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/src/stdlib/flow/liveness.ts) — adds the domain-independent backward gen/kill solver.
+- [index.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/src/stdlib/index.ts) — exports the primitive and interface.
+- [regalloc.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/src/typed/backend/regalloc.ts) — uses the shared solver for intervals.
+- [coalesce.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/src/typed/backend/coalesce.ts) — uses the shared solver for interference analysis.
+- [liveness.test.mjs](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/tests/stdlib/liveness.test.mjs) — tests the specified unreachable predecessor and a loop.
+- [dependencies.test.mjs](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lib-tl-irwb-046-a/tests/stdlib/dependencies.test.mjs) — checks the stdlib import boundary.
+
+Verification passed: the new test files passed; the baseline check printed **“no differences”**; and all 70 requested non-GPU suite files passed after reruns. The initial sandbox run had four file failures from Node subprocess restrictions; all four passed outside the sandbox. These are file-level counts; the workbench rerun also had one existing skipped test. `npm run build`, `npm run check`, and formatting checks passed.
+
+The named defect files contain no liveness or IRWB-046-A todo to remove, so their unrelated todos remain. Later standard-library modules and physical-register bitset liveness were left outside this step.
+
+Last commit: `56dc2cf81e669de32713d642d4bb067007764b31`.

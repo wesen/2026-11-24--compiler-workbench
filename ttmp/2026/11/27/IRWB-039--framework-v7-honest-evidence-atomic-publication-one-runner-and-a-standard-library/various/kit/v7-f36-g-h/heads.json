@@ -1,0 +1,9 @@
+{
+ "IRWB-042-B": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-g-h-irwb-042-b",
+  "branch": "v7-f36-g-h/irwb-042-b",
+  "base": "f99682a",
+  "harness": "pi",
+  "rev": "3104030"
+ }
+}
