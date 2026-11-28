@@ -69,7 +69,7 @@ Most implementation work is done by coding agents (Codex, Pi, Claude) in paralle
 
 | Item | Status |
 |---|---|
-| 4.1 derivations (K2) | running: IRWB-056, GLM high (A) and DeepSeek xhigh (B) |
+| 4.1 derivations (K2) | **merged** (IRWB-056-B, DeepSeek). Rule-citing records 0 → 183; correspondence from steps equals today's on all 547 O2 and `speed` applications; both A0 policies are queries over the records (203 and 393; the 2-record gap from 395 is explained in its test); cost 0.99× |
 | 4.2 lowering as cross-IR transformations | not started; waits for 4.1, because both change the runner |
 | 4.3 attribution and classification as queries | not started; needs 4.1 |
 | 4.4 fusion and scheduling as decide/eligible/prepare (K6) | **merged** (IRWB-057, Fable). The unification held, and the extent-17 counterexample is rejected. |
@@ -80,7 +80,7 @@ Most implementation work is done by coding agents (Codex, Pi, Claude) in paralle
 
 The cleanup lane (IRWB-055, Terra low) is merged: `steps.ts` moved into `core`, one identity algorithm, one plan builder.
 
-**Where things stood at handoff** (update this line if you read it later): see the final diary step for which of IRWB-055, 056 and 058 were merged.
+**Where things stood at handoff:** working branch at the last commit of diary step 10. Every v7 lane launched so far is merged or withdrawn, and no agent is running. All suites, the baselines and the GPU suite (23/23) pass on the working branch.
 
 ## 5. How a round works
 
@@ -160,24 +160,30 @@ These come from the user during the project; keep them.
 
 ## 8. What comes next
 
-1. **Finish this round:**
-   - when IRWB-056 (derivations) finishes, score both cells, review, and merge one;
-   - check its decision point: rule-citing records 0 → 183 on the O2 corpus, correspondence from steps equal to today's, both A0 policies (203 and 395 local edits) as queries over the same records, and cost within about 2× of today's correspondence.
-2. **Next phase-4 round,** after 4.1 is merged. These three touch different files:
+1. **Next phase-4 round.** 4.1 is merged, so these three can start now; they touch different files:
    - **4.6 term rules:** Typed simplify, fold and identities, and Tix inline and split-sum, as rules over a term signature. Cheap cells. Decision point: if the rule path is materially slower than the compiled visitor, share only the matcher and the verifier.
    - **4.2 lowering on the runner:** `lowerToImage` and the CUDA lowering as `Transformation`s from one IR to another, with `rv32.image-agrees` and `tensor.cuda-meaning` as their `ensures` obligations. Check: the composed correspondence equals today's, and images are unchanged. Use a strong cell.
    - **4.8 staged choice:** a launch-time variant with its guard, so the differential's arms are derived. It builds on 4.4.
-3. **Then:**
+2. **Then:**
    - 4.3, attribution and classification as queries over derivations;
    - 4.7, keep or delete the unused engines, decided by what the other items actually use.
-4. **Open the PR** when phase 4 is closed, with every item merged or withdrawn at its decision point: `gh pr create --base main --head irwb-001/import-v6-prototype`. The body summarizes phases 0–4 and links this ticket's design doc and diary.
-5. **After v7, the research stages in `BACKLOG.md`:**
+3. **Open the PR** when phase 4 is closed, with every item merged or withdrawn at its decision point: `gh pr create --base main --head irwb-001/import-v6-prototype`. The body summarizes phases 0–4 and links this ticket's design doc and diary.
+4. **After v7, the research stages in `BACKLOG.md`:**
    - tensor: T4 tolerance calibration, T10 split-K, T11 FMA contraction, T7 autotuning, T5 streaming attention, T12 tensor cores;
    - Typed: B2 (specializing Candela) and A1 (an e-graph over value trees).
 
    The research priority after v7 is derivations plus lowering as checked transformations, so that a whole compilation is a chain of justified steps. Then the backend split into checked steps on a machine IR: selection, allocation, coalescing.
 
 ## 9. Follow-ups found during v7, not yet scheduled
+
+From derivations (4.1):
+- Tix `inline`'s correspondence still says `removed` for a merged statement; the merge is only in the derivation (`mergedInto`). GLM's cell (branch `v7-derivations-g-h/irwb-056-a`, `src/tensor/passes.ts`) records it truthfully as `merged`; port that.
+- The coverage vocabulary exists twice: `DerivationCoverage` in `src/framework/ir/derivation.ts` mirrors `CorrespondenceCoverage` in the analysis manager. The framework should own one coverage check.
+- `revisionCorrespondence` (Typed) is now a test-only reference; delete it once 4.3 lands.
+- Only Typed's `Tx` passes and Tix `inline` record derivations. Typed `inline`, `dfe`, `rotate`, `pe` and `specialize` record decisions but no rules.
+- A0's in-place policy gives 393, not 395. Two `fold-add` records fold a constant tree that the same application made. The test documents the cause; 4.3 should settle which reading is meant.
+
+From the earlier lanes:
 
 - `planPass` (`src/tensor/schedule.ts`) is domain-local. It belongs in the framework as `decision({ eligible, prepare, conforms })`.
 - `runTixCuda` should pass the kernel manifest, so that `emittedKernels`' source-hash side table can go.

@@ -317,3 +317,26 @@ The user asked for a handoff document for a colleague ("what instructions and fi
 **Handoff:** `reference/02-handoff.md`. It covers what the project is, where everything is, the read-first list, v7 status, how a round is run (brief, launch, score, review, cherry-pick, check, scan, push, record), staffing evidence, standing rules, next steps, follow-ups and records owed.
 
 Still running: derivations (IRWB-056, GLM high and DeepSeek xhigh).
+
+## Step 10: derivations (K2) merged; every launched lane closed
+
+Both derivations cells (IRWB-056) scored clean: GLM 372a202, DeepSeek c0635e3, baselines `no differences`, oracle untouched. Both met the rule count and the cost gate.
+
+| | GLM high (056-A) | DeepSeek xhigh (056-B) |
+|---|---|---|
+| rule-citing O2 records | 0 → 183 (fold 43, simplify 140) | 0 → 183 (the same split) |
+| correspondence from steps equals today's | O2 (195 revisions) and a one-off `speed` probe | all 547 O2 and `speed` applications, under all four coverage policies |
+| A0 policies | 203 by a query; **395 by calling the old IRWB-035-G classifier on the before and after IR** | 203 and **393, both queries over the records**; the 2-record gap (`fold-add` folding a tree the same application made) is explained in its test |
+| Tix `inline` | correspondence says `merged` (the truth R3 asked for) | keeps today's `removed` to hold the equality; the merge is in the derivation (`mergedInto`) |
+| cost | pipeline medians 9.5 s before and after | 0.99× end to end; 1.07× in-build |
+| size | +338 lines | +651 lines; touched `typed/program.ts` (outside the scope, needed to carry the derivation into revisions) |
+
+**Merged DeepSeek's cell** by cherry-pick, no conflicts. The step's point is that classification becomes a query over the producer's records. GLM's second policy calls the old classifier, so it only looks like it meets that. GLM's truthful `merged` correspondence for Tix `inline` is a follow-up to port (handoff §9).
+
+**Checks on the working branch:**
+- tsc clean; Prettier still flags 7 pre-existing files;
+- suites: typed 193, framework 266, workbench 24, stdlib 61, tensor CPU 51;
+- baselines `no differences`; site builds;
+- GPU 23/23.
+
+Every lane launched in v7 so far is merged or withdrawn at its decision point, and no agent is running. Phase 4 has 4.1, 4.4 and 4.5 (`solveFor`, with `pe` and `unfold` withdrawn) done; 4.2, 4.3, 4.6, 4.7 and 4.8 remain. The handoff (`reference/02-handoff.md`) is updated to this state.
