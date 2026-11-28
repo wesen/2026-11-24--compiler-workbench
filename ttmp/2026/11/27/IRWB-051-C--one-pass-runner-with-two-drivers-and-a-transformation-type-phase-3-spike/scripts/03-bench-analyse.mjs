@@ -15,9 +15,14 @@ const rounds = Number(process.argv[2] ?? 7);
 const dist = process.env.DIST ?? 'dist';
 const { installVendor } = await imp('tools/node-vendor.mjs');
 await installVendor();
+// the front end is installed into dist's typed domain; a second build needs it in its own module instances
+if (dist !== 'dist') {
+  const { setVendor } = await imp(dist + '/typed/vendor.js');
+  setVendor({ typedTape: globalThis.typedTape, typedWasm: globalThis.typedWasm, typedRv32Interp: globalThis.typedRv32Interp });
+}
 const { projectFiles } = await imp('tools/corpus.mjs');
-const { projectSource } = await imp('dist/typed/project.js');
-const { Program } = await imp('dist/typed/program.js'); // the artifact is data; the vendor front end is installed in dist only;
+const { projectSource } = await imp(dist + '/typed/project.js');
+const { Program } = await imp(dist + '/typed/program.js');
 const A = await imp(dist + '/typed/analyses.js');
 const { AnalysisManager } = await imp(dist + '/framework/contracts/index.js');
 

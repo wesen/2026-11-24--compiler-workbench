@@ -1,4 +1,0 @@
-analyse typed.cfg, miss (new manager)                      1.5946 ms (1.3143..2.7553)
-analyse typed.cfg, hit                                     0.2287 ms (0.0900..2.3967)
-analyse typed.ranges, miss (new manager)                   229.8148 ms (184.1705..251.2522)
-analyse typed.ranges, hit                                  0.1613 ms (0.1219..0.1861)
