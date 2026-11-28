@@ -14,6 +14,11 @@
  * derives the v6 change set by diffing the two projections, validates the native value through the adapter, builds
  * the correspondence, enforces `writes`, runs the contract, and checks the preservation claims. Nothing is
  * published unless all of that succeeds.
+ *
+ * F33: publication is one step. The candidate is prepared on a store the caller cannot see, the contract runs with
+ * `deferCommit`, and only after the preservation claims pass does `publishAccepted` make the revision the store's
+ * head and commit the contract's evidence in the same atomic publication. Every rejection before that publishes
+ * nothing and rolls the deferred evidence back.
  */
 import type { Artifact } from '../core/types.js';
 import { canonical } from '../core/data.js';
@@ -36,6 +41,7 @@ import type {
   Correspondence,
   IRType,
   Ports,
+  PreparedTransformation,
   TransformationDefinition,
 } from '../contracts/types.js';
 import type { AnalysisManager } from '../contracts/analysis-manager.js';
@@ -225,11 +231,12 @@ function prepareNative<S, N extends Needs, P>(
   view: IRView<S>,
   produced: NativeResult<S>,
   id: string,
-  store?: IRStore,
 ) {
   const before = view.artifact;
   const after = createIRArtifact(pass.adapter, id, produced.native);
-  const afterView = openIR(after, pass.adapter, store);
+  // F33: the candidate is opened on a private store, so preparing it publishes nothing the caller can observe;
+  // `applyPass` publishes it, and the evidence about it, once every check has accepted it.
+  const afterView = openIR(after, pass.adapter);
   const changes = diff(view, afterView);
   const correspondence = makeCorrespondence(
     { artifact: before.id, revision: before.revision },
@@ -249,6 +256,45 @@ function enforceWrites(pass: Pick<PassSpec<unknown, Needs>, 'writes' | 'id'>, ch
     throw new PassError('undeclaredWrite', `Pass ${pass.id} changed kinds it did not declare in writes`, {
       undeclared: undeclared.slice(0, 20),
     });
+}
+
+/** Discard a deferred transformation's evidence unless it has already been committed. */
+function discardEvidence(prepared: PreparedTransformation | undefined, reason: string) {
+  if (!prepared || prepared.execution.status === 'accepted') return;
+  prepared.rollback(reason);
+}
+
+/**
+ * F33: the one publication point of an accepted application. The revision becomes the store's head and the
+ * contract's prepared execution and facts are committed inside that same atomic publication, so the head never
+ * outlives the evidence that justified it; without a store the evidence is the whole publication. A store refusal
+ * (a stale head, a colliding lineage) propagates as its own `IRError` after the evidence is rolled back.
+ */
+function publishAccepted<S>(
+  pass: { readonly id: string },
+  store: IRStore | undefined,
+  before: Artifact<S>,
+  after: Artifact<S>,
+  prepared: PreparedTransformation | undefined,
+  generation: number | undefined,
+): void {
+  const acceptance = prepared && {
+    commit: () => void prepared.commit(),
+    rollback: (reason?: string) => prepared.rollback(reason),
+  };
+  if (!store) {
+    prepared?.commit();
+    return;
+  }
+  try {
+    store.publish(after, {
+      ...(after.id === before.id ? { base: before, generation } : {}),
+      ...(acceptance ? { acceptance } : {}),
+    });
+  } catch (e) {
+    discardEvidence(prepared, `Pass ${pass.id} was not published: ${(e as Error).message}`);
+    throw e;
+  }
 }
 
 /** Run a synchronous native kernel; the caller supplies its synchronous semantic gate. */
@@ -302,6 +348,8 @@ export async function applyPass<S, N extends Needs, P>(
 ): Promise<PassResult<S>> {
   const { manager } = options;
   const view = openIR(before, pass.adapter, options.store);
+  // the generation a head advance is checked against: what the caller's store held when the input was opened
+  const generation = options.store?.generation(before.id);
   checkLegal(pass, before, view, options.params as P);
   const facts: Record<string, unknown> = {},
     records: Record<string, AnalysisRecord<unknown>> = {};
@@ -338,7 +386,6 @@ export async function applyPass<S, N extends Needs, P>(
       view,
       produced,
       options.outputId ?? before.id,
-      options.store,
     ));
     report = produced.report;
   } else {
@@ -376,19 +423,20 @@ export async function applyPass<S, N extends Needs, P>(
 
   enforceWrites(pass, changes);
 
-  let contract: unknown;
+  let contract: PreparedTransformation | undefined;
   const gate = options.contract ?? pass.contract;
   if (gate) {
     try {
-      const prepared = await manager.verifyTransformation(
+      // F33: deferred, so the evidence is committed at the publication boundary below and not before it
+      contract = await manager.verifyTransformation(
         { input: before, ...(options.contractInputs ?? {}) } as never,
         { output: after } as never,
         gate,
         gate.correspondence.length
           ? gate.correspondence.map(req => semanticCorrespondence(correspondence, req.id, req.relation))
           : [semanticCorrespondence(correspondence)],
+        { deferCommit: true },
       );
-      contract = prepared;
     } catch (e) {
       throw new PassError('contractRejected', `Pass ${pass.id} output rejected: ${(e as Error).message}`, {
         cause: String(e),
@@ -397,27 +445,34 @@ export async function applyPass<S, N extends Needs, P>(
   }
 
   const preserved: PreservationOutcome[] = [];
-  for (const def of pass.preserves ?? []) {
-    if (!manager.hasAnalysis(def, before)) {
-      if (!options.auditPreservation) continue; // nothing to keep
-      await manager.analyse(def, before);
+  try {
+    for (const def of pass.preserves ?? []) {
+      if (!manager.hasAnalysis(def, before)) {
+        if (!options.auditPreservation) continue; // nothing to keep
+        await manager.analyse(def, before);
+      }
+      try {
+        const record = await manager.preserve(def, before, after, semanticCorrespondence(correspondence));
+        preserved.push({ analysis: def.id, how: 'transferred', evidence: record.transfer?.evidence });
+      } catch {
+        const old = await manager.analyse(def, before),
+          fresh = await manager.analyse(def, after);
+        if (canonical(old.value) !== canonical(fresh.value))
+          throw new PassError(
+            'preserveViolated',
+            `Pass ${pass.id} claims to preserve ${def.id}, but it changed`,
+            {
+              analysis: def.id,
+            },
+          );
+        preserved.push({ analysis: def.id, how: 'confirmed-by-recompute', evidence: { equalValue: true } });
+      }
     }
-    try {
-      const record = await manager.preserve(def, before, after, semanticCorrespondence(correspondence));
-      preserved.push({ analysis: def.id, how: 'transferred', evidence: record.transfer?.evidence });
-    } catch {
-      const old = await manager.analyse(def, before),
-        fresh = await manager.analyse(def, after);
-      if (canonical(old.value) !== canonical(fresh.value))
-        throw new PassError(
-          'preserveViolated',
-          `Pass ${pass.id} claims to preserve ${def.id}, but it changed`,
-          {
-            analysis: def.id,
-          },
-        );
-      preserved.push({ analysis: def.id, how: 'confirmed-by-recompute', evidence: { equalValue: true } });
-    }
+    publishAccepted(pass, options.store, before, after, contract, generation);
+  } catch (e) {
+    // every rejection before, or at, publication leaves the manager holding nothing about the candidate
+    discardEvidence(contract, `Pass ${pass.id} rejected: ${(e as Error).message}`);
+    throw e;
   }
   return {
     pass: { id: pass.id, version: pass.version },
