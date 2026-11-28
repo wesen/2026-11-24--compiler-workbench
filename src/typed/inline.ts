@@ -22,7 +22,7 @@
  * The pass is built by `makeInline(correspond)`, which passes.ts calls with its correspondence function, so this
  * module imports nothing from passes.ts at load time.
  */
-import { definePass } from '../framework/passes/define-pass.js';
+import { transformation } from '../framework/passes/transformation.js';
 import type { CorrespondenceEntry } from '../framework/ir/types.js';
 import type { DataflowResult } from '../framework/dataflow/analysis.js';
 import { ANALYSES, hasEffect, liveView, stmtValues } from './analyses.js';
@@ -412,7 +412,7 @@ function inlineCaller(
 export function makeInline(
   correspond: (before: TypedBlocks, after: TypedBlocks, edits: readonly Edit[]) => CorrespondenceEntry[],
 ): TypedPass {
-  const definition = definePass<TypedBlocks, Record<string, any>, Record<string, unknown>>({
+  const definition = transformation<TypedBlocks, Record<string, any>, Record<string, unknown>>({
     id: 'typed.inline',
     version: '1',
     description: ABOUT,
@@ -423,8 +423,8 @@ export function makeInline(
       entities: ['local', 'block', 'stmt.*', 'value.*'],
       relations: ['declares', 'contains', 'uses', 'operand', 'reads', 'writes', 'succ', 'jump'],
     },
-    preserves: [],
-    run({ before, facts, params }) {
+    relation: 'exact',
+    prepare({ before, facts, params }) {
       const limits = { ...INLINE_DEFAULTS, ...((params ?? {}) as InlineParams) };
       const src = Store.from(before.value),
         st = Store.from(before.value);

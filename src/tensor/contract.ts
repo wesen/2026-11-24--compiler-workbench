@@ -6,12 +6,13 @@ import {
   type CheckResult,
 } from '../framework/contracts/index.js';
 import type { Artifact } from '../framework/core/types.js';
+import type { Relation } from '../framework/passes/transformation.js';
 import { evaluate, OutsideSample, size, type BufferValue } from './evaluate.js';
 import type { CudaInputs } from './cuda-runtime.js';
 import { TixIR } from './ir.js';
 import { plain, value, type Fn, type Module } from './model.js';
 
-export type Relation = 'exact' | 'tolerance';
+export type { Relation };
 interface Sample {
   fn: string;
   shapeValues: number[];

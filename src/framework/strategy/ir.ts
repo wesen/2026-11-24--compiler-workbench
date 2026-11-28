@@ -250,6 +250,12 @@ export interface StrategyAlgorithm {
   readonly kind: AlgorithmKind;
   readonly description: string;
   run(context: AlgorithmContext, input: unknown, args: unknown): unknown | Promise<unknown>;
+  /**
+   * IRWB-052: `run` as steps (contracts/steps.ts), for an algorithm that itself delegates to stepped code (the
+   * pass runner, the analysis manager). When present the interpreter runs it in place of `run`, under whichever
+   * driver runs the plan, so the algorithm waits only where a step of its own answers with a promise.
+   */
+  steps?(context: AlgorithmContext, input: unknown, args: unknown): Generator<unknown, unknown, any>;
 }
 export interface ExecuteOptions {
   readonly id?: string;

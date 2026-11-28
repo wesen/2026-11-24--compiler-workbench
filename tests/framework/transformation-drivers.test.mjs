@@ -12,6 +12,8 @@ import {
   AnalysisManager,
   createArtifact,
   defineAnalysis,
+  defineInvariant,
+  defineTransformation,
   defineType,
   differentialSpec,
   runDifferential,
@@ -246,6 +248,26 @@ const cse = extra =>
   });
 const r0 = () => createArtifact(ExpressionIR, 'e', exampleExpression());
 const asynchronous = /answered asynchronously; use the asynchronous driver/;
+/** A contract whose one condition answers with a promise (IRWB-052). */
+const asyncContract = defineTransformation({
+  id: 'test.async-contract',
+  version: '1',
+  description: 'a contract with an asynchronous condition',
+  inputs: { input: ExpressionIR },
+  outputs: { output: ExpressionIR },
+  ensures: [
+    {
+      invariant: defineInvariant({
+        id: 'test.async-ok',
+        version: '1',
+        description: 'accepts, later',
+        inputs: { output: ExpressionIR },
+        check: async () => ({ ok: true }),
+      }),
+      bindings: { output: { from: 'outputs', port: 'output' } },
+    },
+  ],
+});
 
 test('analyseSync refuses an analysis that is not pure and records nothing', async () => {
   const art = r0();
@@ -265,12 +287,15 @@ test('analyseSync refuses an analysis that is not pure and records nothing', asy
   await assert.rejects(manager.analyse(unawaited, art), /must be awaited/);
 });
 
-test('the synchronous driver stops at an asynchronous need, prepare or contract; the asynchronous driver runs all three', async () => {
+// IRWB-052: a contract is no longer among these. The contract path is steps now, so the synchronous driver runs a
+// contract whose conditions return values (tests/framework/one-runner.test.mjs); it stops at one that answers with
+// a promise, which is the third case here.
+test('the synchronous driver stops at an asynchronous need, prepare or contract condition; the asynchronous driver runs all three', async () => {
   const before = r0();
   const cases = [
     ['need', cse({ needs: { n: asyncCount } }), {}],
     ['prepare', cse({ prepare: async () => ({ native: before.value }) }), {}],
-    ['contract', cse({}), { ensures: [expressionContract] }],
+    ['contract', cse({}), { ensures: [asyncContract] }],
   ];
   for (const [what, t, extra] of cases) {
     const manager = new AnalysisManager(),

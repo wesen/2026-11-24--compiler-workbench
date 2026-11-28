@@ -38,6 +38,14 @@ import type {
   TransformationTransaction,
   VersionRef,
 } from './types.js';
+/** A transaction whose verification is also available as steps (`verify` drives `verifySteps` asynchronously). */
+interface SteppedTransaction<I extends Ports, O extends Ports> extends TransformationTransaction<I, O> {
+  verifySteps(
+    outputs: PortValues<O>,
+    correspondence?: readonly Correspondence[],
+    options?: { cached?: boolean },
+  ): Steps<PreparedTransformation<O>>;
+}
 export class ContractError extends Error {
   constructor(
     readonly code: string,
@@ -722,11 +730,18 @@ export class AnalysisManager {
   async check<S>(property: PropertyDefinition<S>, subject: Artifact<S>): Promise<PropertyFact> {
     return this.checkInternal(property, subject);
   }
-  private async checkInternal<S>(
+  private checkInternal<S>(
     property: PropertyDefinition<S>,
     subject: Artifact<S>,
     parent?: Frame,
   ): Promise<PropertyFact> {
+    return driveAsync(this.checkFrom(property, subject, parent));
+  }
+  private *checkFrom<S>(
+    property: PropertyDefinition<S>,
+    subject: Artifact<S>,
+    parent?: Frame,
+  ): Steps<PropertyFact> {
     if (parent) this.checkActive(parent);
     this.registry.register(property);
     subject = this.snapshotArtifact(subject, property.subject);
@@ -772,7 +787,7 @@ export class AnalysisManager {
     const frame = this.freshFrame(property.check.effects, store, parent);
     frame.stack = [...(parent?.stack ?? []), `p:${key}`];
     try {
-      const analysis = await this.analyseInternal(property.check, subject, null, frame),
+      const analysis = yield* this.analyseFrom(property.check, subject, null, frame),
         result = checkResult(analysis.value);
       this.checkActive(frame);
       if (this.epoch(property, subject) !== epoch)
@@ -825,8 +840,11 @@ export class AnalysisManager {
       );
       return fact;
     } finally {
-      await Promise.allSettled([...frame.pending]);
-      frame.active = false;
+      try {
+        if (frame.pending.size) yield Promise.allSettled([...frame.pending]);
+      } finally {
+        frame.active = false;
+      }
     }
   }
   properties(subject: Artifact): PropertyFact[] {
@@ -1254,11 +1272,18 @@ export class AnalysisManager {
   ): Promise<CheckEvidence> {
     return this.invariantInternal(definition, inputs);
   }
-  private async invariantInternal<P extends Ports>(
+  private invariantInternal<P extends Ports>(
     definition: InvariantDefinition<P>,
     inputs: PortValues<P>,
     parent?: Frame,
   ): Promise<CheckEvidence> {
+    return driveAsync(this.invariantFrom(definition, inputs, parent));
+  }
+  private *invariantFrom<P extends Ports>(
+    definition: InvariantDefinition<P>,
+    inputs: PortValues<P>,
+    parent?: Frame,
+  ): Steps<CheckEvidence> {
     if (parent) this.checkActive(parent);
     this.registry.register(definition);
     const captured = immutable(inputs);
@@ -1284,8 +1309,8 @@ export class AnalysisManager {
     const frame = this.freshFrame(definition.effects, parent?.store ?? this.store, parent);
     frame.stack = [...(parent?.stack ?? []), key];
     try {
-      const result = checkResult(await definition.check(this.context(frame), captured));
-      await this.drain(frame);
+      const result = checkResult(yield* wait(definition.check(this.context(frame), captured)));
+      yield* this.drainSteps(frame);
       this.checkActive(frame);
       if (parent) {
         for (const dependency of frame.deps) uniquePush(parent.deps, dependency);
@@ -1310,22 +1335,25 @@ export class AnalysisManager {
       );
       return evidence;
     } finally {
-      await Promise.allSettled([...frame.pending]);
-      frame.active = false;
+      try {
+        if (frame.pending.size) yield Promise.allSettled([...frame.pending]);
+      } finally {
+        frame.active = false;
+      }
     }
   }
-  private async condition(
+  private *condition(
     condition: Condition,
     phase: CheckEvidence['phase'],
     inputs: Record<string, unknown>,
     outputs: Record<string, unknown>,
     frame: Frame,
-  ): Promise<CheckEvidence> {
+  ): Steps<CheckEvidence> {
     const select = (s: { from: 'inputs' | 'outputs'; port: string }) =>
       (s.from === 'inputs' ? inputs : outputs)[s.port];
     if ('property' in condition) {
       const subject = select(condition.subject) as Artifact,
-        fact = await this.checkInternal(condition.property, subject, frame);
+        fact = yield* this.checkFrom(condition.property, subject, frame);
       return immutable({
         phase,
         definition: definitionRef(condition.property),
@@ -1338,17 +1366,32 @@ export class AnalysisManager {
       });
     }
     const values = Object.fromEntries(Object.entries(condition.bindings).map(([k, s]) => [k, select(s)]));
-    const result = await this.invariantInternal(condition.invariant, values, frame);
+    const result = yield* this.invariantFrom(condition.invariant, values, frame);
     return immutable({
       ...result,
       phase,
     });
   }
-  async beginTransformation<I extends Ports, O extends Ports>(
+  beginTransformation<I extends Ports, O extends Ports>(
     definition: TransformationDefinition<I, O>,
     inputs: PortValues<I>,
     options: ExecutionOptions = {},
   ): Promise<TransformationTransaction<I, O>> {
+    return driveAsync(this.beginFrom(definition, inputs, options));
+  }
+  /**
+   * `beginTransformation` as steps. The transaction it returns also carries `verifySteps`, which `verify` drives
+   * asynchronously, so `verifyTransformationSteps` runs the whole contract path under either driver.
+   *
+   * The cleanup rule (IRWB-052): a synchronous driver abandons a run with `return()`, which runs `finally` and no
+   * `catch`. So the `finally` here and in `verifySteps` rolls back a transaction that neither finished nor failed;
+   * otherwise its execution would stay `prepared` and its frame active.
+   */
+  private *beginFrom<I extends Ports, O extends Ports>(
+    definition: TransformationDefinition<I, O>,
+    inputs: PortValues<I>,
+    options: ExecutionOptions = {},
+  ): Steps<SteppedTransaction<I, O>> {
     this.registry.register(definition);
     const captured = immutable(inputs);
     const overlay: Store = {
@@ -1456,19 +1499,25 @@ export class AnalysisManager {
       refresh();
       this.event(frame, 'transformation.rejected', execution.error, definition);
     };
+    const abandoned = 'Abandoned at an asynchronous step by a synchronous driver';
+    let begun = false;
     try {
       this.validatePorts(definition.inputs, captured);
       for (const c of definition.requires) {
-        const check = await this.condition(c, 'requires', captured, {}, frame);
+        const check = yield* this.condition(c, 'requires', captured, {}, frame);
         checks.push(check);
         if (!check.ok || check.assurance === 'declared')
           throw new ContractError('precondition', `${check.definition.id}: ${check.reason}`);
       }
+      begun = true;
     } catch (error) {
       fail(error);
       throw error;
+    } finally {
+      if (!begun && !closed) rollback(abandoned);
     }
-    const transaction: TransformationTransaction<I, O> = {
+    const self = this;
+    const transaction: SteppedTransaction<I, O> = {
       inputs: captured,
       context: bodyContext,
       get execution() {
@@ -1531,7 +1580,9 @@ export class AnalysisManager {
         }
         this.event(bodyFrame, 'body.dependencies-reused', { dependencies: imported }, definition);
       },
-      verify: async (outputs, correspondence = [], info = {}) => {
+      verify: (outputs, correspondence = [], info = {}) =>
+        driveAsync(transaction.verifySteps(outputs, correspondence, info)),
+      *verifySteps(outputs, correspondence = [], info = {}) {
         if (closed || prepared || verifying)
           throw new ContractError(
             'transaction-state',
@@ -1542,11 +1593,11 @@ export class AnalysisManager {
         try {
           const after = immutable(outputs),
             capturedCorrespondence = immutable(correspondence);
-          await this.drain(bodyFrame);
+          yield* self.drainSteps(bodyFrame);
           for (const dependency of bodyFrame.deps) uniquePush(frame.deps, dependency);
           if (!bodyFrame.cacheable) frame.cacheable = false;
           bodyFrame.active = false;
-          this.validatePorts(definition.outputs, after);
+          self.validatePorts(definition.outputs, after);
           execution.outputs = after;
           execution.cached = info.cached ?? execution.cached;
           execution.cacheReason = execution.cached
@@ -1562,7 +1613,7 @@ export class AnalysisManager {
           for (const requirement of definition.correspondence) {
             const c = correspondences.find(x => x.id === requirement.id);
             if (!c) throw new ContractError('correspondence', `Missing correspondence ${requirement.id}`);
-            this.validateCorrespondence(
+            self.validateCorrespondence(
               c,
               captured[requirement.from] as Artifact,
               after[requirement.to] as Artifact,
@@ -1590,7 +1641,7 @@ export class AnalysisManager {
           for (const p of definition.preserves) {
             const from = captured[p.from] as Artifact,
               to = after[p.to] as Artifact,
-              source = await this.checkInternal(p.property, from, frame);
+              source = yield* self.checkFrom(p.property, from, frame);
             if (!source.ok)
               throw new ContractError(
                 'preservation-source',
@@ -1603,9 +1654,9 @@ export class AnalysisManager {
                   'correspondence',
                   `Missing transfer correspondence ${p.correspondence}`,
                 );
-              await this.preserveInternal(p.property.check, from, to, correspondence, frame);
+              yield* self.preserveFrom(p.property.check, from, to, correspondence, frame);
             }
-            const fact = await this.checkInternal(p.property, to, frame),
+            const fact = yield* self.checkFrom(p.property, to, frame),
               check: CheckEvidence = {
                 phase: 'preserves',
                 definition: definitionRef(p.property),
@@ -1625,15 +1676,15 @@ export class AnalysisManager {
             ['establishes', definition.establishes],
           ] as const)
             for (const c of conditions) {
-              const check = await this.condition(c, phase, captured, after, frame);
+              const check = yield* self.condition(c, phase, captured, after, frame);
               checks.push(check);
               if (!check.ok || check.assurance === 'declared')
                 throw new ContractError('postcondition', `${check.definition.id}: ${check.reason}`);
             }
-          this.checkActive(frame);
+          self.checkActive(frame);
           prepared = true;
           refresh();
-          this.event(frame, 'transformation.prepared', { checks: checks.length }, definition);
+          self.event(frame, 'transformation.prepared', { checks: checks.length }, definition);
           const accepted: PreparedTransformation<O> = {
             outputs: after,
             get execution() {
@@ -1642,13 +1693,13 @@ export class AnalysisManager {
             },
             commit: () => {
               if (closed) throw new ContractError('transaction-state', 'Transaction is already closed');
-              if (!this.validDependencies(frame.deps, overlay, new Set(), true)) {
+              if (!self.validDependencies(frame.deps, overlay, new Set(), true)) {
                 const e = new ContractError('stale-evidence', 'A semantic dependency changed before commit');
                 fail(e);
                 throw e;
               }
               try {
-                const committed: unknown = this.resources.commit(
+                const committed: unknown = self.resources.commit(
                   immutable([...frame.writes.values()]),
                   immutable([...frame.expected.values()]),
                 );
@@ -1670,16 +1721,16 @@ export class AnalysisManager {
                 fail(error);
                 throw error;
               }
-              for (const [k, v] of overlay.analyses) this.store.analyses.set(k, v);
-              for (const [k, v] of overlay.facts) this.store.facts.set(k, v);
-              for (const [k, v] of overlay.analysisHistory) this.store.analysisHistory.set(k, v);
-              for (const [k, v] of overlay.factHistory) this.store.factHistory.set(k, v);
+              for (const [k, v] of overlay.analyses) self.store.analyses.set(k, v);
+              for (const [k, v] of overlay.facts) self.store.facts.set(k, v);
+              for (const [k, v] of overlay.analysisHistory) self.store.analysisHistory.set(k, v);
+              for (const [k, v] of overlay.factHistory) self.store.factHistory.set(k, v);
               closed = true;
               frame.active = false;
-              this.activeFrames.delete(execution.id);
+              self.activeFrames.delete(execution.id);
               execution.status = 'accepted';
               refresh();
-              this.event(frame, 'transformation.accepted', { outputs: Object.keys(after) }, definition);
+              self.event(frame, 'transformation.accepted', { outputs: Object.keys(after) }, definition);
               return immutable(execution);
             },
             rollback,
@@ -1689,6 +1740,8 @@ export class AnalysisManager {
         } catch (error) {
           fail(error);
           throw error;
+        } finally {
+          if (!prepared && !closed) rollback(abandoned);
         }
       },
       rollback,
@@ -1696,19 +1749,47 @@ export class AnalysisManager {
     };
     return transaction;
   }
-  async verifyTransformation<I extends Ports, O extends Ports>(
+  verifyTransformation<I extends Ports, O extends Ports>(
     before: PortValues<I>,
     after: PortValues<O>,
     contract: TransformationDefinition<I, O>,
     correspondence: readonly Correspondence[] = [],
     options: ExecutionOptions = {},
   ): Promise<PreparedTransformation<O>> {
+    return driveAsync(this.verifyTransformationSteps(before, after, contract, correspondence, options));
+  }
+  /**
+   * IRWB-052: `verifyTransformation` for a caller that cannot wait. The execution, its checks and its facts are
+   * recorded as `verifyTransformation` records them (both drive `verifyTransformationSteps`). It answers contracts
+   * whose conditions return values; at a condition that answers with a promise it throws, and the execution is
+   * rolled back.
+   */
+  verifyTransformationSync<I extends Ports, O extends Ports>(
+    before: PortValues<I>,
+    after: PortValues<O>,
+    contract: TransformationDefinition<I, O>,
+    correspondence: readonly Correspondence[] = [],
+    options: ExecutionOptions = {},
+  ): PreparedTransformation<O> {
+    return driveSync(
+      this.verifyTransformationSteps(before, after, contract, correspondence, options),
+      `Contract ${contract.id}`,
+    );
+  }
+  /** `verifyTransformation` as steps, for a runner driven synchronously or asynchronously (steps.ts). */
+  *verifyTransformationSteps<I extends Ports, O extends Ports>(
+    before: PortValues<I>,
+    after: PortValues<O>,
+    contract: TransformationDefinition<I, O>,
+    correspondence: readonly Correspondence[] = [],
+    options: ExecutionOptions = {},
+  ): Steps<PreparedTransformation<O>> {
     before = immutable(before);
     after = immutable(after);
     correspondence = immutable(correspondence);
     options = immutable(options);
-    const transaction = await this.beginTransformation(contract, before, options);
-    const prepared = await transaction.verify(after, correspondence, { cached: options.cached });
+    const transaction = yield* this.beginFrom(contract, before, options);
+    const prepared = yield* transaction.verifySteps(after, correspondence, { cached: options.cached });
     if (!options.deferCommit) prepared.commit();
     return prepared;
   }

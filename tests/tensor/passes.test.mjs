@@ -9,7 +9,7 @@ const sum = compileTix('fn f(x:f32[1,K]):f32[1]{y[i]=sum(k)x[i,k];return y;}');
 const mutate = (pass, change) => ({
   ...pass,
   run(ctx) {
-    const native = structuredClone(pass.run(ctx).native);
+    const native = structuredClone(pass.prepare(ctx).native);
     change(native.functions[0].statements.at(-1).expr);
     return { native };
   },
@@ -125,7 +125,7 @@ test('the meaning gate tells every pair of shape symbols apart (IRWB-019 F21)', 
   const alias = {
     ...inlinePass,
     run(ctx) {
-      const native = structuredClone(inlinePass.run(ctx).native);
+      const native = structuredClone(inlinePass.prepare(ctx).native);
       for (const s of native.functions[0].statements) shorten(s.expr);
       return { native };
     },

@@ -1,5 +1,5 @@
 import type { Artifact } from '../framework/core/types.js';
-import { definePass, transformation, type EnsuresCheck, type Pass } from '../framework/passes/index.js';
+import { transformation, type EnsuresCheck, type Transformation } from '../framework/passes/index.js';
 import { meaningGate, type Relation } from './contract.js';
 import { adapter, TixIR } from './ir.js';
 import {
@@ -81,25 +81,13 @@ function split(fn: Fn): Fn {
     })),
   };
 }
-export type TixPass = Pass<Module> & { readonly relation: Relation };
+export type TixPass = Transformation<Module>;
 
-function pass(name: string, relation: Relation, transform: (fn: Fn) => Fn): TixPass {
-  return Object.freeze({
-    ...definePass<Module>({
-      id: 'tensor.' + name,
-      version: '1',
-      description: name,
-      ir: TixIR,
-      adapter,
-      writes: { entities: ['tensor'], relations: ['reads', 'contains'] },
-      run: ({ before }) => ({ native: { functions: before.value.functions.map(transform) } }),
-    }),
-    relation,
-  });
-}
 /**
- * IRWB-051-C: the Tix meaning gate as an obligation. It reads the relation the transformation declares and the
- * origin the application supplies (`inputs.origin`), so no caller builds the gate from the pass's name.
+ * The Tix meaning gate, as the obligation every Tix pass carries (F27; the one encoding of the gate since
+ * IRWB-052). It reads the relation the pass declares and the origin the application supplies (`inputs.origin`), so
+ * no caller builds the gate from the pass's name, and it runs wherever the pass does: `optimizeTix`, a strategy
+ * plan, either driver.
  */
 export const tixMeaning: EnsuresCheck<Module, unknown> = {
   id: 'tix.meaning-gate',
@@ -108,22 +96,18 @@ export const tixMeaning: EnsuresCheck<Module, unknown> = {
     return meaningGate(inputs.origin as Artifact<Module>, relation)(before, candidate);
   },
 };
-/**
- * IRWB-051-C: `inline` as a transformation (the phase 3 spike's first port). It is still a `TixPass`, so
- * `optimizeTix` and `tixAlgorithm` run it as before; `applyTransformationSync(inlinePass, current, { inputs:
- * { origin } })` runs it, with its gate, on the new runner.
- */
-export const inlinePass = Object.freeze({
-  ...transformation<Module>({
-    id: 'tensor.inline',
+function pass(name: string, relation: Relation, transform: (fn: Fn) => Fn): TixPass {
+  return transformation<Module>({
+    id: 'tensor.' + name,
     version: '1',
-    description: 'inline',
+    description: name,
     ir: TixIR,
     adapter,
     writes: { entities: ['tensor'], relations: ['reads', 'contains'] },
-    relation: 'exact',
-    prepare: ({ before }) => ({ native: { functions: before.value.functions.map(inline) } }),
+    relation,
+    prepare: ({ before }) => ({ native: { functions: before.value.functions.map(transform) } }),
     obligations: { ensures: [tixMeaning] },
-  }),
-}) satisfies TixPass;
+  });
+}
+export const inlinePass = pass('inline', 'exact', inline);
 export const splitPass = pass('split-sum', 'tolerance', split);

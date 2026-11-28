@@ -1,4 +1,5 @@
 import { canonical, fingerprint, immutable } from '../core/data.js';
+import { driveAsync, driveSync, wait, type Steps } from '../contracts/steps.js';
 import type {
   AlgorithmContext,
   AlgorithmKind,
@@ -131,12 +132,38 @@ function satisfies(value: number, c: Constraint) {
  * Parallelism is bounded async scheduling. Already-started algorithms are awaited on failure.
  * Cancellation is cooperative: an algorithm doing long asynchronous work must honor ctx.signal.
  */
-export async function execute(
+export function execute(
   plan: StrategyPlan,
   registry: AlgorithmRegistry,
   input: unknown,
   options: ExecuteOptions = {},
 ): Promise<StrategyExecution> {
+  return driveAsync(executeSteps(plan, registry, input, options));
+}
+/**
+ * IRWB-052: `execute` for a caller that cannot wait. The interpreter is the same generator (`executeSteps`); here
+ * `maxConcurrency` is 1, so `parallel`, `fork` and `forEach` run their members one after the other in index order
+ * instead of as concurrent workers. It throws when an algorithm answers with a promise; an algorithm that provides
+ * `steps` (a pass, an analysis) answers through its own steps.
+ */
+export function executeSync(
+  plan: StrategyPlan,
+  registry: AlgorithmRegistry,
+  input: unknown,
+  options: Omit<ExecuteOptions, 'maxConcurrency'> = {},
+): StrategyExecution {
+  return driveSync(
+    executeSteps(plan, registry, input, { ...options, maxConcurrency: 1 }),
+    `Plan ${plan?.id}`,
+  );
+}
+/** The interpreter as steps (contracts/steps.ts): it yields what it would `await`. */
+export function* executeSteps(
+  plan: StrategyPlan,
+  registry: AlgorithmRegistry,
+  input: unknown,
+  options: ExecuteOptions = {},
+): Steps<StrategyExecution> {
   assertValid(plan, registry);
   const snapshot = immutable(plan),
     algorithms = registry.snapshot(),
@@ -300,13 +327,16 @@ export async function execute(
   let activeCalls = 0;
   const waitingCalls: Array<{ resolve: () => void; reject: (error: unknown) => void; abort: () => void }> =
     [];
-  async function acquire() {
+  function* acquire(): Steps<void> {
     check();
     if (activeCalls < maxConcurrency) {
       activeCalls++;
+      // A turn, as `await acquire()` took before this was steps: concurrent workers start their algorithms in
+      // the order they did then. The synchronous driver sends a plain value straight back.
+      yield undefined;
       return;
     }
-    await new Promise<void>((resolve, reject) => {
+    yield new Promise<void>((resolve, reject) => {
       const waiter = {
         resolve: () => {
           controller.signal.removeEventListener('abort', waiter.abort);
@@ -330,16 +360,16 @@ export async function execute(
     const next = waitingCalls.shift();
     next?.resolve();
   }
-  async function call(
+  function* call(
     ref: AlgorithmRef,
     kind: AlgorithmKind,
     current: unknown,
     args: unknown,
     record: MutableRecord,
-  ): Promise<unknown> {
+  ): Steps<unknown> {
     check();
     const algorithm = algorithms.get(ref, kind);
-    await acquire();
+    yield* acquire();
     let active = true;
     // A semaphore slot is held only while executing one algorithm, never a composite.
     evidence(record, 'algorithm', { id: ref.id, version: ref.version, kind });
@@ -371,7 +401,9 @@ export async function execute(
     };
     try {
       check();
-      const value = await algorithm.run(ctx, immutable(current), immutable(args));
+      const value = algorithm.steps
+        ? yield* algorithm.steps(ctx, immutable(current), immutable(args))
+        : yield* wait(algorithm.run(ctx, immutable(current), immutable(args)));
       check();
       return immutable(value);
     } catch (error) {
@@ -386,29 +418,33 @@ export async function execute(
       release();
     }
   }
-  async function group<T>(
+  function* group<T>(
     items: readonly T[],
     limit: number,
-    runItem: (item: T, index: number) => Promise<unknown>,
+    runItem: (item: T, index: number) => Steps<unknown>,
     skipItem: (item: T, index: number) => void,
-  ): Promise<unknown[]> {
+  ): Steps<unknown[]> {
     const results: unknown[] = new Array(items.length),
       errors: Array<{ index: number; error: unknown }> = [];
     let cursor = 0,
       stopped = false;
-    async function worker() {
+    function* worker(): Steps<void> {
       while (!stopped) {
         const index = cursor++;
         if (index >= items.length) return;
         try {
-          results[index] = await runItem(items[index], index);
+          results[index] = yield* runItem(items[index], index);
         } catch (error) {
           errors.push({ index, error });
           stopped = true;
         }
       }
     }
-    await Promise.all(Array.from({ length: Math.min(items.length, limit, maxConcurrency) }, () => worker()));
+    // One worker takes the items in order within this run's own steps, so it waits only where an item does;
+    // several workers are concurrent asynchronous runs of the same steps.
+    const workers = Math.min(items.length, limit, maxConcurrency);
+    if (workers === 1) yield* worker();
+    else if (workers > 1) yield Promise.all(Array.from({ length: workers }, () => driveAsync(worker())));
     for (let i = Math.min(cursor, items.length); i < items.length; i++) skipItem(items[i], i);
     if (errors.length) {
       // A recoverable rejection must never mask a sibling implementation failure.
@@ -426,14 +462,14 @@ export async function execute(
     check();
     return results;
   }
-  async function run(
+  function* run(
     node: StrategyNode,
     current: unknown,
     frame: Frame,
     parent: MutableRecord | undefined,
     path: string,
     depth: number,
-  ): Promise<unknown> {
+  ): Steps<unknown> {
     const r = newRecord(node, current, parent, path, frame, 'running'),
       clock = performance.now();
     try {
@@ -446,7 +482,7 @@ export async function execute(
       let value: unknown;
       switch (node.kind) {
         case 'apply':
-          value = await call(
+          value = yield* call(
             node.algorithm,
             'transform',
             evaluate(node.input, current, frame, current),
@@ -459,7 +495,7 @@ export async function execute(
           value = current;
           for (let i = 0; i < node.steps.length; i++) {
             try {
-              value = await sub(node.steps[i], `steps[${i}]`, value, local);
+              value = yield* sub(node.steps[i], `steps[${i}]`, value, local);
             } catch (error) {
               for (let j = i + 1; j < node.steps.length; j++)
                 skip(node.steps[j], r, `${path}/steps[${j}]`, local, 'Earlier sequence step did not succeed');
@@ -469,7 +505,7 @@ export async function execute(
           break;
         }
         case 'parallel': {
-          value = await group(
+          value = yield* group(
             node.steps,
             node.concurrency ?? maxConcurrency,
             (child, i) => sub(child, `steps[${i}]`),
@@ -485,15 +521,15 @@ export async function execute(
           break;
         }
         case 'fork': {
-          const candidates = await group(
+          const candidates = yield* group(
             node.branches,
             node.concurrency ?? maxConcurrency,
-            async (branch, i) => {
+            function* (branch, i) {
               try {
                 return {
                   name: branch.name,
                   status: 'succeeded',
-                  value: await sub(branch.strategy, `branches[${i}]`, current, {
+                  value: yield* sub(branch.strategy, `branches[${i}]`, current, {
                     ...copyFrame(frame),
                     branch: branch.name,
                   }),
@@ -532,7 +568,7 @@ export async function execute(
           break;
         }
         case 'chooseBest': {
-          const pool = await sub(node.candidates, 'candidates');
+          const pool = yield* sub(node.candidates, 'candidates');
           if (!isRecord(pool) || pool.kind !== 'strategy.candidates' || !Array.isArray(pool.candidates))
             throw new StrategyFault('candidate-set', 'chooseBest requires a strategy.candidates value');
           const names = new Set<string>();
@@ -577,7 +613,7 @@ export async function execute(
             if (!Object.hasOwn(candidate, 'value'))
               throw new StrategyFault('candidate-value', `Candidate ${candidate.name} is missing its value`);
             const metricData = node.metrics
-              ? await call(
+              ? yield* call(
                   node.metrics,
                   'metrics',
                   candidate.value,
@@ -646,7 +682,7 @@ export async function execute(
           break;
         }
         case 'conditional': {
-          const condition = await call(
+          const condition = yield* call(
             node.predicate,
             'predicate',
             evaluate(node.input, current, frame, current),
@@ -663,24 +699,25 @@ export async function execute(
             frame,
             'Conditional branch was not selected',
           );
-          value = await sub(condition ? node.then : node.else, condition ? 'then' : 'else');
+          value = yield* sub(condition ? node.then : node.else, condition ? 'then' : 'else');
           break;
         }
         case 'repeatUntilStable': {
-          const identity = async (v: unknown) =>
-            fingerprint(
-              node.identity ? await call(node.identity, 'analysis', v, {}, r) : semanticIdentity(v),
+          const identity = function* (v: unknown): Steps<string> {
+            return fingerprint(
+              node.identity ? yield* call(node.identity, 'analysis', v, {}, r) : semanticIdentity(v),
             );
+          };
           let previous = current,
-            previousKey = await identity(current);
+            previousKey = yield* identity(current);
           const seen = new Set([previousKey]);
           let converged = false;
           for (let i = 1; i <= node.maxIterations; i++) {
-            const next = await sub(node.body, `iteration[${i}]`, previous, {
+            const next = yield* sub(node.body, `iteration[${i}]`, previous, {
                 ...copyFrame(frame),
                 iteration: i,
               }),
-              key = await identity(next);
+              key = yield* identity(next);
             evidence(r, 'iteration', {
               iteration: i,
               before: previousKey,
@@ -707,7 +744,7 @@ export async function execute(
         }
         case 'forEach': {
           const items = node.selector
-            ? await call(
+            ? yield* call(
                 node.selector,
                 'selector',
                 evaluate(node.input, current, frame, current),
@@ -728,7 +765,7 @@ export async function execute(
             concurrency: Math.min(node.concurrency ?? maxConcurrency, maxConcurrency),
           });
           if (!items.length) skip(node.body, r, `${path}/empty`, frame, 'forEach selected no items');
-          value = await group(
+          value = yield* group(
             items,
             node.concurrency ?? maxConcurrency,
             (item, i) => sub(node.body, `item[${i}]`, item, { ...copyFrame(frame), item, index: i }),
@@ -744,7 +781,7 @@ export async function execute(
           break;
         }
         case 'require': {
-          const result = await call(
+          const result = yield* call(
             node.analysis,
             'analysis',
             evaluate(node.input, current, frame, current),
@@ -757,7 +794,7 @@ export async function execute(
           break;
         }
         case 'verify': {
-          const raw = await call(
+          const raw = yield* call(
             node.invariant,
             'invariant',
             evaluate(node.input, current, frame, current),
@@ -790,7 +827,7 @@ export async function execute(
           break;
         case 'attempt': {
           try {
-            value = await sub(node.body, 'body');
+            value = yield* sub(node.body, 'body');
             skip(node.fallback, r, `${path}/fallback`, frame, 'Attempt succeeded; fallback was not needed');
           } catch (error) {
             if (!(error instanceof StrategyRejected) || (node.codes && !node.codes.includes(error.code))) {
@@ -804,13 +841,13 @@ export async function execute(
               throw error;
             }
             evidence(r, 'recovery', { rejection: errorInfo(error), fallback: node.fallback.id });
-            value = await sub(node.fallback, 'fallback');
+            value = yield* sub(node.fallback, 'fallback');
           }
           break;
         }
         case 'scope':
           evidence(r, 'scope', { name: node.name });
-          value = await sub(node.body, 'body');
+          value = yield* sub(node.body, 'body');
           break;
       }
       check();
@@ -835,7 +872,7 @@ export async function execute(
     error: unknown,
     status: StrategyExecution['status'] = 'succeeded';
   try {
-    value = await run(snapshot.root, initial, { bindings: new Map() }, undefined, 'root', 0);
+    value = yield* run(snapshot.root, initial, { bindings: new Map() }, undefined, 'root', 0);
   } catch (e) {
     error = e;
     status = statusFor(e);
