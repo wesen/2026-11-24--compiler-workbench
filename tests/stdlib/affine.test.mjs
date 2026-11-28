@@ -167,14 +167,14 @@ test('joinDepth reads the library distances: aligned members join, a transposed 
   );
   assert.match(constantIndex.refusals[0].reason, /^reads a at index 0 in position 0, not its own axis/);
 
-  // Every other position still aligns: b joins a at depth 1 when only position 1 is misaligned.
-  const first = planFusion(
+  // A third member that only reads b at its own axes joins at the same depth.
+  const three = planFusion(
     program(
       'fn g(x: f32[N,N]): f32[N,N] { a[i,j] = x[i,j] * 2; b[i,j] = a[i,j] + x[i,j]; c[i,j] = b[i,j]; return c; }',
     ),
   );
   assert.deepEqual(
-    first.groups.map(g => [g.depth, g.statements]),
+    three.groups.map(g => [g.depth, g.statements]),
     [[2, ['a', 'b', 'c']]],
   );
 });
