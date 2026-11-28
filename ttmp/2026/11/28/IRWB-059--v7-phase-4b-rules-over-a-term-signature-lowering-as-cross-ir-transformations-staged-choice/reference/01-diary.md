@@ -162,3 +162,66 @@ Fable (IRWB-061) finished in about 30 minutes. Both lowerings now run on the one
 ### Code review instructions
 - Start with `src/framework/passes/transformation.ts` (`transformation({ from, to })`, `CrossTransformation`, `options.pending`), then `src/typed/backend/compile.ts` (`imageLowering`, `lowerImageChecked`) and `src/tensor/cuda-contract.ts` (the composed correspondence).
 - Validate: `node --test tests/framework/cross-transformation.test.mjs tests/typed/lowering.test.mjs tests/tensor/lowering.test.mjs`.
+
+## Step 4: lanes 4.8, F41 and 4.6 scored and merged; F41 finished by the coordinator
+
+The four Codex and Pi cells all exited 0 and scored clean on their commits. GLM's term cell had one unformatted file. I merged staged choice (Sol low), the coverage check (Terra low) and term rules (GLM), in that order, with no conflicts. Terra's cell left F41 half done, because the duplicate types lay outside its brief, so I finished it. On the working branch every check passes, GPU included.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Score, review, choose between the two term cells, merge, and validate at merge.
+**Commit (code):** cherry-picks of `v7-staged-sl/irwb-062`, `v7-coverage-tl/irwb-063` and `v7-terms-g-h/irwb-060-a`; `b1e975d`, F41 completed.
+
+### What I did
+- `BASEREF=v7-p4b-base scripts/07-score-lanes.sh` on the four cells. Each: build and tsc ok, baselines 0 differences, all suites green, oracle 0, dirty 0. GLM 060-A had one new Prettier issue, in `src/framework/ir/derivation.ts`.
+- Read the final messages and diff stats of both term cells.
+- Cherry-picked staged choice, then the coverage check, then GLM's terms.
+- Ran Prettier on `derivation.ts`.
+- **F41:** made `DerivationCoverage` (`ir/derivation.ts`) and `CorrespondenceCoverage` (`contracts/types.ts`) aliases of `Coverage` in `ir/correspondence.ts`. `contracts/types.ts` now imports that type; the analysis manager already imported `checkCoverage` from `../ir`, so the layering does not change.
+- Ran the full checks, the GPU suite included.
+
+### Why: GLM's term cell over DeepSeek's
+| | GLM high (060-A) | DeepSeek xhigh (060-B) |
+|---|---|---|
+| decision point (library path against the compiled matcher, O2, interleaved) | +3.4%, +5.2%, +2.7% over three runs: under 10%, library path kept | −0.28%: library path kept |
+| F40 | one branch in `stepEntries` (`ir/derivation.ts`) maps a `merged` step to the statement that absorbed it. **Tix `inline` keeps its derivation**, and the correspondence is computed from it. | `inline` supplies `merged` entries and **no longer emits a `Derivation`**, which undoes K2 for Tix (its own report says "the K2 record for Tix does not [survive]") |
+| scope | touched `ir/derivation.ts`, a documented exception | within scope; ran the `*-gpu` tests once by mistake (glob), and recorded it |
+| library shape | `terms.ts`, `types.ts`, `verify.ts` (337 lines; the seeded `Rng` moved verbatim) | `signature.ts`, `pattern.ts`, `rules.ts`, `verify.ts` (91), and `tensor/rules.ts`; A0's matcher copy (`edit-classes.ts`) ported too |
+
+DeepSeek's library is cleaner and ports one more client, but its F40 removes a derivation that phase 4.1 had just added. The derivation is meant to be the source the correspondence is computed from, so GLM's fix sits in the right place. **Follow-up:** port DeepSeek's `edit-classes.ts` change, A0's matcher on the library, from `v7-terms-ds-x/irwb-060-b`.
+
+### What worked
+- No conflicts, although lanes 4.2 and 4.8 both touched `cuda-contract.ts`: 4.8 changed only `modesOf`, as both briefs specified.
+- Checks on the working branch:
+  - tsc clean; Prettier flags 6 pre-existing files;
+  - suites: typed 198, framework 273, workbench 24, stdlib 67, tensor CPU 63;
+  - baselines `no differences`; site builds;
+  - **GPU 23/23**.
+
+### What didn't work
+- IRWB-063's own final message: "F41 is incomplete: the original duplicate type declarations remain. Removing them requires edits to `contracts/types.ts` and `passes/define-pass.ts`, both excluded by the brief's scope." I finished it in `b1e975d`. Two aliases were enough; `define-pass.ts` needed no change, since it imports `DerivationCoverage`.
+- The Codex sandbox again reported four failing test files, from subprocess EPERM; the escalated rerun passed.
+
+### What I learned
+- **The F40 brief was wrong.** After IRWB-056-B the correspondence is computed in the framework from the derivation, so "port 056-A's `passes.ts`" could not work. Both cells said so, and they resolved it in opposite places.
+- **Staged choice (IRWB-062):**
+  - the gate and the contraction variants are one ordered launch `select`;
+  - the manifest carries the guards and arms, and `modesOf` derives the forcing modes from them;
+  - unreachable arms and uncovered launches are diagnosed;
+  - CUDA is byte-identical.
+
+### What warrants a second pair of eyes
+- GLM's `stepEntries` branch for `merged` changes what `correspondenceFromDerivation` produces for a step whose target existed before. IRWB-056-B pinned the old behaviour in `tests/framework/derivation.test.mjs`, and GLM updated two assertions there.
+- The library's `verify.ts` (337 lines) holds the moved `Rng`. Check that nothing still imports Typed's old copy.
+
+### What should be done in the future
+- Port DeepSeek's A0 matcher change, as above.
+- Make the checked lowering the default on some path (from step 3).
+- `scheduleFunction` should return the pass results, so the second registry in `cuda-contract.ts` can go (from step 3).
+- Remaining phase-4 items: 4.3, attribution and classification as queries (settles 393 against 395); 4.7, keep or delete (E1 benchmark). Then the PR.
+
+### Code review instructions
+- Term rules: start at `src/stdlib/term/terms.ts`, `src/typed/rules/compile.ts` (the library matcher over `ValueHandle`), and `src/tensor/passes.ts` (`split-sum` and `inline` as rules).
+- Staged choice: `src/tensor/schedule.ts` (the launch `select` and its diagnostics), then `modesOf`.
+- F41: `src/framework/ir/correspondence.ts` (`Coverage`, `checkCoverage`).
+- Validate: `node --test tests/stdlib/term.test.mjs tests/tensor/terms.test.mjs tests/tensor/staged-choice.test.mjs tests/framework/correspondence-entities.test.mjs`.
