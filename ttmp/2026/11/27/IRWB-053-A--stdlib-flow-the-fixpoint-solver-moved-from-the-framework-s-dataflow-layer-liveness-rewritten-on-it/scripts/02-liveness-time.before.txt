@@ -1,0 +1,6 @@
+before	bytecode-vm	0.28ms	1 fns
+before	f32-dsp	0.52ms	3 fns
+before	lz-roundtrip	0.66ms	4 fns
+before	regex-nfa	0.91ms	2 fns
+before	sha-chacha	1.27ms	5 fns
+before	median-total	3.64ms

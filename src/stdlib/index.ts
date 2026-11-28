@@ -9,7 +9,9 @@
  * above; `check` and `measure` on top. Nothing under src/stdlib imports outside src/stdlib.
  *
  * What exists now:
- *   flow/     liveness — backward gen/kill liveness over blocks, with an explicit scope
+ *   flow/     liveness — backward gen/kill liveness over blocks, with an explicit scope, solved on
+ *             `solve`; solve — the fixpoint solver: a monotone transfer over a graph, in either
+ *             direction, widening at loop heads, over the caller's lattice (generalises liveness)
  *   graph/    orders, dominators, natural loops — over one digraph: nodes, an entry, successors
  *   lattice/  lattices — join, order and widening: the set, flat, interval and map lattices
  *             (dataflow's ranges analysis, and SCCP's flat lattice of SSA names)
@@ -20,7 +22,6 @@
  * Later modules, one line each (each enters under the admission rule, with its two clients):
  *   graph/    dominance frontiers
  *   num/      exact small-number helpers (saturating and wrapping arithmetic)
- *   flow/     the fixpoint solver over a lattice (liveness hardcodes its own; this generalises it)
  *   ssa/      SSA construction — from a graph and dominators to phi placement
  *   term/     terms over a signature, matching and substitution
  *   pe/       partial evaluation — specialization over a term and an affine form
@@ -28,6 +29,11 @@
  *   measure/  cost measures over library results (sizes, depths)
  */
 export { liveness, reachableBlocks } from './flow/liveness.js';
+// The solver's own `depthFirst` (over a FlowGraph) is not re-exported here: the graph module's
+// `depthFirst` (over a Digraph) already owns the name; it stays reachable through the module and
+// through the framework dataflow layer that re-exports the whole solver.
+export { DataflowError, solve } from './flow/solve.js';
+export type { FlowGraph, SolveOptions, Solution } from './flow/solve.js';
 export { minmax, NUMBERS } from './num/minmax.js';
 export type { FloatOrder, MinMax, MinMaxProfile } from './num/minmax.js';
 export { binary32, BITS, CANONICAL_NAN, fromBits, isNaNBits, toBits } from './num/binary32.js';
