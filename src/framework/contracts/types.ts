@@ -120,11 +120,14 @@ export interface Preservation {
   readonly mode: 'check' | 'transfer';
   readonly correspondence?: string;
 }
+export type CorrespondenceCoverage = 'partial' | 'sourceTotal' | 'targetTotal' | 'bothTotal';
 export interface CorrespondenceRequirement {
   readonly id: string;
   readonly from: string;
   readonly to: string;
   readonly relation?: string;
+  /** What the record's mapping groups must cover; the default is 'bothTotal' (F35). */
+  readonly coverage?: CorrespondenceCoverage;
 }
 export type CachePolicy = 'pure' | 'tracked' | 'never';
 export interface TransformationDefinition<I extends Ports = Ports, O extends Ports = Ports>

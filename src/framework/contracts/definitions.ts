@@ -24,6 +24,8 @@ import type {
   VersionRef,
 } from './types.js';
 const nonempty = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
+/** The coverage a correspondence requirement may demand of its record's mapping groups (F35). */
+const COVERAGES = ['partial', 'sourceTotal', 'targetTotal', 'bothTotal'] as const;
 function portType(value: unknown, category?: 'ir' | 'type'): asserts value is IRType<any> | ValueType<any> {
   if (
     !value ||
@@ -179,6 +181,9 @@ export function defineTransformation<I extends Ports, O extends Ports>(
   if (result.cache !== 'never' && result.effects.some(e => e.access === 'write'))
     throw new Error('Write effects require cache: never');
   if (!['pure', 'tracked', 'never'].includes(result.cache)) throw new Error('Invalid cache policy');
+  for (const c of result.correspondence)
+    if (c.coverage !== undefined && !COVERAGES.includes(c.coverage))
+      throw new Error(`Invalid correspondence coverage ${String(c.coverage)}`);
   const selector = (
     s: {
       from: 'inputs' | 'outputs';

@@ -1126,6 +1126,19 @@ export class AnalysisManager {
         for (const id of label === 'source' ? entry.from : entry.to)
           if (!actual.has(id)) throw new ContractError('correspondence', `Unknown ${label} entity ${id}`);
     }
+    // F35: a group may not contradict what the structural diff of the two revisions shows. An id present in
+    // both universes survives (diffGraphs shows it unchanged or updated); a group mapping it to nothing claims
+    // a removal the revisions contradict. The universes here are the record's own lists, which the membership
+    // check above has already pinned to the artifacts' entities on enumerated types.
+    const survivors = new Set(c.targetEntities ?? []);
+    for (const entry of c.entities ?? [])
+      if (!entry.to.length)
+        for (const id of entry.from)
+          if (survivors.has(id))
+            throw new ContractError(
+              'correspondence',
+              `Entity ${id} survives in the target, so mapping it to nothing contradicts the diff`,
+            );
   }
   async checkInvariant<P extends Ports>(
     definition: InvariantDefinition<P>,
@@ -1453,6 +1466,28 @@ export class AnalysisManager {
                 'correspondence',
                 'Correspondence relation does not match its declaration',
               );
+            // F35: the requirement declares what its mapping must cover; a record whose groups leave the
+            // declared entities unaccounted for says less than it claims. The lists were already pinned to the
+            // artifacts' entities by validateCorrespondence on enumerated types.
+            const coverage = requirement.coverage ?? 'bothTotal';
+            if (coverage !== 'partial') {
+              const groups = c.entities ?? [],
+                mappedSource = new Set(groups.flatMap(g => [...g.from])),
+                mappedTarget = new Set(groups.flatMap(g => [...g.to])),
+                uncovered = [
+                  ...(coverage !== 'targetTotal'
+                    ? (c.sourceEntities ?? []).filter(id => !mappedSource.has(id)).map(id => `${id} (source)`)
+                    : []),
+                  ...(coverage !== 'sourceTotal'
+                    ? (c.targetEntities ?? []).filter(id => !mappedTarget.has(id)).map(id => `${id} (target)`)
+                    : []),
+                ];
+              if (uncovered.length)
+                throw new ContractError(
+                  'correspondence',
+                  `Correspondence ${requirement.id} does not cover its declared entities: ${uncovered.join(', ')}`,
+                );
+            }
             checks.push({
               phase: 'correspondence',
               definition: {

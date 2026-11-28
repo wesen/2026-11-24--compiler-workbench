@@ -218,7 +218,17 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     inputs,
     outputs,
     cache: 'never',
-    correspondence: [{ id: 'kernels', from: 'baseline', to: 'subject', relation: 'statements-to-kernels' }],
+    // F35: the baseline is the whole module, but a lowering maps only the lowered function's statements to
+    // kernels, so the requirement covers every target kernel, not every source statement.
+    correspondence: [
+      {
+        id: 'kernels',
+        from: 'baseline',
+        to: 'subject',
+        relation: 'statements-to-kernels',
+        coverage: 'targetTotal',
+      },
+    ],
     ensures: [
       {
         invariant,
