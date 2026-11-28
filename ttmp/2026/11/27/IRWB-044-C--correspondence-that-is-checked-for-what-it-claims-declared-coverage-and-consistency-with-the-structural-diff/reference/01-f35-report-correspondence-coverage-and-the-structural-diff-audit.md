@@ -136,5 +136,14 @@ behaviour the framework documents as "self-declared". I backed it out and the te
 
 ## Commits
 
-`IRWB-044-C:` design and probes; implementation and the un-todoed test; README + formatting. The last commit
-holds the working code and is named in the final message.
+| Commit | Content |
+| --- | --- |
+| `6995661` | design, ticket, probes 01 and 02 |
+| `9a78b34` | implementation and the un-todoed F35 test |
+| `02ac33a` | contracts README, prettier on `definitions.ts` |
+| `12d0580` | diary, changelog, tasks, this report |
+| `c3e655a` and the commit after it | ticket markdown only (`git diff --stat 02ac33a HEAD -- src tests` is empty) |
+
+Every acceptance check above was run on the code of `02ac33a`, which is byte-identical to the code of the
+last commit (`git diff --stat 02ac33a HEAD -- src tests` prints nothing); the last commit only changes this
+ticket's markdown.
