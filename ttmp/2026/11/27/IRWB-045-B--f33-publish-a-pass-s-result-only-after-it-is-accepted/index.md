@@ -8,7 +8,11 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/framework/passes/define-pass.ts
+      Note: 'The acceptance boundary: prepareNative''s private candidate store, the deferred contract commit, and the commit/retain/rollback ordering'
+    - Path: repo://tests/framework/r3-defects.test.mjs
+      Note: The two F33 tests, their todo removed in the fix commit
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T18:40:09.138874453-05:00
