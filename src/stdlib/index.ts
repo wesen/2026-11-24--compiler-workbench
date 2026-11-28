@@ -12,6 +12,8 @@
  *   flow/     liveness — backward gen/kill liveness over blocks, with an explicit scope, solved on
  *             `solve`; solve — the fixpoint solver: a monotone transfer over a graph, in either
  *             direction, widening at loop heads, over the caller's lattice (generalises liveness)
+ *             solveFor — demand-driven equation solving (local fixpoints, Fecht–Seidl): unknowns created
+ *             on demand, with widening and a budget (SCCP)
  *   graph/    orders, dominators, natural loops — over one digraph: nodes, an entry, successors
  *   lattice/  lattices — join, order and widening: the set, flat, interval and map lattices
  *             (dataflow's ranges analysis, and SCCP's flat lattice of SSA names)
@@ -68,3 +70,6 @@ export type { Affine } from './affine/forms.js';
 export { distanceVector, isZero } from './affine/distances.js';
 export { direction, orderViolation, stripMine } from './affine/directions.js';
 export type { Direction, OrderViolation, ScheduledLoop } from './affine/directions.js';
+
+export { solveFor } from './flow/solve-for.js';
+export type { Budget, Equations, Solution as LocalSolution } from './flow/solve-for.js';
