@@ -105,3 +105,13 @@ Then the audit test (in `tests/typed/derivations.test.mjs`, reusing its O2 corpu
 - `tools/build-site.mjs`: builds (3,229 KiB app, 50 projects, 17 chapters).
 
 **What didn't work.** `npm run format:check` reports four files I did not touch (`candela-render.ts`, `evaluate.ts`, `ir.ts`, `model.ts`) as unformatted — pre-existing at HEAD, left alone; the five files this ticket changes all pass Prettier.
+
+## Step 9 — the report and the bookkeeping
+
+**What I did.** Re-ran the D1 and D2 scripts on the final code and re-diffed against the before-outputs (identical). Wrote `reference/01-final-report.md` (the file-by-file account, the checks with their numbers, the 203/395 settlement, what remains and why, what was left out), checked the four tasks, and updated the changelog with the five file notes.
+
+**Why.** The brief asks for a report in the ticket; the re-run closes the gap between "outputs captured mid-work" and "outputs of the last commit".
+
+**What I learned.** The two D1 tables and the three D2 outputs are small enough to attach in full; the corpus differential's value is the count and the zero, recorded in the report.
+
+**Code review instructions.** Read the report against the brief's acceptance list; then review `src/framework/ir/attribution.ts` (the queries' contracts are its comments), the diff of the three Typed tools, and the two test changes that carry decisions (395 with its justification in `tests/typed/derivations.test.mjs`; the audit test).
