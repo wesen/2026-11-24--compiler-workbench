@@ -179,3 +179,30 @@ All eleven cells exited 0 and committed. Every cell met the acceptance on its co
 - **Brief error:** I suggested `licm` or `bce`, but both declare `preserves: []`.
 - **Verdict:** one runner, two drivers. The migration base is Fable's structure (the runner in its own module, generic steps, the manager's `analyse` and `preserve` as generators), with Sol's sync transfer as a cross-check.
 - **Remaining phase 3 work:** contracts as steps (13 `await`s), a synchronous strategy driver, then every pass migrated.
+
+## Step 5: the phase 3 migration, the solver move and F39 launched
+
+The user said "yes" to the three next steps.
+
+**Phase 3 migration.** Ticket IRWB-052, run by a Fable cell (Agent tool). It works in worktree `v7-p3-fa-irwb-052`, which is `v7-p2` plus the three IRWB-051-C spike commits. The brief is `prompts/migration/common.md`, with the wrapper in `prompts/migration/claude/IRWB-052.md`. It asks for:
+1. contracts as steps;
+2. a synchronous strategy driver, with `optimizeTix` running as a plan;
+3. every pass on the transformation runner, with the synchronous runner's restriction deleted;
+4. one encoding of the Tix meaning gate;
+5. cleanup in `finally`, with a test.
+
+The baselines must stay byte-identical. The brief excludes the phase-4 items.
+
+**Solver move.** Ticket IRWB-053, run on two cells: GLM high and DeepSeek xhigh. `solve` moves into `stdlib/flow`, and liveness is rewritten on it as the second client. The cells must measure corpus compile time; if the solver is more than about 10% slower, they keep both.
+
+**F39.** Ticket IRWB-054, run on one cell, DeepSeek xhigh, because only one GPU job may run at a time. The cell must reproduce the failure in a loop, capture the disagreeing case, find the cause and fix it there. It is the only agent allowed to use the GPU; every other brief forbids the GPU tests, and the coordinator runs none until it exits.
+
+The three cells' scopes are disjoint:
+
+| Cell | Files |
+|---|---|
+| Migration | `framework/{passes,contracts,strategy}`, `typed/passes.ts`, `tensor/{passes,contract,index}.ts` |
+| Solver move | `stdlib/flow`, `framework/dataflow` |
+| F39 | `tensor/{schedule,cuda-*}.ts`, `tools/cuda-remote.mjs` |
+
+Briefs are written by `scripts/08-write-briefs-p3.py` (`91249ef`); the launcher is `scripts/09-launch-p3-lanes.sh` (base `v7-p2`).
