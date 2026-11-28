@@ -44,7 +44,10 @@ const backend = {
   ...(flag('--tuned') ? { chains: true, coalesce: true, homes: true } : {}),
   ...JSON.parse(option('--backend') ?? '{}'),
 };
+// the revision chain that produced the head: where each site's code came from (IRWB-065-A)
+const chain = p.revisions.slice(1).map(r => ({ pass: r.pass, correspondence: r.correspondence }));
 const h = hotShapes(p.head, calls, {
+  chain,
   backend,
   rules: [...SIMPLIFY_RULES.rules, ...FOLD_RULES.rules],
   ...(option('--limit') ? { limit: +option('--limit') } : {}),

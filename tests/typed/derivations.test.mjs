@@ -9,7 +9,7 @@ await installVendor();
 const { Program } = await import('../../dist/typed/program.js');
 const { projectSource } = await import('../../dist/typed/project.js');
 const { PIPELINES, revisionCorrespondence } = await import('../../dist/typed/passes.js');
-const { correspondenceFromDerivation, locality, validateDerivation } = await import(
+const { correspondenceFromDerivation, inPlaceInput, locality, validateDerivation } = await import(
   '../../dist/framework/ir/derivation.js'
 );
 const { makeCorrespondence } = await import('../../dist/framework/ir/correspondence.js');
@@ -37,17 +37,6 @@ const corpus = () =>
 
 /** The steps an edit cites. */
 const cited = (r, edit) => (edit.steps ?? []).map(i => r.derivation.steps[i]);
-
-/**
- * The entities a local claim may rest on under the in-place policy: the input revision's, and what the producer only
- * remade from them (a tree rebuilt around a changed operand is the input's tree, not something new).
- */
-const inputOf = r => {
-  const input = new Set(r.correspondence.sourceEntities);
-  for (const s of r.derivation.steps)
-    if ('decision' in s.by && s.by.decision === 'rebuild') for (const p of s.produces) input.add(p);
-  return input;
-};
 
 test(
   'the derivation computes the correspondence revisionCorrespondence computes, on every O2 revision',
@@ -144,11 +133,11 @@ test('every rule-citing record names the rules the trees were rewritten by, and 
     for (const p of premises) assert.ok(typeof p === 'string' && p.length, `${name}: ${p}`);
 });
 
-test("both policies as queries over the same records: 203 (scoped) and 393 (in-place, G's 395 minus two)", async () => {
+test('both policies as queries over the same records: 203 (scoped) and 395 (in-place)', async () => {
   const revisions = await corpus();
   const tally = { scoped: {}, 'in-place': {} };
   for (const { r } of revisions) {
-    const input = inputOf(r);
+    const input = inPlaceInput(r.derivation, r.correspondence.sourceEntities);
     for (const edit of r.edits) {
       const steps = cited(r, edit);
       if (edit.kind !== 'replace' || !steps.length) continue;
@@ -164,13 +153,17 @@ test("both policies as queries over the same records: 203 (scoped) and 393 (in-p
     Object.values(tally.scoped).reduce((a, b) => a + b, 0),
     203,
   );
-  // G's reading: nothing this application introduced. It adds constprop 141 and subst's 51 replacements (395 in
-  // IRWB-035-G's count); two of those 51 are fold edits that fold a constant tree the same application computed
-  // (`fold-add` on the product of `fold-shl`), which this policy reads as depending on something the application made.
-  assert.deepEqual(tally['in-place'], { simplify: 140, fold: 41, strength: 20, constprop: 141, subst: 51 });
+  // G's reading: nothing this application placed into the program. It adds constprop 141 and subst's 51 replacements
+  // (395 in IRWB-035-G's count). The settled reading of "placed into the program" (IRWB-065-A): a local the
+  // application created, a statement it inserted, a value it made outside a rule chain — not the intermediates of
+  // its own rewrite chains, which are part of the chain's net change (A0's header: a local rewrite is one "where B
+  // reads only locals the input revision already defines", and a chain of replaces is classified by its net change).
+  // So the two `fold` records whose premise is a constant the same application's rule chain computed (`fold-add` on
+  // `fold-shl`'s product, on `constants` and `orders`) are local, and the count is G's 395, not 393.
+  assert.deepEqual(tally['in-place'], { simplify: 140, fold: 43, strength: 20, constprop: 141, subst: 51 });
   assert.equal(
     Object.values(tally['in-place']).reduce((a, b) => a + b, 0),
-    393,
+    395,
   );
   // the classes are answers, not fields: no step and no edit record carries one
   for (const { r } of revisions) {
@@ -213,4 +206,45 @@ test('Tix inline records which statement was merged into which, and the correspo
     },
   };
   assert.throws(() => applyNativePassSync(broken, p.current, () => ({ ok: true })), /consumes f\/zz/);
+});
+
+test('the audit: what the rule tables re-derive is what the cited steps recorded, on every rule-licensed chain', async () => {
+  const EC = await import('../../dist/typed/edit-classes.js');
+  const revisions = await corpus();
+  let chains = 0;
+  for (const { id, r, before } of revisions) {
+    const after = r.artifact.value;
+    const grouped = new Map();
+    for (const e of r.edits)
+      if (e.kind === 'replace') {
+        const k = `${e.stmt}.${e.field}`;
+        (grouped.get(k) ?? grouped.set(k, []).get(k)).push(e);
+      }
+    for (const chain of grouped.values()) {
+      const by = chain
+        .flatMap(e => cited(r, e))
+        .flatMap(s => (s && 'rule' in s.by ? [s.by] : []));
+      if (!by.length) continue;
+      const from = chain[0].from,
+        to = chain.at(-1).to;
+      const a = EC.treeOf(before.values, from),
+        b = EC.treeOf(after.values, to);
+      // the tables, the pass's own first (as the classifier ordered them)
+      const rd = EC.rederive(
+        a,
+        b,
+        [...EC.VERIFIED_TABLES].sort((s, t) => +(t.name === r.pass) - +(s.name === r.pass)),
+      );
+      assert.ok(rd, `${id} r${r.rev}: no table re-derives what ${by.map(x => x.rule)} recorded`);
+      assert.equal(rd.table, by[0].table ?? r.pass, `${id} r${r.rev}: another table re-derives the chain`);
+      assert.deepEqual(
+        rd.fired,
+        EC.firedRules(chain.flatMap(e => cited(r, e))),
+        `${id} r${r.rev} ${from} -> ${to}: the tables fire different rules than the steps recorded`,
+      );
+      chains++;
+    }
+  }
+  // every rule-licensed chain of the O2 corpus (the 183 rule-citing records are among these)
+  assert.ok(chains >= 183, `${chains} rule-licensed chains`);
 });

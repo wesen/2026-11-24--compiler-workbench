@@ -291,3 +291,25 @@ export function locality(
   }
   return 'local';
 }
+
+/**
+ * The entities an application's steps may rest on under the in-place policy (IRWB-065-A): the input revision's
+ * entities, and what the application's own rewrite chains only remade — the products of `rebuild` steps (a tree
+ * re-hung around a changed operand is the input's tree) and of rule steps (an intermediate a rule chain computes
+ * and a later rule of the same chain consumes is part of that chain's net change, not something the application
+ * placed into the program). Not included: locals the application created, statements it inserted, and values it
+ * made outside a rule chain (`licm`'s hoisted tree, `lvn`'s numbered value) — a step citing one of those needs
+ * something the application introduced, so it is structural.
+ *
+ * This is the settled reading of R3's two counts (203 and 395 local edits of the O2 corpus): A0's header defines a
+ * local rewrite as one "where B reads only locals the input revision already defines", and a chain of replaces by
+ * its net change — so the two `fold` records whose premise is a constant the same application's rule chain
+ * computed are local, and the in-place policy answers 395 where taking every made entity as new answered 393.
+ */
+export function inPlaceInput(derivation: Derivation, sourceEntities: readonly string[]): ReadonlySet<string> {
+  const input = new Set(sourceEntities);
+  for (const step of derivation.steps)
+    if ('rule' in step.by || ('decision' in step.by && step.by.decision === 'rebuild'))
+      for (const id of step.produces) input.add(id);
+  return input;
+}

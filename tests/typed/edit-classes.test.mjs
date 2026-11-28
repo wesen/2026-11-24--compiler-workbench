@@ -1,4 +1,5 @@
-// IRWB-035-G: the edit classifier (src/typed/edit-classes.ts): local value rewrites, structural edits, other.
+// IRWB-035-G + IRWB-065-A: the edit classifier (src/typed/edit-classes.ts) — the class of an edit is a query over
+// the derivation steps its chain cites (locality, in-place policy), and the rule tables it re-derives are an audit.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { installVendor } from '../../tools/node-vendor.mjs';
@@ -15,7 +16,13 @@ const open = id => Program.fromProject(projectSource(id, projectFiles(id)));
 const classified = p => {
   const images = p.revisions.map(r => lowerToImage(r.artifact).image.value);
   return p.revisions.slice(1).map((r, i) => {
-    const app = { pass: r.pass, before: p.revisions[i].artifact.value, after: r.artifact.value, edits: r.edits };
+    const app = {
+      pass: r.pass,
+      before: p.revisions[i].artifact.value,
+      after: r.artifact.value,
+      edits: r.edits,
+      derivation: r.derivation,
+    };
     const edits = EC.classifyApplication(app);
     const weights = EC.instructionWeights(edits, images[i], images[i + 1]);
     const upper = EC.instructionWeights(edits, images[i], images[i + 1], { rebuilt: true });
@@ -108,9 +115,30 @@ test('a pass with no table and no because: div-to-shift is local/uncited, with i
   const p = open('wrong-shift');
   await p.apply('div-to-shift', { check: false });
   const r = p.revisions.at(-1);
-  const edits = EC.classifyApplication({ pass: r.pass, before: p.revisions.at(-2).artifact.value, after: r.artifact.value, edits: r.edits });
+  const edits = EC.classifyApplication({
+    pass: r.pass,
+    before: p.revisions.at(-2).artifact.value,
+    after: r.artifact.value,
+    edits: r.edits,
+    derivation: r.derivation,
+  });
   assert.ok(edits.length > 0);
   for (const e of edits) assert.deepEqual([e.class, e.sub, e.shape], ['local', 'uncited', 'div(get,#) -> shr(get,#)']);
   const t = EC.tallyInto(EC.emptyTally(), edits);
   assert.deepEqual([t.edits, t.byClass.local.edits, t.byClass.structural.edits], [edits.length, edits.length, 0]);
+});
+
+test('the class is a query over the records: no derivation, no claim about a replace', async () => {
+  const p = open('wrong-shift');
+  await p.apply('div-to-shift', { check: false });
+  const r = p.revisions.at(-1);
+  // the same application without its derivation: the records cite no steps, so no query over them can classify
+  // the rewrite; the trees are still there, and what is not classification still works
+  const edits = EC.classifyApplication({
+    pass: r.pass,
+    before: p.revisions.at(-2).artifact.value,
+    after: r.artifact.value,
+    edits: r.edits,
+  });
+  for (const e of edits) assert.deepEqual([e.class, e.sub], ['other', 'unrecorded']);
 });
