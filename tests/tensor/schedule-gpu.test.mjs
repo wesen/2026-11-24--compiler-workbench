@@ -1,35 +1,17 @@
 // IRWB-033-D: tiled contraction kernels checked on the GB10. Needs the GPU machine (tools/cuda-remote.mjs).
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { seededRandom } from '../../dist/framework/contracts/index.js';
-import {
-  checkLowering,
-  compileTix,
-  cudaSource,
-  optimizeTix,
-  runTix,
-  runTixCuda,
-} from '../../dist/tensor/index.js';
+import { checkLowering, compileTix, optimizeTix, runTix, runTixCuda } from '../../dist/tensor/index.js';
 import { checkCudaLowering, cudaArtifact } from '../../dist/tensor/cuda-contract.js';
+import { emitScheduleProgram } from '../../dist/tensor/cuda-source.js';
 import { lowerSchedule } from '../../dist/tensor/strategy.js';
 
 const words = ({ data }) => new Uint32Array(data.buffer, data.byteOffset, data.length);
-const features = compileTix(`
-  fn batched(a:f32[B,M,K], b:f32[B,K,N]):f32[B,M,N] { y[z,i,j] = sum(k) a[z,i,k] * b[z,k,j]; return y; }
-  fn transposed(q:f32[Q,D], k:f32[K,D]):f32[Q,K] { s[i,j] = (sum(d) q[i,d] * k[j,d]) / sqrt(D); return s; }
-  fn epilogue(x:f32[N,D], w:f32[D,H], bias:f32[H]):f32[N,H] {
-    h[i,j] = (sum(d) x[i,d] * w[d,j]) + bias[j]; g[i,j] = tanh(h[i,j]) * h[i,j]; return g;
-  }
-  fn shifted(x:f32[C,H,W], k:f32[O,C,3]):f32[O,H,W-2] {
-    y[o,r,c]: f32[O,H,W-2] = sum(ci,dc) x[ci,r,c+dc] * k[o,ci,dc]; return y;
-  }
-  fn after(x:f32[N,K], w:f32[K,M]):f32[N,M] {
-    m[i] = max(j) x[i,j]; y[i,j] = (sum(k) x[i,k] * w[k,j]) - m[i]; return y;
-  }
-  fn chain(a:f32[M,K], b:f32[K,N], c:f32[N,P]):f32[M,P] {
-    t[i,j] = sum(k) a[i,k] * b[k,j]; y[i,p] = sum(j) t[i,j] * c[j,p]; return y;
-  }
-`);
+const features = compileTix(
+  readFileSync(new URL('./fixtures/schedule-features.tix', import.meta.url), 'utf8'),
+);
 const fns = ['batched', 'transposed', 'epilogue', 'shifted', 'after', 'chain'];
 
 test('every tiled variant of the feature contractions is exact on every case (each variant forced)', async () => {
@@ -42,7 +24,6 @@ test('every tiled variant of the feature contractions is exact on every case (ea
     assert.deepEqual(await checkLowering(features, fn), { accepted: true, relation: 'exact' }, fn);
   }
   for (const name of ['attention', 'mlp']) {
-    const { readFileSync } = await import('node:fs');
     const program = compileTix(
       readFileSync(new URL(`../../corpus/tensor/${name}/main.tix`, import.meta.url), 'utf8'),
     );
@@ -80,9 +61,12 @@ test('at shapes the rule tiles, and at tails, short and single reductions, the r
 
 test('mutants of the tiled kernel are rejected with a coordinate and the variant', async () => {
   const fn = 'transposed';
-  const source = cudaSource(features, fn);
-  // IRWB-057: the candidate's manifest gives its variants (the contract no longer counts them in the source)
-  const kernels = [{ name: 'k0', mapping: 'tiled', statements: ['s'], variants: 4 }];
+  const { source, kernels } = emitScheduleProgram(
+    lowerSchedule(
+      features.current.value.functions.find(f => f.name === fn),
+      true,
+    ).value,
+  );
   const mutants = {
     'terms in reverse within a tile': source.replace(
       'for (int kk = 0; kk < BK; ++kk) {',

@@ -1,0 +1,14 @@
+  fn batched(a:f32[B,M,K], b:f32[B,K,N]):f32[B,M,N] { y[z,i,j] = sum(k) a[z,i,k] * b[z,k,j]; return y; }
+  fn transposed(q:f32[Q,D], k:f32[K,D]):f32[Q,K] { s[i,j] = (sum(d) q[i,d] * k[j,d]) / sqrt(D); return s; }
+  fn epilogue(x:f32[N,D], w:f32[D,H], bias:f32[H]):f32[N,H] {
+    h[i,j] = (sum(d) x[i,d] * w[d,j]) + bias[j]; g[i,j] = tanh(h[i,j]) * h[i,j]; return g;
+  }
+  fn shifted(x:f32[C,H,W], k:f32[O,C,3]):f32[O,H,W-2] {
+    y[o,r,c]: f32[O,H,W-2] = sum(ci,dc) x[ci,r,c+dc] * k[o,ci,dc]; return y;
+  }
+  fn after(x:f32[N,K], w:f32[K,M]):f32[N,M] {
+    m[i] = max(j) x[i,j]; y[i,j] = (sum(k) x[i,k] * w[k,j]) - m[i]; return y;
+  }
+  fn chain(a:f32[M,K], b:f32[K,N], c:f32[N,P]):f32[M,P] {
+    t[i,j] = sum(k) a[i,k] * b[k,j]; y[i,p] = sum(j) t[i,j] * c[j,p]; return y;
+  }

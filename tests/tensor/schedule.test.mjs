@@ -185,3 +185,25 @@ test('the printer only prints: a schedule outside its form is rejected, fuse: fa
   assert.match(source, /__launch_bounds__\(V == 1 \? 256 : V == 2 \? 64 : V == 3 \? 256 : 256\) k0/);
   assert.match(source, /static int variant_mode = -1;/);
 });
+
+test('launch coverage diagnoses a shadowed arm and an uncovered launch', () => {
+  const fn = corpus('matmul');
+  const schedule = S.initialSchedule(fn).value;
+  const plan = structuredClone(chooseLoops(schedule));
+  const kernel = plan.kernels[0];
+  kernel.select = [{ variant: 1, minBlocks: 1 }, ...kernel.select];
+  assert.match(S.loopsEligible(schedule, plan).reason, /k0: unreachable launch arm 1 \(variant 1\)/);
+  kernel.select = kernel.select.slice(1, -1);
+  assert.match(S.loopsEligible(schedule, plan).reason, /k0: uncovered launch with no tiled variant fitting/);
+});
+
+test('schedule validation reports a gate with no reachable fallback', () => {
+  const schedule = structuredClone(lowerSchedule(corpus('softmax'), true).value);
+  const { guard } = schedule.kernels[0].select[0];
+  guard.fullRow = 1;
+  guard.heavy = [];
+  assert.throws(
+    () => createIRArtifact(S.scheduleAdapter, 'always-fused', schedule),
+    /unreachable unfused launch arm/,
+  );
+});

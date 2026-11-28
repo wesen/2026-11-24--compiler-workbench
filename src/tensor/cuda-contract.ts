@@ -258,14 +258,19 @@ interface Mode {
   variant?: number;
 }
 function modesOf(kernels: readonly CudaKernel[]): Mode[] {
-  const gate = kernels.some(k => k.gated),
-    variants = Math.max(0, ...kernels.map(k => k.variants ?? 0));
-  if (variants)
-    return Array.from({ length: variants }, (_, variant) => ({
-      variant,
-      ...(gate && { gate: variant % 2 ? ('unfused' as const) : ('fused' as const) }),
-    }));
-  return gate ? [{ gate: 'fused' }, { gate: 'unfused' }] : [{}];
+  const gates = new Set<NonNullable<Mode['gate']>>();
+  const variants = new Set<number>();
+  for (const kernel of kernels)
+    for (const arm of kernel.select ?? []) {
+      if ('gate' in arm) gates.add(arm.gate);
+      else variants.add(arm.variant);
+    }
+  const gateModes = [...gates];
+  const variantModes = [...variants].sort((a, b) => a - b);
+  return Array.from({ length: Math.max(1, gateModes.length, variantModes.length) }, (_, i) => ({
+    ...(gateModes.length && { gate: gateModes[i % gateModes.length] }),
+    ...(variantModes.length && { variant: variantModes[i % variantModes.length] }),
+  }));
 }
 type CudaSample = ReturnType<typeof cudaCases>[number] & Mode;
 

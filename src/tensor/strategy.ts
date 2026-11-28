@@ -33,7 +33,8 @@ import {
   type Loop,
   type LoopPlan,
   type Schedule,
-  type Selection,
+  type LaunchSelect,
+  type VariantArm,
   type Variant,
 } from './schedule.js';
 import type { Expr, Fn } from './model.js';
@@ -62,7 +63,7 @@ export const tiles = [
  *    stage 2's time; with 64 blocks (256 x 256 x 1) 0.94 and with 128 (4096 x 1 x 1024) 0.59 (script 06);
  *  - variant 0 (one thread per output, stage 2's mapping) otherwise.
  */
-export const selection: Selection[] = [
+export const selection: LaunchSelect<VariantArm> = [
   { variant: 1, minBlocks: 16 },
   { variant: 2, minBlocks: 2, minTerms: 256 },
   { variant: 3, minBlocks: 1 },
