@@ -19,6 +19,7 @@ import {
 } from './model.js';
 import { emitContraction } from './cuda-contraction.js';
 import type { ContractionKernel, Schedule } from './schedule.js';
+import { sha256 } from '../framework/core/data.js';
 
 const support = String.raw`
 #include <cuda_runtime.h>
@@ -146,8 +147,6 @@ const gatedMain = main.replace(
 );
 if (gatedMain === main) throw Error('The CUDA main no longer has the benchmark flag line');
 const gateSupport = '\nstatic int gate_mode = 0;';
-/** Whether a generated program has a gated kernel, and so takes --gate=fused|unfused. */
-export const takesGate = (source: string) => source.includes(gateSupport);
 
 // IRWB-033-D: a source with contraction kernels also takes --variant=N, which forces every contraction kernel to its
 // variant N where that variant can launch (the contract); --gate=* as for gated kernels.
@@ -158,13 +157,34 @@ const variantMain = gatedMain.replace(
       else throw std::runtime_error("unknown argument");`,
 );
 if (variantMain === gatedMain) throw Error('The gated CUDA main no longer has the unknown-argument line');
-/** Whether a generated program has a contraction kernel, and so takes --variant=N. */
-export const takesVariant = (source: string) => source.includes(variantSupport);
-/** The number of variants of the source's contraction kernels (the largest), or 0 without one. */
-export const variantCount = (source: string) =>
-  takesVariant(source)
-    ? Math.max(...[...source.matchAll(/if constexpr \(V == (\d+)\)/g)].map(m => +m[1])) + 1
-    : 0;
+
+/**
+ * IRWB-057: the manifest of a generated program, produced with its source: one entry per kernel, in launch order.
+ * The host program's interface follows from it, so nothing reads the source text to find it:
+ *   - a `gated` kernel decides at launch between its block mode and its statements one by one. The program then
+ *     takes --gate=fused|unfused, and after each case's result it writes one byte per gated kernel, in manifest
+ *     order: 1 when the kernel ran fused;
+ *   - a kernel with `variants` is a contraction kernel with that many variants; the program then takes --variant=N.
+ */
+export interface CudaKernel {
+  name: string;
+  mapping: 'thread' | 'block' | 'tiled';
+  statements: string[];
+  gated?: boolean;
+  variants?: number;
+}
+export interface CudaProgram {
+  source: string;
+  kernels: CudaKernel[];
+}
+/** A group that is printed behind a gate: a fused block-mode kernel. */
+const gatedGroup = (g: FusionGroup) => g.statements.length > 1 && g.mapping === 'block';
+
+// The manifests of the sources printed in this process, by the source's hash. `cudaSource` (index.ts) returns the
+// source alone, so a caller that holds only that text finds its manifest here (`emittedKernels`).
+const manifests = new Map<string, CudaKernel[]>();
+/** The manifest of a source this process printed, or undefined for any other text. */
+export const emittedKernels = (source: string): CudaKernel[] | undefined => manifests.get(sha256(source));
 
 function affine(a: Affine, name: (key: string) => string): string {
   const terms = a.terms.map(([key, coefficient]) =>
@@ -666,6 +686,14 @@ export function emitCuda(
   /** IRWB-033-D: the schedule's contraction kernels, printed from their variants. */
   contractions: ReadonlyMap<string, ContractionKernel> = new Map(),
 ): string {
+  return emitProgram(fn, plan, contractions).source;
+}
+/** `emitCuda` with the program's manifest. */
+function emitProgram(
+  fn: Fn,
+  plan: FusionPlan,
+  contractions: ReadonlyMap<string, ContractionKernel>,
+): CudaProgram {
   const all = [...fn.params, ...fn.statements];
   const tensors = new Map(all.map(t => [t.name, t]));
   const names = new Map(all.map((t, i) => [t.name, `t${i}`]));
@@ -752,26 +780,42 @@ export function emitCuda(
     `  write(output, ${buffer}.data(), ${buffer}.size());`,
     '  write(output, &gpu_ms, 1);',
     ...plan.groups
-      .filter(g => g.statements.length > 1 && g.mapping === 'block')
+      .filter(gatedGroup)
       .map(g => `  { const unsigned char choice = fused_${g.kernel} ? 1 : 0; write(output, &choice, 1); }`),
     '}',
   );
   const fused = plan.groups.some(g => g.statements.length > 1) ? [fusedSupport] : [];
-  const gated = plan.groups.some(g => g.statements.length > 1 && g.mapping === 'block');
+  const gated = plan.groups.some(gatedGroup);
   if (gated) fused.push(gateSupport);
   if (contractions.size) fused.push(variantSupport);
   if (contractions.size && !gated) fused.push('\nstatic int gate_mode{0};');
-  return [
+  const source = [
     support,
     ...fused,
     ...kernels.map(k => k.code),
     host.join('\n'),
     contractions.size ? variantMain : gated ? gatedMain : main,
   ].join('\n\n');
+  const manifest = plan.groups.map((g): CudaKernel => {
+    const contraction = contractions.get(g.kernel);
+    return {
+      name: g.kernel,
+      mapping: contraction ? 'tiled' : g.mapping,
+      statements: g.statements,
+      ...(gatedGroup(g) && { gated: true }),
+      ...(contraction && { variants: contraction.variants.length }),
+    };
+  });
+  manifests.set(sha256(source), manifest);
+  return { source, kernels: manifest };
 }
 
 /** IRWB-033-D: print a schedule. With no contraction kernel this is `emitCuda` of the schedule's fusion plan. */
 export function emitSchedule(schedule: Schedule): string {
+  return emitScheduleProgram(schedule).source;
+}
+/** `emitSchedule` with the program's manifest. */
+export function emitScheduleProgram(schedule: Schedule): CudaProgram {
   const plan: FusionPlan = {
     fn: schedule.fn.name,
     groups: schedule.kernels.map(k => k.group),
@@ -781,5 +825,5 @@ export function emitSchedule(schedule: Schedule): string {
   const contractions = new Map(
     schedule.kernels.flatMap(k => (k.kind === 'contraction' ? [[k.name, k] as const] : [])),
   );
-  return emitCuda(schedule.fn, plan, contractions);
+  return emitProgram(schedule.fn, plan, contractions);
 }

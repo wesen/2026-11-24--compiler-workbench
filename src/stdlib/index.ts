@@ -17,6 +17,7 @@
  *             (dataflow's ranges analysis, and SCCP's flat lattice of SSA names)
  *   affine/   forms — linear expressions over index variables, computed exactly; distances — dependence
  *             distance vectors over them (a read's index per position against the consumer's axis)
+ *             directions — direction vectors, strip-mining, and the legality of a loop order with parallel loops
  *   num/      binary32 arithmetic on bit patterns, and min/max under a named IEEE 754-2019 profile
  *
  * Later modules, one line each (each enters under the admission rule, with its two clients):
@@ -65,3 +66,5 @@ export type { Flat, Interval, Json, Lattice } from './lattice/lattices.js';
 export { add, constant, plain, substitute, value, variable } from './affine/forms.js';
 export type { Affine } from './affine/forms.js';
 export { distanceVector, isZero } from './affine/distances.js';
+export { direction, orderViolation, stripMine } from './affine/directions.js';
+export type { Direction, OrderViolation, ScheduledLoop } from './affine/directions.js';

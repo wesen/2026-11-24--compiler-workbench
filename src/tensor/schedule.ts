@@ -7,8 +7,8 @@
 //     loop nest over four flattened dims (b: batch, m and n: the output axes only one operand reads, r: the
 //     reduction axes in the meaning's order) and the operand tiles it stages in shared memory. The host picks a
 //     variant at launch (`select`).
-// Scheduling steps are v6 passes with a legality check decided from the IR (`legal`) and a correspondence to the
-// revision before. Every application is gated by `accumulationOrder`, which must not change.
+// IRWB-057: a schedule starts as stage 2's one kernel per statement and is changed by two transformations, each
+// taking a plan as its parameter (K6, below): `fusePass` (the grouping) and `loopsPass` (the loop nests).
 import { defineIR, type CheckResult } from '../framework/contracts/index.js';
 import {
   defineAdapter,
@@ -16,11 +16,23 @@ import {
   type IREntity,
   type IRRelation,
 } from '../framework/ir/index.js';
-import { applyNativePassSync, definePass, type PassResult } from '../framework/passes/index.js';
+import { transformation } from '../framework/passes/index.js';
 import { createIRArtifact } from '../framework/ir/index.js';
+import { canonical } from '../framework/core/data.js';
 import type { Artifact } from '../framework/core/types.js';
-import { outerReductions, planFusion, type FusionGroup, type FusionPlan, type Reduce } from './fusion.js';
-import { visit, type Expr, type Fn, type Statement } from './model.js';
+import { distanceVector } from '../stdlib/affine/distances.js';
+import { direction, orderViolation, stripMine, type Direction } from '../stdlib/affine/directions.js';
+import {
+  fusionEligible,
+  fusionPlan,
+  outerReductions,
+  unfusedPlan,
+  type FusionChoice,
+  type FusionGroup,
+  type FusionPlan,
+  type Reduce,
+} from './fusion.js';
+import { add, constant, variable, visit, type Expr, type Fn, type Statement } from './model.js';
 
 export type Dim = 'b' | 'm' | 'n' | 'r';
 export const dimsInOrder: readonly Dim[] = ['b', 'm', 'n', 'r'];
@@ -265,155 +277,45 @@ export const scheduleAdapter = defineAdapter<Schedule>({
   describe: (_, id) => ({ label: id }),
 });
 
-// ---- the order analysis ----
-
-/** The nest's iteration space at concrete dim extents: calls `visit` with each point's dim values, in nest order. */
-export function simulate(
-  loops: readonly Loop[],
-  extents: Record<Dim, number>,
-  visitPoint: (point: Record<Dim, number>) => void,
-  only: (l: Loop) => boolean = () => true,
-) {
-  const nest = loops.filter(only);
-  const inner = nest.map(l =>
-    loops.filter(x => x.dim === l.dim && x.level > l.level).reduce((p, x) => p * x.factor!, 1),
-  );
-  const trips = nest.map((l, i) => l.factor ?? Math.ceil(extents[l.dim] / inner[i]));
-  const index = nest.map(() => 0);
-  const walk = (depth: number) => {
-    if (depth === nest.length) {
-      const point = { b: 0, m: 0, n: 0, r: 0 };
-      nest.forEach((l, i) => (point[l.dim] += index[i] * inner[i]));
-      visitPoint(point);
-      return;
-    }
-    for (index[depth] = 0; index[depth] < trips[depth]; index[depth]++) walk(depth + 1);
-  };
-  walk(0);
-}
-
-const parallel = (b: Bind) => b !== 'serial' && b !== 'unroll';
-/** Why a variant does not accumulate every output over r = 0, 1, ..., R - 1 with its own accumulator, or undefined. */
-const violations = new Map<string, string | undefined>();
-export function orderViolation(v: Variant): string | undefined {
-  const key = JSON.stringify(v.loops);
-  if (!violations.has(key)) violations.set(key, findViolation(v));
-  return violations.get(key);
-}
-function findViolation(v: Variant): string | undefined {
-  const bound = v.loops.find(l => l.dim === 'r' && parallel(l.bind));
-  if (bound) return `reduction loop ${bound.id} is bound to ${bound.bind} (a reassociation)`;
-  // The accumulator is indexed by the output point, so loops of other dims do not change the sequence of terms one
-  // output receives: it is the enumeration of the r loops alone, in nest order. Likewise each output dim's loops
-  // alone must reach every value of that dim exactly once. Small extents that are not multiples of any factor the
-  // strategy uses, and single-term and empty reductions.
-  for (const extents of [
-    { b: 2, m: 5, n: 3, r: 11 },
-    { b: 1, m: 7, n: 2, r: 1 },
-    { b: 3, m: 1, n: 1, r: 0 },
-  ])
-    for (const d of dimsInOrder) {
-      const seen: number[] = [];
-      simulate(
-        v.loops,
-        extents,
-        p => {
-          if (p[d] < extents[d]) seen.push(p[d]);
-        },
-        l => l.dim === d,
-      );
-      const want = Array.from({ length: extents[d] }, (_, i) => i);
-      if (d === 'r' ? seen.join() !== want.join() : [...seen].sort((x, y) => x - y).join() !== want.join())
-        return d === 'r'
-          ? `with ${extents.r} terms, an output accumulates r in the order ${seen.join(' ')}`
-          : `dim ${d} of extent ${extents[d]} is covered as ${[...seen].sort((x, y) => x - y).join(' ')}`;
-    }
-  return undefined;
-}
-
-/**
- * For each statement with a reduction, the order in which every output accumulates each of its reductions. Kernels
- * printed with stage 2's scalar code have the meaning's order by construction (stages 2, 3 and 3b); a contraction
- * kernel has it when every variant passes `orderViolation`.
- */
-export function accumulationOrder(s: Schedule): Record<string, string[]> {
-  const out: Record<string, string[]> = {};
-  const statements = new Map(s.fn.statements.map(t => [t.name, t]));
-  for (const k of s.kernels)
-    for (const name of k.group.statements) {
-      const rs = reductions(statements.get(name)!.expr);
-      if (!rs.length) continue;
-      out[name] = rs.map(r => `lexicographic(${r.axes.map(a => a.id).join(',')})`);
-      if (k.kind === 'contraction' && name === k.contraction)
-        k.variants.forEach((v, i) => {
-          const why = orderViolation(v);
-          if (why) out[name] = [`variant ${i}: ${why}`];
-        });
-    }
-  return out;
-}
-export function orderGate(before: Artifact<Schedule>, after: Artifact<Schedule>): CheckResult {
-  const a = accumulationOrder(before.value),
-    b = accumulationOrder(after.value);
-  const changed = Object.keys({ ...a, ...b }).filter(n => JSON.stringify(a[n]) !== JSON.stringify(b[n]));
-  return changed.length
-    ? {
-        ok: false,
-        reason: `accumulation order of ${changed[0]} changed: ${JSON.stringify(a[changed[0]])} to ${JSON.stringify(b[changed[0]])}`,
-        evidence: { before: a, after: b },
-      }
-    : { ok: true, evidence: { order: b } };
-}
-
-// ---- passes ----
+// ---- plans (IRWB-057, K6) ----
+//
+// A transformation that makes a choice takes the choice as its parameter, a plan: a serializable value that an
+// untrusted `decide` (strategy.ts) computes. `eligible` decides whether the plan is legal on the schedule, `prepare`
+// applies it, and one `ensures` check confirms that the candidate is the plan (`conforms`). So `decide` and
+// `prepare` need not be trusted: a plan that `eligible` accepts and the candidate realizes is legal whoever made it.
+// Fusion and loop scheduling are the two instances; both have the signature `(schedule, plan) => CheckResult`.
 
 const ok: CheckResult = { ok: true };
 const no = (reason: string): CheckResult => ({ ok: false, reason });
-/** A copy whose variants a pass may change; the function and the fusion groups stay shared (they are frozen). */
-const editable = (s: Schedule): Schedule => ({
-  fn: s.fn,
-  kernels: s.kernels.map(k =>
-    k.kind === 'contraction'
-      ? {
-          ...k,
-          variants: k.variants.map(v => ({
-            loops: v.loops.map(l => ({ ...l })),
-            stages: v.stages.map(x => ({ ...x })),
-          })),
-          select: k.select.map(e => ({ ...e })),
-        }
-      : k,
-  ),
-});
-type Native = { native: Schedule; correspondence?: CorrespondenceEntry[]; report?: unknown };
-function schedulePass<P>(
-  name: string,
-  description: string,
-  legal: (s: Schedule, p: P) => CheckResult,
-  run: (s: Schedule, p: P) => Native,
-) {
-  return definePass<Schedule, {}, P>({
-    id: 'tensor.schedule.' + name,
+type Native = { native: Schedule; correspondence?: CorrespondenceEntry[] };
+function planPass<P>(spec: {
+  name: string;
+  description: string;
+  eligible: (s: Schedule, plan: P) => CheckResult;
+  prepare: (s: Schedule, plan: P) => Native;
+  /** Whether the candidate schedule is what the plan says. */
+  conforms: (candidate: Schedule, plan: P, before: Schedule) => CheckResult;
+}) {
+  return transformation<Schedule, {}, P>({
+    id: 'tensor.schedule.' + spec.name,
     version: '1',
-    description,
+    description: spec.description,
     ir: ScheduleIR,
     adapter: scheduleAdapter,
     writes: { entities: ['kernel', 'variant', 'loop', 'stage'], relations: ['contains'] },
-    legal: ({ before, params }) => legal(before.value, params),
-    run: ({ before, params }) => run(editable(before.value), params),
+    relation: 'exact',
+    eligible: ({ before, params }) => spec.eligible(before.value, params),
+    prepare: ({ before, params }) => spec.prepare(before.value, params),
+    obligations: {
+      ensures: [
+        {
+          id: 'tensor.schedule.conforms',
+          check: ({ before, candidate, params }) => spec.conforms(candidate.value, params, before.value),
+        },
+      ],
+    },
   });
 }
-const contractionKernel = (s: Schedule, kernel: string) => {
-  const k = s.kernels.find(x => x.name === kernel);
-  return k?.kind === 'contraction' ? k : undefined;
-};
-interface VariantRef {
-  kernel: string;
-  variant: number;
-}
-const variantOf = (s: Schedule, p: VariantRef) => contractionKernel(s, p.kernel)?.variants[p.variant];
-const loopOf = (s: Schedule, p: VariantRef & { loop: string }) =>
-  variantOf(s, p)?.loops.find(l => l.id === p.loop);
 
 /** Schedule kernels for a fusion plan: block-mode groups are rows kernels, the others pointwise. */
 export function scheduleKernels(plan: FusionPlan): ScheduleKernel[] {
@@ -423,202 +325,126 @@ export function scheduleKernels(plan: FusionPlan): ScheduleKernel[] {
     group,
   }));
 }
-export function initialSchedule(fn: Fn, plan: FusionPlan): Artifact<Schedule> {
-  return createIRArtifact(scheduleAdapter, 'tix-schedule/' + fn.name, { fn, kernels: scheduleKernels(plan) });
+/** The unscheduled function: stage 2's one pointwise kernel per statement. */
+export function initialSchedule(fn: Fn): Artifact<Schedule> {
+  return createIRArtifact(scheduleAdapter, 'tix-schedule/' + fn.name, {
+    fn,
+    kernels: scheduleKernels(unfusedPlan(fn)),
+  });
 }
-const tileable = (fn: Fn) =>
-  fn.statements.filter(s => typeof contractionForm(s) !== 'string').map(s => s.name);
 
-/** Fission: re-plan fusion so that no tileable contraction is computed in block mode. */
-export const isolatePass = schedulePass<{}>(
-  'isolate',
-  'Take tileable contractions out of block-mode kernels (planFusion with noBlock)',
-  s =>
-    s.kernels.some(k => k.kind === 'rows' && k.group.statements.some(n => tileable(s.fn).includes(n)))
+/** Correspondence of a regrouping: the runs of old and new kernels that compute the same statements. */
+function regrouped(
+  before: readonly ScheduleKernel[],
+  after: readonly ScheduleKernel[],
+): CorrespondenceEntry[] {
+  const entries: CorrespondenceEntry[] = [];
+  let from: string[] = [],
+    to: string[] = [];
+  // both lists hold the statements in source order; a and b count the statements taken from each
+  for (let i = 0, j = 0, a = 0, b = 0; i < before.length || j < after.length; ) {
+    if (a <= b && i < before.length) {
+      from.push(before[i].name);
+      a += before[i++].group.statements.length;
+    } else {
+      to.push(after[j].name);
+      b += after[j++].group.statements.length;
+    }
+    if (a !== b) continue;
+    const relation =
+      from.length === 1 && to.length === 1 ? 'retained' : to.length === 1 ? 'fused' : 'regrouped';
+    entries.push({ from, to, relation });
+    [from, to] = [[], []];
+  }
+  return entries;
+}
+
+/**
+ * Fusion: the plan is the grouping (`FusionChoice`), legal by `fusionEligible` (zero dependence distance in each
+ * kernel's block domain). It applies before any loop scheduling.
+ */
+export const fusePass = planPass<FusionChoice>({
+  name: 'fuse',
+  description: 'Group the statements into kernels as the plan says',
+  eligible: (s, plan) =>
+    s.kernels.some(k => k.kind === 'contraction')
+      ? no('a contraction kernel is already scheduled')
+      : fusionEligible(s.fn, plan),
+  prepare: (s, plan) => {
+    const kernels = scheduleKernels(fusionPlan(s.fn, plan));
+    return { native: { fn: s.fn, kernels }, correspondence: regrouped(s.kernels, kernels) };
+  },
+  conforms: (candidate, plan) =>
+    canonical(candidate.kernels.map(k => [k.kind !== 'contraction', k.group.statements, k.group.depth])) ===
+    canonical(plan.groups.map(g => [true, g.statements, g.depth]))
       ? ok
-      : no('no block-mode kernel computes a tileable contraction'),
-  s => {
-    const kernels = scheduleKernels(planFusion(s.fn, { noBlock: new Set(tileable(s.fn)) }));
-    // Correspondence by statements: connected groups of old and new kernels that share a statement.
-    const entries: CorrespondenceEntry[] = [];
-    const left = new Set(s.kernels.map(k => k.name));
-    for (const start of s.kernels) {
-      if (!left.has(start.name)) continue;
-      const from = new Set([start.name]),
-        to = new Set<string>();
-      let grew = true;
-      while (grew) {
-        grew = false;
-        for (const n of kernels)
-          if (
-            !to.has(n.name) &&
-            n.group.statements.some(t =>
-              s.kernels.some(o => from.has(o.name) && o.group.statements.includes(t)),
-            )
-          )
-            (to.add(n.name), (grew = true));
-        for (const o of s.kernels)
-          if (
-            !from.has(o.name) &&
-            o.group.statements.some(t => kernels.some(n => to.has(n.name) && n.group.statements.includes(t)))
-          )
-            (from.add(o.name), (grew = true));
-      }
-      from.forEach(n => left.delete(n));
-      entries.push({
-        from: [...from],
-        to: [...to],
-        relation: from.size === 1 && to.size === 1 ? 'retained' : 'refused-fusion',
-      });
-    }
-    return { native: { ...s, kernels }, correspondence: entries };
-  },
-);
+      : no('the kernels are not the groups of the plan'),
+});
 
-/** A pointwise kernel whose one reduction is a tileable contraction becomes a contraction kernel with variant 0. */
-export const contractionPass = schedulePass<{ kernel: string }>(
-  'contraction',
-  'Give a pointwise kernel with a tileable contraction its loop nest; variant 0 is one thread per output',
-  (s, { kernel }) => {
-    const k = s.kernels.find(x => x.name === kernel);
-    if (k?.kind !== 'pointwise') return no(`${kernel} is not a pointwise kernel`);
-    const members = k.group.statements.map(n => s.fn.statements.find(t => t.name === n)!);
-    const reducing = members.filter(m => reductions(m.expr).length);
-    if (reducing.length !== 1)
-      return no(`${kernel} has ${reducing.length} members with a reduction, not one`);
-    const form = contractionForm(reducing[0], new Set(k.group.statements));
-    return typeof form === 'string' ? no(`${reducing[0].name}: ${form}`) : ok;
-  },
-  (s, { kernel }) => {
-    const i = s.kernels.findIndex(x => x.name === kernel);
-    const { group } = s.kernels[i];
-    const statement = group.statements
-      .map(n => s.fn.statements.find(t => t.name === n)!)
-      .find(m => reductions(m.expr).length)!;
-    const form = contractionForm(statement, new Set(group.statements)) as Exclude<
-      ReturnType<typeof contractionForm>,
-      string
-    >;
-    const loops: Loop[] = dimsInOrder.map(dim => ({
-      id: dim + '.0',
-      dim,
-      level: 0,
-      factor: null,
-      bind: dim === 'r' ? 'serial' : 'thread',
-    }));
-    s.kernels[i] = {
-      name: kernel,
-      kind: 'contraction',
-      group,
-      contraction: statement.name,
-      dims: form.dims,
-      operands: form.operands,
-      variants: [{ loops, stages: [] }],
-      select: [{ variant: 0, minBlocks: 0 }],
-    };
-    return { native: s };
-  },
-);
+/** The loop nests of a kernel's variants and its launch rule. */
+export interface KernelLoops {
+  kernel: string;
+  variants: Variant[];
+  select: Selection[];
+}
+/** The loop-scheduling plan: for each kernel it names, the order, tiling and bindings of every variant. */
+export interface LoopPlan {
+  kernels: KernelLoops[];
+}
 
-/** A new variant: the unscheduled nest (every loop serial), to be scheduled by the passes below. */
-export const variantPass = schedulePass<{ kernel: string }>(
-  'variant',
-  'Add a variant of a contraction kernel: its nest b, m, n, r, all serial',
-  (s, { kernel }) => (contractionKernel(s, kernel) ? ok : no(`${kernel} is not a contraction kernel`)),
-  (s, { kernel }) => {
-    const k = contractionKernel(s, kernel)!;
-    k.variants.push({
-      loops: dimsInOrder.map(dim => ({ id: dim + '.0', dim, level: 0, factor: null, bind: 'serial' })),
-      stages: [],
-    });
-    return { native: s };
-  },
-);
+/** The member of a pointwise kernel whose reduction is a tileable contraction, with its form, or why there is none. */
+export function contractionOf(s: Schedule, kernel: string) {
+  const k = s.kernels.find(x => x.name === kernel);
+  if (k?.kind !== 'pointwise') return `${kernel} is not a pointwise kernel`;
+  const members = k.group.statements.map(n => s.fn.statements.find(t => t.name === n)!);
+  const reducing = members.filter(m => reductions(m.expr).length);
+  if (reducing.length !== 1) return `${kernel} has ${reducing.length} members with a reduction, not one`;
+  const form = contractionForm(reducing[0], new Set(k.group.statements));
+  return typeof form === 'string' ? `${reducing[0].name}: ${form}` : { statement: reducing[0].name, form, k };
+}
 
-/** Split loop L of dim d at level l into L (outer) and a new level l + 1 of `factor` iterations, right inside it. */
-export const splitPass = schedulePass<VariantRef & { loop: string; factor: number }>(
-  'split',
-  'Split a loop into an outer loop and an inner loop of a fixed number of iterations',
-  (s, p) => {
-    const l = loopOf(s, p);
-    if (!l) return no(`no loop ${p.loop} in ${p.kernel} variant ${p.variant}`);
-    if (l.bind !== 'serial') return no(`${p.loop} is bound to ${l.bind}`);
-    if (!Number.isSafeInteger(p.factor) || p.factor < 1) return no('the factor must be a positive integer');
-    if (l.factor !== null && l.factor % p.factor) return no(`${p.factor} does not divide ${l.factor}`);
-    return ok;
-  },
-  (s, p) => {
-    const v = variantOf(s, p)!;
-    const l = v.loops.find(x => x.id === p.loop)!;
-    const prefix = `${p.kernel}/v${p.variant}/`;
-    const entries: CorrespondenceEntry[] = [];
-    const deeper = v.loops
-      .filter(x => x.dim === l.dim && x.level > l.level)
-      .sort((a, b) => b.level - a.level);
-    for (const x of deeper) {
-      const id = `${x.dim}.${x.level + 1}`;
-      entries.push({ from: [prefix + x.id], to: [prefix + id], relation: 'renamed' });
-      Object.assign(x, { id, level: x.level + 1 });
-    }
-    const inner: Loop = {
-      id: `${l.dim}.${l.level + 1}`,
-      dim: l.dim,
-      level: l.level + 1,
-      factor: p.factor,
-      bind: 'serial',
-    };
-    if (l.factor !== null) l.factor /= p.factor;
-    v.loops.splice(v.loops.indexOf(l) + 1, 0, inner);
-    entries.push({ from: [prefix + l.id], to: [prefix + l.id, prefix + inner.id], relation: 'split' });
-    for (const st of v.stages)
-      if (deeper.some(x => x.id === st.at)) throw Error('unreachable: stage at a renamed loop');
-    return { native: s, correspondence: entries };
-  },
-);
+const parallel = (b: Bind) => b !== 'serial' && b !== 'unroll';
+/**
+ * The contraction's dependence over its dims (b, m, n, r): term r of an output's sum adds to the accumulator that
+ * term r - 1 left, so the statement at (b, m, n, r) reads its own result at (b, m, n, r - 1). Its distance vector
+ * is (0, 0, 0, 1). The f32 sum is the source's only when every schedule keeps this dependence forward: an output
+ * receives its terms in the order r = 0, 1, ...
+ */
+const accumulation: Direction[] = distanceVector(
+  dimsInOrder,
+  dimsInOrder.map(d => add(variable(d), constant(d === 'r' ? 1 : 0), -1)),
+).map(direction);
 
-/** Permute the nest. Reduction loops keep their relative order (so each output's term order is unchanged). */
-export const reorderPass = schedulePass<VariantRef & { order: string[] }>(
-  'reorder',
-  'Permute the loops of a variant',
-  (s, p) => {
-    const v = variantOf(s, p);
-    if (!v) return no(`no variant ${p.variant} of ${p.kernel}`);
-    const ids = v.loops.map(l => l.id);
-    if (p.order.length !== ids.length || !ids.every(id => p.order.includes(id)))
-      return no('the order is not a permutation of the loops');
-    const r = (list: string[]) => list.filter(id => id.startsWith('r.')).join();
-    if (r(p.order) !== r(ids)) return no(`reduction loops ${r(ids)} would become ${r(p.order)}`);
-    return ok;
-  },
-  (s, p) => {
-    const v = variantOf(s, p)!;
-    v.loops = p.order.map(id => v.loops.find(l => l.id === id)!);
-    return { native: s };
-  },
-);
-
-/** Bind a loop to a hardware index or unroll it. */
-export const bindPass = schedulePass<VariantRef & { loop: string; target: Bind }>(
-  'bind',
-  'Bind a loop to a block or thread index, or unroll it',
-  (s, p) => {
-    const v = variantOf(s, p),
-      l = loopOf(s, p);
-    if (!v || !l) return no(`no loop ${p.loop} in ${p.kernel} variant ${p.variant}`);
-    if (!binds.includes(p.target)) return no(`unknown target ${p.target}`);
-    if (l.dim === 'r' && parallel(p.target))
-      return no(`${p.loop} is a reduction loop; binding it to ${p.target} would reassociate the sum`);
-    if (parallel(p.target) && p.target !== 'thread' && v.loops.some(x => x !== l && x.bind === p.target))
-      return no(`${p.target} is already bound`);
-    if ((p.target.startsWith('thread.') || p.target === 'unroll') && l.factor === null)
-      return no(`${p.loop} has no fixed number of iterations`);
-    return ok;
-  },
-  (s, p) => {
-    loopOf(s, p)!.bind = p.target;
-    return { native: s };
-  },
-);
+/**
+ * Why a variant's nest does not keep every output's accumulation order, or undefined. Each dim is strip-mined into
+ * its levels (level 0 outermost; `stripMine` gives the directions of each level), and the nest must keep the
+ * dependence forward with no two dependent iterations in parallel (`orderViolation` of the affine library). The
+ * argument holds for every extent and every factor, so nothing is simulated.
+ */
+export function accumulationViolation(v: Variant): string | undefined {
+  let vectors: Direction[][] = [accumulation];
+  const offset = {} as Record<Dim, number>;
+  for (const d of [...dimsInOrder].reverse()) {
+    const levels = v.loops.filter(l => l.dim === d).length;
+    for (let i = 1; i < levels; i++) vectors = stripMine(vectors, dimsInOrder.indexOf(d));
+  }
+  let next = 0;
+  for (const d of dimsInOrder) {
+    offset[d] = next;
+    next += v.loops.filter(l => l.dim === d).length;
+  }
+  const position = (l: Loop) => offset[l.dim] + l.level;
+  const found = orderViolation(
+    vectors,
+    v.loops.map(l => ({ position: position(l), parallel: parallel(l.bind) })),
+  );
+  if (!found) return undefined;
+  const loop = v.loops.find(l => position(l) === found.position)!;
+  return found.kind === 'parallel'
+    ? `reduction loop ${loop.id} is bound to ${loop.bind}: its iterations depend on each other (a reassociation)`
+    : `loop ${loop.id} is outside the loops that order it (nest ${v.loops.map(l => l.id).join(' ')}, ` +
+        `dependence ${found.vector.join(' ')}): an output would not accumulate its terms in the source's order`;
+}
 
 const sharedTileLimit = 48 * 1024;
 /** Elements of an operand tile staged at `at`: every point of the loops inside it and of the block's thread loops. */
@@ -629,55 +455,104 @@ export function tileElements(v: Variant, operand: 'm' | 'n', at: string): number
   );
   return covered.some(l => l.factor === null) ? undefined : covered.reduce((p, l) => p * l.factor!, 1);
 }
-/** Copy an operand's tile to shared memory at every iteration of an r loop. */
-export const stagePass = schedulePass<VariantRef & { operand: 'm' | 'n'; at: string; fast: Dim }>(
-  'stage',
-  "Stage an operand's tile in shared memory",
-  (s, p) => {
-    const v = variantOf(s, p);
-    const at = v?.loops.find(l => l.id === p.at);
-    if (!v || !at) return no(`no loop ${p.at} in ${p.kernel} variant ${p.variant}`);
-    if (at.dim !== 'r') return no(`${p.at} is not a reduction loop`);
-    if (v.stages.some(x => x.operand === p.operand)) return no(`the ${p.operand} operand is already staged`);
-    if (p.fast !== 'r' && p.fast !== p.operand)
-      return no(`the ${p.operand} operand does not vary with ${p.fast}`);
-    const n = tileElements(v, p.operand, p.at);
-    if (n === undefined) return no('a loop inside the stage has no fixed number of iterations');
+
+/** Why a variant is not a legal schedule of a contraction, or undefined. */
+function variantViolation(v: Variant): string | undefined {
+  try {
+    validateVariant(v);
+  } catch (error) {
+    return (error as Error).message;
+  }
+  // Coverage: level 0 takes the rest of the extent, ceil(extent / the inner factors), and a point at or past the
+  // extent is skipped, so the levels of a dim reach each of its values exactly once (quotient and remainder).
+  const open = v.loops.find(l => l.level === 0 && l.factor !== null);
+  if (open) return `${open.id} has a fixed number of iterations, so it does not cover every extent`;
+  for (const l of v.loops) {
+    if ((l.bind.startsWith('thread.') || l.bind === 'unroll') && l.factor === null)
+      return `${l.id} is bound to ${l.bind} and has no fixed number of iterations`;
+    if (parallel(l.bind) && l.bind !== 'thread' && v.loops.some(x => x !== l && x.bind === l.bind))
+      return `${l.bind} is bound twice`;
+  }
+  const order = accumulationViolation(v);
+  if (order) return order;
+  for (const [i, st] of v.stages.entries()) {
+    if (v.loops.find(l => l.id === st.at)!.dim !== 'r') return `${st.at} is not a reduction loop`;
+    if (v.stages.findIndex(x => x.operand === st.operand) !== i)
+      return `the ${st.operand} operand is staged twice`;
+    if (st.fast !== 'r' && st.fast !== st.operand)
+      return `the ${st.operand} operand does not vary with ${st.fast}`;
+    const n = tileElements(v, st.operand, st.at);
+    if (n === undefined) return 'a loop inside the stage has no fixed number of iterations';
     // half the limit: the other operand's tile and the padding of four floats per row share it
-    if (n * 4 * 2 > sharedTileLimit)
-      return no(`the tile (${n} floats) does not fit ${sharedTileLimit} bytes`);
-    return ok;
-  },
-  (s, p) => {
-    variantOf(s, p)!.stages.push({ operand: p.operand, at: p.at, scope: 'shared', fast: p.fast });
-    return { native: s };
-  },
-);
-
-/** The launch rule over the kernel's variants. */
-export const selectPass = schedulePass<{ kernel: string; rule: Selection[] }>(
-  'select',
-  'Set the launch-time rule that picks a variant from the grid size',
-  (s, { kernel, rule }) => {
-    const k = contractionKernel(s, kernel);
-    if (!k) return no(`${kernel} is not a contraction kernel`);
-    if (!rule.length || rule.at(-1)!.minBlocks !== 0 || rule.at(-1)!.minTerms)
-      return no('the last entry must accept every grid');
-    if (rule.some(e => !k.variants[e.variant] || !(e.minBlocks >= 0) || !((e.minTerms ?? 0) >= 0)))
-      return no('the rule names a missing variant');
-    return ok;
-  },
-  (s, { kernel, rule }) => {
-    contractionKernel(s, kernel)!.select = rule;
-    return { native: s };
-  },
-);
-
-/** Apply a schedule pass, gated by the accumulation order. */
-export function applyStep<P>(
-  pass: ReturnType<typeof schedulePass<P>>,
-  before: Artifact<Schedule>,
-  params: P,
-): PassResult<Schedule> {
-  return applyNativePassSync(pass, before, orderGate, params);
+    if (n * 4 * 2 > sharedTileLimit) return `the tile (${n} floats) does not fit ${sharedTileLimit} bytes`;
+  }
+  return undefined;
 }
+
+/**
+ * Whether a loop plan is legal on a schedule (the trusted part of loop scheduling): each named kernel is a
+ * pointwise kernel with a tileable contraction, every variant covers its dims, keeps the accumulation order and
+ * fits its bindings and tiles, and the launch rule ends with an entry that accepts every grid.
+ */
+export function loopsEligible(s: Schedule, plan: LoopPlan): CheckResult {
+  if (!Array.isArray(plan?.kernels)) return no('the plan is not a list of kernels');
+  const seen = new Set<string>();
+  for (const entry of plan.kernels) {
+    if (seen.has(entry.kernel)) return no(`${entry.kernel} is scheduled twice`);
+    seen.add(entry.kernel);
+    const found = contractionOf(s, entry.kernel);
+    if (typeof found === 'string') return no(found);
+    if (!Array.isArray(entry.variants) || !entry.variants.length)
+      return no(`${entry.kernel} needs a variant`);
+    for (const [i, v] of entry.variants.entries()) {
+      const why = variantViolation(v);
+      if (why) return no(`${entry.kernel} variant ${i}: ${why}`);
+    }
+    const rule = entry.select;
+    if (!Array.isArray(rule) || !rule.length || rule.at(-1)!.minBlocks !== 0 || rule.at(-1)!.minTerms)
+      return no(`${entry.kernel}: the last entry of the launch rule must accept every grid`);
+    if (rule.some(e => !entry.variants[e.variant] || !(e.minBlocks >= 0) || !((e.minTerms ?? 0) >= 0)))
+      return no(`${entry.kernel}: the launch rule names a missing variant`);
+  }
+  return ok;
+}
+
+/** Loop scheduling: the named pointwise kernels become contraction kernels with the plan's variants and rule. */
+export const loopsPass = planPass<LoopPlan>({
+  name: 'loops',
+  description:
+    'Give each contraction kernel the loop nests, bindings, staged tiles and launch rule of the plan',
+  eligible: loopsEligible,
+  prepare: (s, plan) => ({
+    native: {
+      fn: s.fn,
+      kernels: s.kernels.map((k): ScheduleKernel => {
+        const entry = plan.kernels.find(e => e.kernel === k.name);
+        if (!entry) return k;
+        const { statement, form } = contractionOf(s, k.name) as Exclude<
+          ReturnType<typeof contractionOf>,
+          string
+        >;
+        return {
+          name: k.name,
+          kind: 'contraction',
+          group: k.group,
+          contraction: statement,
+          dims: form.dims,
+          operands: form.operands,
+          variants: structuredClone(entry.variants) as Variant[],
+          select: structuredClone(entry.select) as Selection[],
+        };
+      }),
+    },
+  }),
+  conforms: (candidate, plan, before) => {
+    const planned = new Map(plan.kernels.map(e => [e.kernel, e]));
+    const realized = (k: ScheduleKernel) =>
+      k.kind === 'contraction' ? { kernel: k.name, variants: k.variants, select: k.select } : k;
+    return canonical(candidate.kernels.map(realized)) ===
+      canonical(before.kernels.map(k => planned.get(k.name) ?? k))
+      ? ok
+      : no('the kernels are not the loop nests of the plan');
+  },
+});

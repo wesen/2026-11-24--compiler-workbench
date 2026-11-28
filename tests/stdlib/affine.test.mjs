@@ -10,10 +10,25 @@
 //     constant index;
 //   - the second client, planFusion's joinDepth (rewritten on the distances), on small programs:
 //     an aligned read joins the kernel, and a shifted, transposed or constant index narrows or
-//     refuses it with the same reasons as before.
+//     refuses it with the same reasons as before;
+//   - IRWB-057: direction vectors — the direction of a distance, strip-mining, and the legality of a
+//     loop order with parallel loops, each against an enumeration of the iterations (the clients are
+//     the Tix loop plans, tests/tensor/plans.test.mjs).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { add, constant, distanceVector, isZero, plain, substitute, value, variable } from '../../dist/stdlib/index.js';
+import {
+  add,
+  constant,
+  direction,
+  distanceVector,
+  isZero,
+  orderViolation,
+  plain,
+  stripMine,
+  substitute,
+  value,
+  variable,
+} from '../../dist/stdlib/index.js';
 import { planFusion } from '../../dist/tensor/fusion.js';
 import { compileTix } from '../../dist/tensor/index.js';
 
@@ -152,4 +167,68 @@ test('joinDepth on the distances: an aligned read joins, shifted, transposed and
       /narrows the block domain to 1 axis: reads y at index j \+ 1 in position 1/.test(r),
     ),
   );
+});
+
+// IRWB-057: direction vectors. The oracle enumerates a nest and asks whether every pair of dependent
+// iterations runs source first.
+test('directions: the sign of a constant distance, unknown for a symbolic one', () => {
+  const d = (axes, indices) => distanceVector(axes, indices).map(direction);
+  // a[i][j] reads a[i][j-1]: the source is one j earlier
+  assert.deepEqual(d(['i', 'j'], [variable('i'), add(variable('j'), constant(1), -1)]), ['=', '<']);
+  assert.deepEqual(d(['i'], [add(variable('i'), constant(1))]), ['>']);
+  assert.deepEqual(d(['i'], [variable('j')]), ['*']);
+});
+
+test('directions: strip-mining gives (=, <) and (<, *), for every block size and extent', () => {
+  assert.deepEqual(stripMine([['=', '<']], 1), [
+    ['=', '=', '<'],
+    ['=', '<', '*'],
+  ]);
+  assert.deepEqual(stripMine([['=']], 0), [['=', '=']]);
+  assert.deepEqual(stripMine([['>'], ['*']], 0), [['=', '>'], ['>', '*'], ['*', '*']]);
+  // against arithmetic: for k < k' the pair of (q, j) directions is one of the two the library lists
+  const sign = (a, b) => (a < b ? '<' : a > b ? '>' : '=');
+  const covers = (listed, got) => got === listed || listed === '*';
+  for (const T of [1, 2, 3, 16])
+    for (let k = 0; k < 40; k++)
+      for (let k2 = k + 1; k2 < 40; k2++) {
+        const pair = [sign(Math.floor(k / T), Math.floor(k2 / T)), sign(k % T, k2 % T)];
+        assert.ok(
+          stripMine([['<']], 0).some(v => covers(v[0], pair[0]) && covers(v[1], pair[1])),
+          `T=${T} ${k}->${k2}: ${pair}`,
+        );
+      }
+});
+
+test('directions: a loop order is legal when it runs every source first, and a parallel loop carries nothing', () => {
+  const serial = order => order.map(position => ({ position, parallel: false }));
+  // the accumulation of a sum over k, strip-mined: outer q at position 0, inner j at position 1
+  const vectors = stripMine([['<']], 0);
+  assert.equal(orderViolation(vectors, serial([0, 1])), undefined);
+  assert.deepEqual(orderViolation(vectors, serial([1, 0])), { vector: ['<', '*'], position: 1, kind: 'reversed' });
+  // the enumeration: order (j, q) with T = 16 first breaks at extent 17, which no extent below shows
+  const visits = (R, T, order) => {
+    const out = [];
+    const trips = [Math.ceil(R / T), T];
+    const at = [0, 0];
+    for (at[order[0]] = 0; at[order[0]] < trips[order[0]]; at[order[0]]++)
+      for (at[order[1]] = 0; at[order[1]] < trips[order[1]]; at[order[1]]++)
+        if (at[0] * T + at[1] < R) out.push(at[0] * T + at[1]);
+    return out;
+  };
+  const sorted = list => list.every((k, i) => k === i);
+  for (let R = 0; R <= 40; R++) {
+    assert.ok(sorted(visits(R, 16, [0, 1])), 'R=' + R);
+    assert.equal(sorted(visits(R, 16, [1, 0])), R <= 16, 'R=' + R);
+  }
+  // a loop with a dependence between its iterations may not run them concurrently; one with none may
+  const nest = [
+    { position: 0, parallel: true },
+    { position: 1, parallel: false },
+  ];
+  assert.equal(orderViolation([['=', '<']], nest), undefined);
+  assert.deepEqual(orderViolation([['<', '=']], nest), { vector: ['<', '='], position: 0, kind: 'parallel' });
+  // loop-independent dependences (all =) are respected by any order
+  assert.equal(orderViolation([['=', '=']], serial([1, 0])), undefined);
+  assert.deepEqual(orderViolation([['=', '>']], serial([0, 1])), { vector: ['=', '>'], position: 1, kind: 'reversed' });
 });

@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { AnalysisManager } from '../../dist/framework/contracts/index.js';
 import { compileTix, cudaSource, optimizeTix } from '../../dist/tensor/index.js';
-import { emitCuda, takesGate } from '../../dist/tensor/cuda-source.js';
+import { emitCuda, emittedKernels } from '../../dist/tensor/cuda-source.js';
 import { createCudaLowering } from '../../dist/tensor/cuda-contract.js';
 import { evaluate } from '../../dist/tensor/evaluate.js';
 import { gate, planFusion } from '../../dist/tensor/fusion.js';
@@ -281,11 +281,14 @@ test('a block-mode kernel is one definition that also holds its statements in st
   }
   assert.match(source, /const bool fused_k0 = gate_mode \? gate_mode == 1 : /);
   assert.match(source, /"--gate=fused"/);
-  assert.equal(takesGate(source), true);
+  // IRWB-057: the manifest printed with the source says which kernels have a gate (it replaces `takesGate`)
+  assert.deepEqual(emittedKernels(source), [
+    { name: 'k0', mapping: 'block', statements: ['m', 'e', 's', 'y'], gated: true },
+  ]);
   // thread-mode fusion and the unfused lowering have no gate and keep stage 2's main
   const chain = compileTix('fn f(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]; return z; }');
   for (const plain of [cudaSource(chain, 'f'), cudaSource(program, 'softmax', { fuse: false })]) {
-    assert.equal(takesGate(plain), false);
+    assert.ok(emittedKernels(plain).every(k => !k.gated));
     assert.doesNotMatch(plain, /gate/);
   }
 });
