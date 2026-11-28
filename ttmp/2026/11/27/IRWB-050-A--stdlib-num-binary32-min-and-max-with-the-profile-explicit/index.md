@@ -1,7 +1,7 @@
 ---
 Title: 'stdlib num: binary32 min and max with the profile explicit'
 Ticket: IRWB-050-A
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -9,10 +9,18 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/stdlib/num/minmax.ts
+      Note: the num module's first primitive, the min/max family with the profile as the operation name
+    - Path: repo://src/tensor/evaluate.ts
+      Note: second client, the ops table and the max reduction name the JavaScript profile
+    - Path: repo://src/typed/f32.ts
+      Note: first client, fmin/fmax across the bits-number boundary, the old order/minmax helpers deleted
+    - Path: repo://tests/stdlib/minmax.test.mjs
+      Note: each operation on the special values in both orders, plus both clients through their own representations
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-27T20:22:27.433751353-05:00
+LastUpdated: 2026-11-27T21:03:49.892791811-05:00
 WhatFor: ""
 WhenToUse: ""
 ---

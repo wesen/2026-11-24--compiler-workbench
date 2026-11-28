@@ -1,3 +1,22 @@
+---
+Title: 'The num module: min and max as named IEEE operations, two profiles'
+Ticket: IRWB-050-A
+Status: complete
+Topics:
+    - compiler
+    - ir
+    - typescript
+DocType: design-doc
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: "The interface of src/stdlib/num/minmax.ts and the decision to make the profile the operation name."
+LastUpdated: 2026-11-27
+WhatFor: "The design of the num module (IRWB-050-A): the IEEE 754-2019 min/max family, both profiles as named operations."
+WhenToUse: "Before changing src/stdlib/num or its two clients, src/typed/f32.ts and src/tensor/evaluate.ts."
+---
+
 # The num module: min and max as named IEEE operations, two profiles
 
 ## The problem

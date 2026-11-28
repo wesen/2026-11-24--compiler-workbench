@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "ad242fee50b7c863f8df653cf30059953b4c3bf40167dda629e904db2b9152e4",
+  "request": {
+    "ticket": "IRWB-050-A",
+    "status": "complete",
+    "intent": "",
+    "entry": "Ticket closed"
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-54c3748844b5e730d7ba7bf559fd3a8e",
+    "state": "committed",
+    "created_at": "2026-11-28T02:03:49.8929771Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "12fa83585967bdf152d3de037ae49c6fd4d69ac54da656e2d91b2e3498368b28",
+      "index.md": "4090cb8d456f4e5c55e27293225b4777e50629f3b2ad11f692fd47cca3c95d7c"
+    },
+    "after": {
+      "changelog.md": "d44cb842b0f628ddec6a6c4e9d035b1419d7716223d91825145d7ec510f0380a",
+      "index.md": "57d9d34265c1a0f25b31d5e4c46eea71edf301f4d6a1accf6e8e119d5472c69e"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "12fa83585967bdf152d3de037ae49c6fd4d69ac54da656e2d91b2e3498368b28",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjcKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNwoKc3RkbGliIG51bS9taW5tYXg6IHRoZSBJRUVFIDc1NC0yMDE5IG1pbi9tYXggZmFtaWx5IG1vdmVkIGludG8gdGhlIGxpYnJhcnkgYXMgZm91ciBuYW1lZCBvcGVyYXRpb25zIChtYXhpbXVtTnVtYmVyL21pbmltdW1OdW1iZXIgPSBSVjMyRiwgbWF4aW11bS9taW5pbXVtID0gSmF2YVNjcmlwdCk7IHR5cGVkIGYzMiBhbmQgdGhlIHRpeCBldmFsdWF0b3IgY2FsbCBpdCwgdGhlaXIgb2xkIGNvcGllcyBkZWxldGVkOyBib3RoIHByb2ZpbGVzIGFuZCBib3RoIGNsaWVudHMgcGlubmVkIGJ5IHRlc3RzOyBiYXNlbGluZXMgdW5jaGFuZ2VkOyBldmFsdWF0b3Igc3BlZWQgdW5jaGFuZ2VkCgojIyAyMDI2LTExLTI3CgpUaWNrZXQgY2xvc2VkCg=="
+    },
+    {
+      "path": "index.md",
+      "before": "4090cb8d456f4e5c55e27293225b4777e50629f3b2ad11f692fd47cca3c95d7c",
+      "after": "LS0tClRpdGxlOiAnc3RkbGliIG51bTogYmluYXJ5MzIgbWluIGFuZCBtYXggd2l0aCB0aGUgcHJvZmlsZSBleHBsaWNpdCcKVGlja2V0OiBJUldCLTA1MC1BClN0YXR1czogY29tcGxldGUKVG9waWNzOgogICAgLSBjb21waWxlcgogICAgLSBpcgogICAgLSB0eXBlc2NyaXB0CkRvY1R5cGU6IGluZGV4CkludGVudDogbG9uZy10ZXJtCk93bmVyczogW10KUmVsYXRlZEZpbGVzOgogICAgLSBQYXRoOiByZXBvOi8vc3JjL3N0ZGxpYi9udW0vbWlubWF4LnRzCiAgICAgIE5vdGU6IHRoZSBudW0gbW9kdWxlJ3MgZmlyc3QgcHJpbWl0aXZlLCB0aGUgbWluL21heCBmYW1pbHkgd2l0aCB0aGUgcHJvZmlsZSBhcyB0aGUgb3BlcmF0aW9uIG5hbWUKICAgIC0gUGF0aDogcmVwbzovL3NyYy90ZW5zb3IvZXZhbHVhdGUudHMKICAgICAgTm90ZTogc2Vjb25kIGNsaWVudCwgdGhlIG9wcyB0YWJsZSBhbmQgdGhlIG1heCByZWR1Y3Rpb24gbmFtZSB0aGUgSmF2YVNjcmlwdCBwcm9maWxlCiAgICAtIFBhdGg6IHJlcG86Ly9zcmMvdHlwZWQvZjMyLnRzCiAgICAgIE5vdGU6IGZpcnN0IGNsaWVudCwgZm1pbi9mbWF4IGFjcm9zcyB0aGUgYml0cy1udW1iZXIgYm91bmRhcnksIHRoZSBvbGQgb3JkZXIvbWlubWF4IGhlbHBlcnMgZGVsZXRlZAogICAgLSBQYXRoOiByZXBvOi8vdGVzdHMvc3RkbGliL21pbm1heC50ZXN0Lm1qcwogICAgICBOb3RlOiBlYWNoIG9wZXJhdGlvbiBvbiB0aGUgc3BlY2lhbCB2YWx1ZXMgaW4gYm90aCBvcmRlcnMsIHBsdXMgYm90aCBjbGllbnRzIHRocm91Z2ggdGhlaXIgb3duIHJlcHJlc2VudGF0aW9ucwpFeHRlcm5hbFNvdXJjZXM6IFtdClN1bW1hcnk6ICIiCkxhc3RVcGRhdGVkOiAyMDI2LTExLTI3VDIxOjAzOjQ5Ljg5Mjc5MTgxMS0wNTowMApXaGF0Rm9yOiAiIgpXaGVuVG9Vc2U6ICIiCi0tLQoKIyBzdGRsaWIgbnVtOiBiaW5hcnkzMiBtaW4gYW5kIG1heCB3aXRoIHRoZSBwcm9maWxlIGV4cGxpY2l0CgojIyBPdmVydmlldwoKPCEtLSBQcm92aWRlIGEgYnJpZWYgb3ZlcnZpZXcgb2YgdGhlIHRpY2tldCwgaXRzIGdvYWxzLCBhbmQgY3VycmVudCBzdGF0dXMgLS0+CgojIyBLZXkgTGlua3MKCi0gKipSZWxhdGVkIEZpbGVzKio6IFNlZSBmcm9udG1hdHRlciBSZWxhdGVkRmlsZXMgZmllbGQKLSAqKkV4dGVybmFsIFNvdXJjZXMqKjogU2VlIGZyb250bWF0dGVyIEV4dGVybmFsU291cmNlcyBmaWVsZAoKIyMgU3RhdHVzCgpDdXJyZW50IHN0YXR1czogKiphY3RpdmUqKgoKIyMgVG9waWNzCgotIGNvbXBpbGVyCi0gaXIKLSB0eXBlc2NyaXB0CgojIyBUYXNrcwoKU2VlIFt0YXNrcy5tZF0oLi90YXNrcy5tZCkgZm9yIHRoZSBjdXJyZW50IHRhc2sgbGlzdC4KCiMjIENoYW5nZWxvZwoKU2VlIFtjaGFuZ2Vsb2cubWRdKC4vY2hhbmdlbG9nLm1kKSBmb3IgcmVjZW50IGNoYW5nZXMgYW5kIGRlY2lzaW9ucy4KCiMjIFN0cnVjdHVyZQoKLSBkZXNpZ24vIC0gQXJjaGl0ZWN0dXJlIGFuZCBkZXNpZ24gZG9jdW1lbnRzCi0gcmVmZXJlbmNlLyAtIFByb21wdCBwYWNrcywgQVBJIGNvbnRyYWN0cywgY29udGV4dCBzdW1tYXJpZXMKLSBwbGF5Ym9va3MvIC0gQ29tbWFuZCBzZXF1ZW5jZXMgYW5kIHRlc3QgcHJvY2VkdXJlcwotIHNjcmlwdHMvIC0gVGVtcG9yYXJ5IGNvZGUgYW5kIHRvb2xpbmcKLSB2YXJpb3VzLyAtIFdvcmtpbmcgbm90ZXMgYW5kIHJlc2VhcmNoCi0gYXJjaGl2ZS8gLSBEZXByZWNhdGVkIG9yIHJlZmVyZW5jZS1vbmx5IGFydGlmYWN0cwo="
+    }
+  ]
+}
