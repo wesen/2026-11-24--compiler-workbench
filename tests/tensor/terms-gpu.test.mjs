@@ -93,7 +93,8 @@ test('GB10: the exact check rejects a reversed fold over terms, a misplaced term
     'fn f(x:f32[N,C]):f32[N,C] { s[i] = sum(j) x[i,j] / 3; y[i,j] = x[i,j] - s[i]; return y; }',
   );
   const source = cudaSource(p, 'f');
-  const kernels = [{ name: 'k0', mapping: 'block', statements: ['s', 'y'] }];
+  // IRWB-057: the candidate's manifest names its gate (the runtime no longer reads it from the source)
+  const kernels = [{ name: 'k0', mapping: 'block', statements: ['s', 'y'], gated: true }];
   const mutants = {
     // thread 0 adds the terms from the last to the first
     fused: source.replace('__fadd_rn(v1, q1_0[t])', '__fadd_rn(v1, q1_0[c1_0 - 1 - t])'),

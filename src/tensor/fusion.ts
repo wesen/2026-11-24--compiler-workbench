@@ -154,11 +154,22 @@ export interface FusionOptions {
    */
   noBlock?: ReadonlySet<string>;
 }
-export function planFusion(fn: Fn, options: FusionOptions = {}): FusionPlan {
+/**
+ * IRWB-057 (K6): the fusion decision as data. It names the grouping only: which statements share a kernel, in
+ * order, and the number of leading axes each group shares. `decideFusion` chooses it and is not trusted;
+ * `fusionEligible` decides whether a grouping is legal on a function; `fusionPlan` derives the kernels' layout
+ * from it. `reasons` and `refusals` explain the choice and are not read by the check.
+ */
+export interface FusionChoice {
+  groups: { statements: string[]; depth: number; reasons: string[] }[];
+  refusals: FusionRefusal[];
+}
+
+/** The greedy choice: a statement joins the kernel before it at the deepest block domain `joinDepth` finds. */
+export function decideFusion(fn: Fn, options: FusionOptions = {}): FusionChoice {
   const noBlock = options.noBlock ?? new Set<string>();
   const runs: { members: Statement[]; depth: number; reasons: string[] }[] = [];
-  const refusals: FusionRefusal[] = [],
-    termRefusals: FusionRefusal[] = [];
+  const refusals: FusionRefusal[] = [];
   for (const s of fn.statements) {
     const current = runs.at(-1);
     if (current && noBlock.has(s.name))
@@ -188,6 +199,86 @@ export function planFusion(fn: Fn, options: FusionOptions = {}): FusionPlan {
     }
     runs.push({ members: [s], depth: s.axes.length, reasons: [] });
   }
+  return {
+    groups: runs.map(r => ({ statements: r.members.map(m => m.name), depth: r.depth, reasons: r.reasons })),
+    refusals,
+  };
+}
+/** Stage 2's choice: every statement alone. */
+export const unfusedChoice = (fn: Fn): FusionChoice => ({
+  groups: fn.statements.map(s => ({ statements: [s.name], depth: s.axes.length, reasons: [] })),
+  refusals: [],
+});
+
+/**
+ * Whether a grouping is legal on `fn` (the trusted part of fusion). A kernel computes its members in order at each
+ * point of its block domain, the members' first `depth` axes, and a point sees only its own slice of every member.
+ * So the grouping is legal when
+ *   - the groups are the function's statements in order, each once (a kernel's members stay in source order, and
+ *     kernels launch in source order);
+ *   - a statement alone keeps all its axes as the domain; otherwise 1 <= depth <= every member's rank, and the
+ *     members' first `depth` extents are equal (one domain);
+ *   - every dependence between two members has distance zero in the domain: each read of a member is at the
+ *     reader's own point there (`distanceVector` over the leading `depth` positions). A read at another point would
+ *     need a value that another block computes, or that this block has not computed yet.
+ */
+export function fusionEligible(fn: Fn, choice: FusionChoice): { ok: boolean; reason?: string } {
+  const no = (reason: string) => ({ ok: false, reason });
+  if (!Array.isArray(choice?.groups) || choice.groups.some(g => !Array.isArray(g?.statements)))
+    return no('the plan is not a list of groups');
+  const order = choice.groups.flatMap(g => g.statements);
+  if (order.length !== fn.statements.length || fn.statements.some((s, i) => s.name !== order[i]))
+    return no(`the groups are not the statements ${fn.statements.map(s => s.name).join(', ')} in order`);
+  let at = 0;
+  for (const [g, group] of choice.groups.entries()) {
+    const members = fn.statements.slice(at, (at += group.statements.length));
+    const { depth } = group;
+    if (!members.length) return no(`group ${g} is empty`);
+    if (members.length === 1) {
+      if (depth !== members[0].axes.length)
+        return no(`${members[0].name} is alone in group ${g}, whose domain must be all its axes`);
+      continue;
+    }
+    if (!Number.isInteger(depth) || depth < 1) return no(`group ${g} shares no leading axis`);
+    for (const s of members) {
+      if (s.axes.length < depth)
+        return no(`${s.name} has ${s.axes.length} axes, group ${g}'s domain has ${depth}`);
+      const p = s.shape.slice(0, depth).findIndex((d, q) => !same(d, members[0].shape[q]));
+      if (p >= 0)
+        return no(
+          `axis ${p} of ${s.name} has extent ${text(s.shape[p])}, group ${g}'s ${text(members[0].shape[p])}`,
+        );
+    }
+    const names = new Set(members.map(m => m.name));
+    for (const s of members) {
+      const axes = s.axes.slice(0, depth).map(a => a.id);
+      for (const r of loads(s).filter(e => names.has(e.name))) {
+        const p = distanceVector(axes, r.indices.slice(0, depth)).findIndex(d => !isZero(d));
+        if (p >= 0)
+          return no(
+            `${s.name} reads ${r.name} at index ${text(r.indices[p])} in position ${p}, not its own axis there`,
+          );
+      }
+    }
+  }
+  return { ok: true };
+}
+
+/** The fusion plan the greedy choice gives (`decideFusion`, then `fusionPlan`). */
+export function planFusion(fn: Fn, options: FusionOptions = {}): FusionPlan {
+  return fusionPlan(fn, decideFusion(fn, options));
+}
+
+/** The kernels of a grouping: what each stores, buffers and stages, derived from the function. */
+export function fusionPlan(fn: Fn, choice: FusionChoice): FusionPlan {
+  const byName = new Map(fn.statements.map(s => [s.name, s]));
+  const runs = choice.groups.map(g => ({
+    members: g.statements.map(n => byName.get(n)!),
+    depth: g.depth,
+    reasons: g.reasons,
+  }));
+  const { refusals } = choice;
+  const termRefusals: FusionRefusal[] = [];
   const readers = new Map<string, number[]>();
   runs.forEach((run, g) =>
     run.members.forEach(s => loads(s).forEach(e => readers.set(e.name, [...(readers.get(e.name) ?? []), g]))),

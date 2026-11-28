@@ -13,23 +13,19 @@ import {
 import type { Artifact } from '../framework/core/types.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
-import { emitSchedule, takesGate, variantCount } from './cuda-source.js';
+import { emitScheduleProgram, type CudaKernel } from './cuda-source.js';
 import { lowerSchedule } from './strategy.js';
 import type { BufferValue } from './evaluate.js';
 import { TixIR } from './ir.js';
 import { selectFunction, type Module } from './model.js';
 
-interface CudaKernel {
-  name: string;
-  mapping: 'thread' | 'block' | 'tiled';
-  statements: string[];
-  /** The host decides at launch between this kernel's block mode and its statements one by one (IRWB-030-E). */
-  gated?: boolean;
-}
 interface CudaUnit {
   fn: string;
   source: string;
-  /** The fusion plan the source follows: which statements each kernel computes (IRWB-029-D). */
+  /**
+   * The program's manifest (cuda-source.ts): which statements each kernel computes (IRWB-029-D), which kernels
+   * have a gate (IRWB-030-E) and how many variants a contraction kernel has.
+   */
   kernels: CudaKernel[];
 }
 
@@ -49,6 +45,7 @@ export const CudaIR = defineIR<CudaUnit>({
           typeof k?.name !== 'string' ||
           !['thread', 'block', 'tiled'].includes(k.mapping) ||
           !['boolean', 'undefined'].includes(typeof k.gated) ||
+          !(k.variants === undefined || (Number.isSafeInteger(k.variants) && k.variants > 0)) ||
           !Array.isArray(k.statements) ||
           !k.statements.length ||
           k.statements.some(s => typeof s !== 'string'),
@@ -130,9 +127,9 @@ interface Mode {
   gate?: Gate;
   variant?: number;
 }
-function modesOf(source: string): Mode[] {
-  const gate = takesGate(source),
-    variants = variantCount(source);
+function modesOf(kernels: readonly CudaKernel[]): Mode[] {
+  const gate = kernels.some(k => k.gated),
+    variants = Math.max(0, ...kernels.map(k => k.variants ?? 0));
   if (variants)
     return Array.from({ length: variants }, (_, variant) => ({
       variant,
@@ -160,7 +157,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     cases: ({ baseline, fn, subject }, random): CudaSample[] => {
       const samples = cudaCases(selectFunction(baseline.value, fn), random);
       if (!samples.length) throw Error('No eligible CUDA check cases for ' + fn);
-      return samples.flatMap(s => modesOf(subject.value.source).map(mode => ({ ...s, ...mode })));
+      return samples.flatMap(s => modesOf(subject.value.kernels).map(mode => ({ ...s, ...mode })));
     },
     run: (side, _artifact, sample) => {
       if (side === 'baseline') return sample.reference;
@@ -177,14 +174,14 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     }),
     // The case list depends on the subject only through its modes.
     baselineKey: ({ baseline, fn, subject }) =>
-      JSON.stringify([baseline.revision, fn, modesOf(subject.value.source)]),
+      JSON.stringify([baseline.revision, fn, modesOf(subject.value.kernels)]),
     subjectKey: (_artifact, _case, { subject }) => JSON.stringify([subject.revision, profile]),
     async decide({ baseline, fn, subject }, cases, todo) {
       if (subject.value.fn !== fn)
         return todo.map(() => ({ v: 'disagree', reason: 'CUDA function differs' }));
       const pending = todo.map(i => cases[i]);
       const f = selectFunction(baseline.value, fn);
-      const { source } = subject.value;
+      const { source, kernels } = subject.value;
       const results = new Map<CudaSample, BufferValue>();
       const run = async (batch: CudaSample[], mode: Mode) => {
         if (!batch.length) return;
@@ -192,13 +189,13 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
           source,
           f,
           batch.map(c => c.inputs),
-          mode,
+          { ...mode, kernels },
         );
         if (out.length !== batch.length) throw Error('Wrong CUDA response case count');
         batch.forEach((c, i) => results.set(c, out[i]));
       };
       await Promise.all(
-        modesOf(source).map(mode =>
+        modesOf(kernels).map(mode =>
           run(
             pending.filter(c => c.gate === mode.gate && c.variant === mode.variant),
             mode,
@@ -239,14 +236,10 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     ],
     run(_ctx, { baseline, fn, fuse }) {
       // IRWB-033-D: through the schedule IR; its kernels are the CUDA kernels.
-      const schedule = lowerSchedule(selectFunction(baseline.value, fn), fuse).value;
-      const kernels = schedule.kernels.map(k => ({
-        name: k.name,
-        mapping: k.kind === 'contraction' ? ('tiled' as const) : k.group.mapping,
-        statements: k.group.statements,
-        ...(k.kind === 'rows' && k.group.gated && { gated: true }),
-      }));
-      const subject = cudaArtifact(fn, emitSchedule(schedule), kernels);
+      const { source, kernels } = emitScheduleProgram(
+        lowerSchedule(selectFunction(baseline.value, fn), fuse).value,
+      );
+      const subject = cudaArtifact(fn, source, kernels);
       return { outputs: { subject }, correspondence: [kernelCorrespondence(baseline, subject)] };
     },
   });

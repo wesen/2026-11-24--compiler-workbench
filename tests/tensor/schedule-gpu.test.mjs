@@ -81,7 +81,8 @@ test('at shapes the rule tiles, and at tails, short and single reductions, the r
 test('mutants of the tiled kernel are rejected with a coordinate and the variant', async () => {
   const fn = 'transposed';
   const source = cudaSource(features, fn);
-  const kernels = [{ name: 'k0', mapping: 'tiled', statements: ['s'] }];
+  // IRWB-057: the candidate's manifest gives its variants (the contract no longer counts them in the source)
+  const kernels = [{ name: 'k0', mapping: 'tiled', statements: ['s'], variants: 4 }];
   const mutants = {
     'terms in reverse within a tile': source.replace(
       'for (int kk = 0; kk < BK; ++kk) {',
