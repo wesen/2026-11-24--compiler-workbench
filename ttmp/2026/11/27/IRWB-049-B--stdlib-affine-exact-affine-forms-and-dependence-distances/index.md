@@ -10,7 +10,17 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/stdlib/affine/distances.ts
+      Note: dependence distances and the aligned depth
+    - Path: repo://src/stdlib/affine/forms.ts
+      Note: the forms, exact by construction
+    - Path: repo://src/tensor/fusion.ts
+      Note: joinDepth, the second client
+    - Path: repo://src/tensor/model.ts
+      Note: the domain facade, re-exported
+    - Path: repo://tests/stdlib/affine.test.mjs
+      Note: the new tests
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T20:20:46.992263044-05:00
