@@ -1,0 +1,10 @@
+{
+ "IRWB-057": {
+  "task": "fusion",
+  "config": "fa",
+  "model": "fable",
+  "effort": "default",
+  "round": "v7-fusion-fa",
+  "harness": "claude-code-subagent"
+ }
+}

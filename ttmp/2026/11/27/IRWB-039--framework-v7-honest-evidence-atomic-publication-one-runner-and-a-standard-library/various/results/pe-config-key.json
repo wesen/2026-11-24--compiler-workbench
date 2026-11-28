@@ -1,0 +1,10 @@
+{
+ "IRWB-058": {
+  "task": "pe",
+  "config": "sl",
+  "model": "gpt-6.2-sol",
+  "effort": "low",
+  "round": "v7-pe-sl",
+  "harness": "codex"
+ }
+}
