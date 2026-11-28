@@ -10,6 +10,7 @@
 //     member with no trailing axes is computed by thread 0, and `__syncthreads()` separates the members.
 // Every element is still computed by one thread with stage 2's scalar code, so its evaluation order is unchanged.
 import { plain, visit, type Affine, type Expr, type Fn, type Statement } from './model.js';
+import { alignedDepth } from '../stdlib/affine/distances.js';
 
 export interface FusionGroup {
   kernel: string;
@@ -84,6 +85,7 @@ function joinDepth(s: Statement, members: Statement[], depth: number): { depth: 
   const names = new Set(members.map(m => m.name));
   const reads = loads(s).filter(e => names.has(e.name));
   if (!reads.length) return { depth: 0, reason: 'reads no tensor of the kernel (no horizontal fusion)' };
+  const axes = s.axes.map(a => a.id);
   let k = Math.min(depth, s.axes.length),
     reason = `it has ${s.axes.length} ${s.axes.length === 1 ? 'axis' : 'axes'}`;
   for (let p = 0; p < k; p++)
@@ -94,13 +96,15 @@ function joinDepth(s: Statement, members: Statement[], depth: number): { depth: 
       ];
       break;
     }
-  for (const r of reads)
-    for (let p = 0; p < k; p++)
-      if (plain(r.indices[p]) !== s.axes[p].id) {
-        const at = text(r.indices[p]);
-        [k, reason] = [p, `reads ${r.name} at index ${at} in position ${p}, not its own axis there`];
-        break;
-      }
+  for (const r of reads) {
+    // IRWB-049-B: the leading positions at which every read has distance zero, i.e. where it reads at its own
+    // axis; the library's distances decide that, and the position where alignment stops is where the reason is.
+    const d = alignedDepth(axes, r.indices);
+    if (d < k) {
+      const at = text(r.indices[d]);
+      [k, reason] = [d, `reads ${r.name} at index ${at} in position ${d}, not its own axis there`];
+    }
+  }
   return { depth: k, reason };
 }
 
