@@ -266,3 +266,83 @@ GPU execution of the mutants at merge.
 ### Code review instructions
 
 Check the original-emission calls and verify that all mutant assertions remain in place.
+
+## Step 7. Update the exact softmax manifest expectation
+
+The broad CPU run found one expected manifest assertion that still described the old shape. The same source and gate assertions passed up to the exact manifest comparison.
+
+### Prompt Context
+
+See step 1. Update assertions when the requested behavior changes, and preserve all existing checks.
+
+### What I did
+
+Extended the softmax manifest expectation in `fusion.test.mjs` with the fused predicate and the unfused arm. Kept the other expected fields and the deep equality check. Reran all CPU tensor files.
+
+### Why
+
+The manifest now describes its launch predicate and fallback. An exact expected value should check both.
+
+### What worked
+
+Typed, framework, workbench and stdlib passed with zero failures. The final baseline check printed `no differences`. The focused checks passed before implementation commit `1097072`.
+
+### What didn't work
+
+The initial `node --test --test-concurrency=2 --test-reporter=tap` invocation on the non-GPU tensor files reported 55 passes and one `ERR_ASSERTION`. The test named `a block-mode kernel is one definition that also holds its statements in stage 2 form, behind a gate` printed `Expected values to be strictly deep-equal` and showed the new `select` missing from its expected value.
+
+### What I learned
+
+There were two exact legacy manifest assertions. The first focused selection included the attention one in `plans.test.mjs` and missed this softmax one.
+
+### What was tricky
+
+The test should retain exact deep equality so an unexpected change in the rest of the manifest remains visible.
+
+### What warrants a second pair of eyes
+
+The softmax expectation uses the same named policy constants as the runner. The baselines independently protect the emitted predicate text.
+
+### Code review instructions
+
+Review the full softmax manifest expectation and the unchanged CUDA pattern assertions above it.
+
+## Step 8. Record acceptance and close the ticket
+
+The complete CPU tensor rerun passed all 56 tests. All five CPU suites now have zero failures, and the baseline output has no differences.
+
+### Prompt Context
+
+See step 1. The requested handoff includes the report, acceptance counts and commit.
+
+### What I did
+
+Recorded the final counts and limits in the report, checked the two tasks off and staged the last test and the ticket closeout.
+
+### Why
+
+The report puts the reproducible acceptance evidence alongside the domain and implementation boundaries.
+
+### What worked
+
+Typed 193 passed and 2 skipped, framework 266 passed, workbench 24 passed and 1 skipped, stdlib 61 passed, and tensor 56 passed. The reported skips belong to existing opt-in Candela tests.
+
+### What didn't work
+
+No final validation command failed.
+
+### What I learned
+
+The complete CPU suite exercises manifest consumers beyond the focused schedule and differential tests.
+
+### What was tricky
+
+The report distinguishes forced branch checks from a proof of reachability over correlated concrete shapes.
+
+### What warrants a second pair of eyes
+
+The three GPU mutant fixtures should be part of the coordinator's merge run.
+
+### Code review instructions
+
+Use the design and report links in the ticket index. Review implementation commit `1097072` and the final commit's exact softmax fixture update together.

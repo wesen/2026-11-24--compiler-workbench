@@ -295,9 +295,15 @@ test('a block-mode kernel is one definition that also holds its statements in st
   }
   assert.match(source, /const bool fused_k0 = gate_mode \? gate_mode == 1 : /);
   assert.match(source, /"--gate=fused"/);
-  // IRWB-057: the manifest printed with the source says which kernels have a gate (it replaces `takesGate`)
+  // The manifest retains the same gate and now records the policy and both launch arms.
   assert.deepEqual(emittedKernels(source), [
-    { name: 'k0', mapping: 'block', statements: ['m', 'e', 's', 'y'], gated: true },
+    {
+      name: 'k0',
+      mapping: 'block',
+      statements: ['m', 'e', 's', 'y'],
+      gated: true,
+      select: [{ gate: 'fused', guard: { ...gate, heavy: [] } }, { gate: 'unfused' }],
+    },
   ]);
   // thread-mode fusion and the unfused lowering have no gate and keep stage 2's main
   const chain = compileTix('fn f(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]; return z; }');
