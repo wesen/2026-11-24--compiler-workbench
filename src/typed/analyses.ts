@@ -21,6 +21,8 @@ import { canonical } from '../framework/core/data.js';
 import { dataflow, type DataflowResult, type FlowRegion } from '../framework/dataflow/analysis.js';
 import { intervalLattice, mapLattice, setLattice, type Interval } from '../framework/dataflow/lattices.js';
 import type { FlowGraph } from '../framework/dataflow/solver.js';
+import { dominators, domTree, naturalLoops } from '../stdlib/graph/dominators.js';
+import { depthFirst, type Digraph } from '../stdlib/graph/orders.js';
 import { BlocksIR, blocksAdapter, storeOf } from './ir.js';
 import type { BlockRec, StmtRec, Store, TypedBlocks, ValueRec, WorkFn } from './model.js';
 
@@ -75,30 +77,33 @@ export interface Cfg {
   readonly edges: number;
 }
 export function cfgOf(f: WorkFn): Cfg {
-  const succ: Record<string, string[]> = {},
+  const succ: Record<string, readonly string[]> = {},
     preds: Record<string, string[]> = {};
   for (const b of f.blocks) {
     succ[b.id] = b.succ.slice();
     preds[b.id] = [];
   }
   for (const b of f.blocks) for (const s of b.succ) if (preds[s]) preds[s].push(b.id);
-  const order: string[] = [],
-    seen = new Set<string>();
-  const dfs = (id: string) => {
-    if (seen.has(id) || !succ[id]) return;
-    seen.add(id);
-    for (const s of succ[id]) dfs(s);
-    order.push(id);
-  };
-  dfs(f.blocks[0].id);
+  const rpo = depthFirst(graphOf(f, succ)).reversePostorder;
   return {
     entry: f.blocks[0].id,
     succ,
     preds,
-    rpo: order.reverse(),
+    rpo,
     edges: f.blocks.reduce((n, b) => n + b.succ.length, 0),
   };
 }
+const graphOf = (f: WorkFn, succ: Record<string, readonly string[]>): Digraph => ({
+  nodes: f.blocks.map(b => b.id),
+  entry: f.blocks[0].id,
+  succ: b => succ[b] ?? [],
+});
+/** `typed.blocks` as the library's digraph: every block id in block order, the first block as the entry, raw successors. */
+export const digraphOf = (f: WorkFn): Digraph => {
+  const succ: Record<string, readonly string[]> = {};
+  for (const b of f.blocks) succ[b.id] = b.succ.slice();
+  return graphOf(f, succ);
+};
 export const flowGraph = (f: WorkFn): FlowGraph => {
   const c = cfgOf(f);
   return {
@@ -139,53 +144,19 @@ export interface Dominators {
   readonly rpo: readonly string[];
   readonly rounds: number;
 }
+/** Immediate dominators over the library's CHK iteration (the published facts keep their key order). */
 export function dominatorsOf(f: WorkFn): Dominators {
-  const cfg = cfgOf(f),
-    rpo = cfg.rpo,
-    idx = new Map(rpo.map((id, i) => [id, i]));
-  const idom = new Map<string, string | null>([[rpo[0], rpo[0]]]);
-  const inter = (a: string, b: string) => {
-    while (a !== b) {
-      while (idx.get(a)! > idx.get(b)!) a = idom.get(a)!;
-      while (idx.get(b)! > idx.get(a)!) b = idom.get(b)!;
-    }
-    return a;
-  };
-  let changed = true,
-    rounds = 0;
-  while (changed) {
-    changed = false;
-    rounds++;
-    for (const id of rpo.slice(1)) {
-      let n: string | null = null;
-      for (const q of cfg.preds[id])
-        if (idom.has(q) && idom.get(q) !== undefined && idx.has(q)) n = n === null ? q : inter(q, n);
-      if (idom.get(id) !== n) {
-        idom.set(id, n);
-        changed = true;
-      }
-    }
-  }
-  return { idom: Object.fromEntries(idom), rpo, rounds };
+  const d = dominators(digraphOf(f));
+  return { idom: Object.fromEntries(d.idom), rpo: d.rpo, rounds: d.rounds };
 }
 export interface DomView {
   readonly idom: ReadonlyMap<string, string | null>;
   dominates(a: string, b: string): boolean;
-  readonly children: ReadonlyMap<string, string[]>;
+  readonly children: ReadonlyMap<string, readonly string[]>;
 }
+/** The dominator tree and its `dominates` query, over the library's `domTree`. */
 export function domView(d: Dominators): DomView {
-  const idom = new Map(Object.entries(d.idom));
-  const dominates = (a: string, b: string) => {
-    for (;;) {
-      if (a === b) return true;
-      const x = idom.get(b);
-      if (!x || x === b) return false;
-      b = x;
-    }
-  };
-  const children = new Map(d.rpo.map(id => [id, [] as string[]]));
-  for (const [b, x] of idom) if (x && b !== x) children.get(x)?.push(b);
-  return { idom, dominates, children };
+  return domTree({ idom: new Map(Object.entries(d.idom)), rpo: d.rpo });
 }
 export const dominatorsAnalysis = defineAnalysis({
   id: 'typed.dominators',
@@ -215,29 +186,14 @@ export interface Loop {
  * sat on the others' back edges and ran every iteration.
  */
 export function loopsOf(st: Store, f: WorkFn): Loop[] {
-  const dom = domView(dominatorsOf(f)),
-    cfg = cfgOf(f),
-    latchesOf = new Map<string, string[]>();
-  for (const b of f.blocks)
-    for (const s of b.succ)
-      if (dom.dominates(s, b.id)) {
-        const latches = latchesOf.get(s) ?? [];
-        if (!latches.length) latchesOf.set(s, latches);
-        if (!latches.includes(b.id)) latches.push(b.id);
-      }
+  const cfg = cfgOf(f),
+    dom = domView(dominatorsOf(f));
   const out: Loop[] = [];
-  for (const [s, latches] of latchesOf) {
-    const body = new Set([s]),
-      work = [...latches];
-    while (work.length) {
-      const x = work.pop()!;
-      if (body.has(x)) continue;
-      body.add(x);
-      work.push(...cfg.preds[x]);
-    }
-    const outside = cfg.preds[s].filter(q => !body.has(q));
+  for (const { head: s, latches, body } of naturalLoops(digraphOf(f), dom.dominates)) {
+    const inBody = new Set(body);
+    const outside = cfg.preds[s].filter(q => !inBody.has(q));
     const pre = outside.length === 1 && cfg.succ[outside[0]].length === 1 ? outside[0] : null;
-    const exits = [...body].flatMap(x => cfg.succ[x].filter(y => !body.has(y)));
+    const exits = body.flatMap(x => cfg.succ[x].filter(y => !inBody.has(y)));
     const assigned = new Set<number>();
     for (const x of body)
       for (const sid of (st.get(x) as BlockRec).stmts) {
@@ -249,7 +205,7 @@ export function loopsOf(st: Store, f: WorkFn): Loop[] {
       head: s,
       latch: latches[0],
       latches,
-      body: [...body],
+      body,
       preheader: pre,
       exits: [...new Set(exits)],
       assigned: [...assigned],

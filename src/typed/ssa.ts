@@ -16,7 +16,8 @@
  */
 import { defineAnalysis, defineType } from '../framework/contracts/definitions.js';
 import { canonical } from '../framework/core/data.js';
-import { cfgOf, dominatorsOf, stmtValues, type LiveView, type ReachView } from './analyses.js';
+import { dominators } from '../stdlib/graph/dominators.js';
+import { cfgOf, digraphOf, stmtValues, type LiveView, type ReachView } from './analyses.js';
 import { BlocksIR, storeOf } from './ir.js';
 import type { BlockRec, StmtRec, Store, TypedBlocks, ValueRec, WorkFn } from './model.js';
 
@@ -63,9 +64,9 @@ export function ssaOf(st: Store, f: WorkFn): SsaFn {
     rpo = cfg.rpo,
     reachable = new Set(rpo);
   const position = new Map(rpo.map((b, i) => [b, i]));
-  const d = dominatorsOf(f);
+  const d = dominators(digraphOf(f));
   const idom = new Map<string, string>();
-  for (const b of rpo) idom.set(b, b === entry ? VIRTUAL_ENTRY : d.idom[b]!);
+  for (const b of rpo) idom.set(b, b === entry ? VIRTUAL_ENTRY : d.idom.get(b)!);
   const preds = (b: string): string[] => [
     ...(b === entry ? [VIRTUAL_ENTRY] : []),
     ...new Set((cfg.preds[b] ?? []).filter(p => reachable.has(p))),

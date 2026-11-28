@@ -12,6 +12,7 @@
  * worklist, and Compiler Workbench's round-robin sweeps; with widening the schedule can change the result, so a
  * port that must reproduce another tool's facts picks that tool's schedule.
  */
+import { depthFirst as dfsOrders } from '../../stdlib/graph/orders.js';
 import type { Lattice } from './lattices.js';
 
 export interface FlowGraph {
@@ -60,31 +61,15 @@ export class DataflowError extends Error {
   }
 }
 
-/** Depth-first order from the entry: postorder of reachable blocks, and targets of retreating edges. */
-export function depthFirst(graph: FlowGraph): { postorder: string[]; loopHeads: Set<string> } {
-  const state = new Map<string, 'active' | 'done'>(),
-    postorder: string[] = [],
-    loopHeads = new Set<string>();
-  const stack: { block: string; next: number }[] = [{ block: graph.entry, next: 0 }];
-  state.set(graph.entry, 'active');
-  while (stack.length) {
-    const top = stack[stack.length - 1],
-      succ = graph.succ(top.block);
-    if (top.next < succ.length) {
-      const s = succ[top.next++];
-      const st = state.get(s);
-      if (st === 'active') loopHeads.add(s);
-      else if (!st) {
-        state.set(s, 'active');
-        stack.push({ block: s, next: 0 });
-      }
-    } else {
-      state.set(top.block, 'done');
-      postorder.push(top.block);
-      stack.pop();
-    }
-  }
-  return { postorder, loopHeads };
+/** Depth-first order from the entry (the standard library's walk): postorder of the reachable blocks and
+ * the targets of its retreating edges, the heads a widening can sit on. */
+export function depthFirst(graph: FlowGraph): { postorder: readonly string[]; loopHeads: Set<string> } {
+  const { postorder, retreating } = dfsOrders({
+    nodes: graph.blocks,
+    entry: graph.entry,
+    succ: b => graph.succ(b),
+  });
+  return { postorder, loopHeads: new Set(retreating.map(([, to]) => to)) };
 }
 
 export function solve<V>(graph: FlowGraph, options: SolveOptions<V>): Solution<V> {

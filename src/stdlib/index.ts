@@ -5,14 +5,15 @@
  * least two clients, and an executable test; a module that fails one of these stays in its domain.
  *
  * Layering (the v7 design doc's layering D): each directory uses only the directories listed below
- * it. `graph`, `lattice` and `num` use nothing; `ssa` and `flow` use those; `pe`, `affine` and `term`
- * above; `check` and `measure` on top. Nothing under src/stdlib imports outside src/stdlib.
+ * it. `lattice` and `num` use nothing; `graph` uses nothing; `ssa` and `flow` use those; `pe`, `affine`
+ * and `term` above; `check` and `measure` on top. Nothing under src/stdlib imports outside src/stdlib.
  *
  * What exists now:
- *   flow/     liveness — backward gen/kill liveness over blocks, with an explicit scope
+ *   graph/     orders — one depth-first walk: postorder, reverse postorder, retreating edges
+ *   graph/     dominators and loops — CHK immediate dominators, the dominator tree, natural loops
+ *   flow/      liveness — backward gen/kill liveness over blocks, with an explicit scope
  *
  * Later modules, one line each (each enters under the admission rule, with its two clients):
- *   graph/    dominators and loops — the dominator tree, dominance frontiers, natural loops
  *   lattice/  lattices — joins, order, widening for dataflow and constant propagation
  *   num/      exact small-number helpers (saturating and wrapping arithmetic)
  *   flow/     the fixpoint solver over a lattice (liveness hardcodes its own; this generalises it)
@@ -25,3 +26,7 @@
  */
 export { liveness, reachableBlocks } from './flow/liveness.js';
 export type { LiveBlock, LiveGraph, Liveness, LivenessScope } from './flow/liveness.js';
+export { depthFirst } from './graph/orders.js';
+export type { Digraph, DepthFirst } from './graph/orders.js';
+export { dominators, domTree, naturalLoops } from './graph/dominators.js';
+export type { Dominators, DominatorFacts, DomTree, NaturalLoop } from './graph/dominators.js';

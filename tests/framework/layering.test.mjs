@@ -1,5 +1,7 @@
 // The framework's module boundaries, enforced on the source imports.
-//   - src/framework/** imports nothing outside src/framework.
+//   - src/framework/** imports nothing outside src/framework and src/stdlib (the standard library is below the
+//     framework: it is pure, synchronous code that imports nothing but itself; since IRWB-047-A the dataflow
+//     solver's depth-first order is a library client, as the v7 plan's phase 2c provides).
 //   - strategy, contracts and ir import from core only core/data.js and core/types.js (v6's separability claim).
 //   - no layer of the framework imports a domain (labs, typed, candela, workbench).
 import test from 'node:test';
@@ -12,9 +14,10 @@ const src = fileURLToPath(new URL('../../src/', import.meta.url));
 const files = dir => readdirSync(dir).flatMap(f => { const p = join(dir, f); return statSync(p).isDirectory() ? files(p) : p.endsWith('.ts') ? [p] : []; });
 const imports = file => [...readFileSync(file, 'utf8').matchAll(/from\s+'(\.[^']+)'/g)].map(m => relative(src, resolve(dirname(file), m[1])));
 
-test('framework sources import nothing outside src/framework', () => {
+test('framework sources import nothing outside src/framework and src/stdlib', () => {
   for (const f of files(join(src, 'framework')))
-    for (const i of imports(f)) assert.ok(i.startsWith('framework/'), `${relative(src, f)} imports ${i}`);
+    for (const i of imports(f))
+      assert.ok(i.startsWith('framework/') || i.startsWith('stdlib/'), `${relative(src, f)} imports ${i}`);
 });
 
 test('strategy, contracts and ir use only core/data and core/types from core', () => {
