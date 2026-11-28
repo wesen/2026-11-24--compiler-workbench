@@ -230,3 +230,113 @@ Decisions it left to me, and follow-ups:
   - A non-rejection failure in `optimizeTix` is wrapped in `StrategyExecutionError`.
   - With Typed's worker pool installed, the synchronous driver is refused.
 - **Still asynchronous:** the manager's `execute`, which no pass uses. An abandoned plan leaves its records `running`.
+
+## Step 7: the solver move and F39 merged; cleanup and phase 4 lanes launched
+
+**Solver move (IRWB-053).** Both cells scored clean, and both moved `solve` into `stdlib/flow` behind a re-export shim and rewrote liveness on it. I merged GLM's cell (053-A), because of how it handled the speed question:
+- **GLM** measured both implementations interleaved in one process on the corpus's machine CFGs and found a 5× slowdown. The cause was a per-edge closure; it now passes the closure only when unreachable blocks exist. Final numbers: median ratio 0.91 and minimum ratio 1.00, so equal.
+- **DeepSeek** reports about 20% per call, which it did not remove. Its corpus totals moved by +0.4%, +2.5% and −5.7% across runs, which is noise.
+- **Brief ambiguity:** DeepSeek pointed out that "keep both, with the numbers" reads two ways, keep both copies or keep the change and report the numbers. It chose the second.
+
+**F39 (IRWB-054, DeepSeek): there was no race.**
+- The CUDA sanitizers (`racecheck`, `memcheck`, `synccheck`, `initcheck`) report 0 hazards and 0 errors on all four variants of `batched`. 800 repeats give one bit pattern, equal to the interpreter's, and case generation is deterministic.
+- The cause is sshd on bling dropping connections past `MaxStartups 10:30:100`; its journal shows 125 dropped connections.
+- **The fix,** in `tools/cuda-remote.mjs`: classify a failed ssh step as a dropped connection or a failed command. On a drop, repeat the whole job in a fresh remote directory, up to 6 attempts with jittered backoff. Compile errors and program exits are never retried.
+- **Effect:**
+  - at 6 workers, 35 of 72 checks failed before and 0 of 2,952 after;
+  - at 48 simultaneous jobs, 144 of 144 failed before and 0 after, with 202 dropped connections absorbed.
+- The T6 exactness claims stand. BACKLOG F39 is done.
+
+**Merged** both by cherry-pick onto the working branch, with no conflicts. Checks:
+- tsc clean; Prettier shows the same 8 pre-existing files;
+- suites: typed 186, framework 259, workbench 24, stdlib 56, tensor CPU 45;
+- baselines `no differences`; the site builds.
+- I did not run the GPU suite on the branch, because the phase-4 fusion cell (Fable) holds the GPU. I'll run it when Fable is done.
+
+**Launched** on `v7-p4-base` (`ab23152`). Briefs come from `scripts/10-write-briefs-p4.py`; Fable's cell uses the Agent tool, the rest `scripts/11-launch-p4-lanes.sh`.
+
+| Lane | Ticket | Cells | Decision point |
+|---|---|---|---|
+| cleanup: `steps.ts` into core, one identity algorithm, one plan builder | IRWB-055 | Terra low | — |
+| derivations (K2) | IRWB-056 | GLM high, DeepSeek xhigh | rule-citing records 0 → 183; correspondence from steps equals today's; both A0 policies as queries; more than about 2× cost means local terms on demand |
+| fusion and scheduling as decide/eligible/prepare (K6) | IRWB-057 | Fable | the extent-17 counterexample is rejected; CUDA byte-identical; different `eligible` signatures withdraw the unification |
+| `solveFor` and `pe` | IRWB-058 | Sol low | the restated B1 specializer is at most half the original's lines, or `unfold` is dropped |
+
+- **Held back:** term rules (4.6) and lowering on the runner. Both collide with the derivations lane, the first on `typed/rules`, the second on the runner.
+- **The PR:** the user asked to open a PR into `main` when v7 is done. `main` stays at `c07a1e4` until then.
+
+## Step 8: fusion and scheduling as decide, eligible, prepare (K6) merged
+
+Fable (IRWB-057) finished in 25 minutes. Its branch scored clean on `06ebb78`: tensor CPU 51, stdlib 51, baselines `no differences`, oracle untouched.
+
+**Decision point: K6's unification holds for this pair.** Fusion and loop scheduling share one `eligible` signature, `(schedule, plan) => CheckResult`, on `Transformation<Schedule, {}, P>` with the plan as the parameter: `fusePass` takes a `FusionChoice`, `loopsPass` a `LoopPlan`. This works because fusion became a transformation of the schedule IR: a schedule starts as one pointwise kernel per statement, and `fusePass` regroups it.
+
+**The extent-17 counterexample is rejected.** `accumulationViolation` strip-mines the reduction's direction vectors along with the loops (`stdlib/affine/directions.ts`) and checks the loop order by the textbook legality rule (no lexicographically negative direction, no carried dependence on a parallel loop). Over all 1,560 loop orders of three small nests it agrees with enumeration: 540 accepted, 1,020 rejected. The simulating output validator, the eight per-step passes and the gate regex are deleted.
+
+**Other effects:**
+- The hand-written schedule rule is a four-node strategy plan under `executeSync`.
+- A manifest from the emitter drives the CUDA runtime's gate names.
+- Scheduling attention went from 384 ms and 107 pass applications to 7.1 ms and 2.
+
+**Merged** by cherry-pick, no conflicts. Checks:
+- tsc clean; Prettier still flags 8 pre-existing files;
+- suites: typed 186, framework 259, workbench 24, stdlib 59, tensor CPU 51;
+- **GPU 23/23**: the first GPU run on the branch since the migration, and the first with F39's retry;
+- baselines `no differences`; site builds.
+
+**Follow-ups it named:**
+- `runTixCuda` should pass the manifest; the source-hash side table can then go.
+- `planPass` is domain-local; it belongs in the framework as `decision({ eligible, prepare, conforms })`.
+- A no-op `prepare` returns `unchanged` before `conforms` runs.
+- The fusion layout derived in `prepare` is checked only by the GPU differential.
+- `directions.ts` has one client so far; the admission rule wants two.
+- Correspondence is coarser: loops and variants are recorded as inserted.
+- After this change, neither the `definePass` wrapper nor `applyNativePassSync` has a caller in `src/` outside the framework.
+
+## Step 9: the cleanup and solveFor merged; pe and unfold withdrawn at the decision point; handoff written
+
+The user asked for a handoff document for a colleague ("what instructions and files and guidelines and playbooks would we point them towards ... write a handoff document"), then: "after that, wait for the 2 agents to finish, update whatever is needed, and then stop and tell me how to hand over."
+
+**Cleanup (IRWB-055, Terra low).** Scored clean on `1f34dfe` and merged.
+- `steps.ts` moved to `src/framework/core/`; the layering allow-list gained `core/steps.js`.
+- `strategy/builders.ts` holds the shared identity algorithm and the pass-sequence builder, used by `optimizeTix` and Typed's `pipelinePlan` (keeping `tolerate`).
+- The extra lines in `differential.ts` are only Prettier formatting (checked with `git diff -w`), so the known-unformatted count drops from 8 to 7.
+- In the Codex sandbox the agent saw four failing test files with no causes shown; the scorer, outside the sandbox, found all suites green.
+
+**solveFor and pe (IRWB-058, Sol low). The decision point fired.**
+- `solveFor` (`src/stdlib/flow/solve-for.ts`, 80 lines: demand-driven equations, dependency tracking, widening, a budget) is merged, with SCCP ported onto it.
+- B1's specializer restated on a shared division and unfolding measured 652 lines, against a limit of 324 (half of the original 648). So `unfold` is not earning its place and the cell restored B1. The prototype stays in the cell's history (`77e1bed`, also in the cherry-picked commits).
+- B1's counts are unchanged under `promote+speed`: Fibonacci 110, entry 34 at 122.
+- **Conflict:** both solvers export a `Solution` type. The index now exports the new one as `LocalSolution`; nothing imported it by the old name.
+
+**Checks on the working branch:**
+- tsc clean; Prettier flags 7 pre-existing files;
+- suites: typed 187, framework 259, workbench 24, stdlib 61, tensor CPU 45 + 6;
+- baselines `no differences`; site builds.
+
+**Handoff:** `reference/02-handoff.md`. It covers what the project is, where everything is, the read-first list, v7 status, how a round is run (brief, launch, score, review, cherry-pick, check, scan, push, record), staffing evidence, standing rules, next steps, follow-ups and records owed.
+
+Still running: derivations (IRWB-056, GLM high and DeepSeek xhigh).
+
+## Step 10: derivations (K2) merged; every launched lane closed
+
+Both derivations cells (IRWB-056) scored clean: GLM 372a202, DeepSeek c0635e3, baselines `no differences`, oracle untouched. Both met the rule count and the cost gate.
+
+| | GLM high (056-A) | DeepSeek xhigh (056-B) |
+|---|---|---|
+| rule-citing O2 records | 0 → 183 (fold 43, simplify 140) | 0 → 183 (the same split) |
+| correspondence from steps equals today's | O2 (195 revisions) and a one-off `speed` probe | all 547 O2 and `speed` applications, under all four coverage policies |
+| A0 policies | 203 by a query; **395 by calling the old IRWB-035-G classifier on the before and after IR** | 203 and **393, both queries over the records**; the 2-record gap (`fold-add` folding a tree the same application made) is explained in its test |
+| Tix `inline` | correspondence says `merged` (the truth R3 asked for) | keeps today's `removed` to hold the equality; the merge is in the derivation (`mergedInto`) |
+| cost | pipeline medians 9.5 s before and after | 0.99× end to end; 1.07× in-build |
+| size | +338 lines | +651 lines; touched `typed/program.ts` (outside the scope, needed to carry the derivation into revisions) |
+
+**Merged DeepSeek's cell** by cherry-pick, no conflicts. The step's point is that classification becomes a query over the producer's records. GLM's second policy calls the old classifier, so it only looks like it meets that. GLM's truthful `merged` correspondence for Tix `inline` is a follow-up to port (handoff §9).
+
+**Checks on the working branch:**
+- tsc clean; Prettier still flags 7 pre-existing files;
+- suites: typed 193, framework 266, workbench 24, stdlib 61, tensor CPU 51;
+- baselines `no differences`; site builds;
+- GPU 23/23.
+
+Every lane launched in v7 so far is merged or withdrawn at its decision point, and no agent is running. Phase 4 has 4.1, 4.4 and 4.5 (`solveFor`, with `pe` and `unfold` withdrawn) done; 4.2, 4.3, 4.6, 4.7 and 4.8 remain. The handoff (`reference/02-handoff.md`) is updated to this state.

@@ -1,0 +1,10 @@
+{
+ "IRWB-063": {
+  "task": "coverage",
+  "config": "tl",
+  "model": "gpt-6.1-terra",
+  "effort": "low",
+  "round": "v7-coverage-tl",
+  "harness": "codex"
+ }
+}

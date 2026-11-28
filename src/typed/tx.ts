@@ -12,6 +12,7 @@ import { prune } from './lift.js';
 import { describeText, show, showStmt, COMPARE } from './listing.js';
 import { hasEffect, isPure, readsOf } from './analyses.js';
 import { F32_RESULT } from './f32.js';
+import type { DerivationBy, DerivationStep } from '../framework/ir/derivation.js';
 import {
   typeClass,
   type BlockRec,
@@ -51,6 +52,8 @@ export interface Edit {
   readonly pass: string;
   readonly fn: string;
   readonly kind: string;
+  /** IRWB-056-B: the derivation steps that licensed this edit (indices into the application's step list). */
+  readonly steps?: readonly number[];
   readonly [field: string]: unknown;
 }
 
@@ -163,18 +166,138 @@ export interface PassInfo {
   readonly writes: readonly WriteKind[];
 }
 
+/** The rule a `Tx.rewrite` visitor is applying, and the premises it relies on (rules/compile.ts). */
+export interface ActiveRule {
+  readonly by: DerivationBy;
+  readonly premises: readonly string[];
+  /** The site the rule matched: the matched node and its operands (the entities it read to produce its result). */
+  readonly site?: readonly string[];
+  readonly note?: string;
+}
+
 export class Tx {
   readonly edits: Edit[] = [];
   readonly writes: ReadonlySet<WriteKind>;
+  /** The pass's derivation steps, shared by the functions a pass walks in one application. */
+  readonly steps: DerivationStep[];
+  /** Whether this transaction records a derivation: false for a pass that builds its own correspondence. */
+  readonly derived: boolean;
   private cur: string | null = null;
   private sid: string | null = null;
+  private rule: ActiveRule | null = null;
+  /** The step indices of the statement field being walked: what a `replace` record cites. */
+  private pending: number[] = [];
   constructor(
     readonly st: Store,
     readonly fn: WorkFn,
     readonly pass: PassInfo,
     readonly rev: number,
+    steps?: DerivationStep[],
   ) {
     this.writes = new Set(pass.writes);
+    this.steps = steps ?? [];
+    this.derived = steps !== undefined;
+  }
+
+  /** Run `f` with `rule` as the rule licensing every entity it makes and every edit it records. */
+  withRule<A>(rule: ActiveRule, f: () => A): A {
+    const outer = this.rule;
+    this.rule = rule;
+    try {
+      return f();
+    } finally {
+      this.rule = outer;
+    }
+  }
+  /**
+   * The step for the entities a transaction made. `by` is the rule being applied (with the guards it checked) or the
+   * decision that made them (`make`, `rebuild`, `set`, `local`, `block`…).
+   */
+  private made(produced: string, from: string | undefined | null, opts: MakeOptions, decision: string): void {
+    if (!this.derived) return;
+    const premises = [...(this.rule?.premises ?? []), ...(opts.because ?? []).map(b => id(b as Ref)!)].filter(
+      (p, i, all) => all.indexOf(p) === i,
+    );
+    const note = opts.note ?? this.rule?.note;
+    // the antecedent first, then the rest of the site the rule read
+    const froms = [...new Set([...(from ? [from] : []), ...(this.rule?.site ?? [])])];
+    this.steps.push({
+      by: this.rule?.by ?? { decision },
+      consumes: [...new Set(froms)],
+      produces: [produced],
+      premises: [...new Set(premises)].sort(),
+      relation: froms.length ? 'modified' : 'inserted',
+      ...(note ? { note } : {}),
+    });
+    this.pending.push(this.steps.length - 1);
+  }
+  /**
+   * The step for a rule that created no entity: it produced one of the entities it consumed again (`x + 0` becomes
+   * `x`). Its site is the tree it matched and the entity it produced, so the derivation records the rewrite even
+   * though the correspondence, which is about survival, needs no entry for it.
+   */
+  inPlace(rule: ActiveRule, consumed: readonly string[], produced: string): void {
+    if (!this.derived) return;
+    this.steps.push({
+      by: rule.by,
+      consumes: [...new Set(consumed)],
+      produces: [produced],
+      premises: [...new Set(rule.premises)].sort(),
+      relation: 'modified',
+      ...(rule.note ? { note: rule.note } : {}),
+    });
+    this.pending.push(this.steps.length - 1);
+  }
+  /**
+   * The step for an edit that is not about an entity this transaction made: the statement or block it is about, and
+   * what it became. A removal's site is the source entity alone (and its block), so it is `removed`
+   * (`edit-classes`'s "dead statement", the correspondence's `removed` entry with its reason).
+   */
+  private editStep(kind: string, detail: Record<string, unknown>): number | undefined {
+    if (!this.derived) return undefined;
+    const one = (x: unknown): string[] => (typeof x === 'string' && x.length > 0 ? [x] : []);
+    const side: Record<string, { consumes: string[]; produces: string[] }> = {
+      remove: { consumes: [...one(detail.stmt), ...one(detail.block)], produces: [] },
+      unreachable: { consumes: one(detail.block), produces: [] },
+      // a moved or retargeted statement stays the same entity: it neither appears nor disappears, and the block it
+      // points to is not something the step made
+      move: { consumes: one(detail.stmt), produces: one(detail.stmt) },
+      retarget: { consumes: one(detail.stmt), produces: one(detail.stmt) },
+      replace: { consumes: one(detail.from), produces: one(detail.to) },
+      replaceStmt: { consumes: one(detail.from), produces: one(detail.to) },
+      merge: { consumes: one(detail.block), produces: one(detail.block) },
+      insert: { consumes: [], produces: one(detail.stmt) },
+    };
+    const { consumes, produces } = side[kind] ?? {
+      consumes: one(detail.local ?? detail.block ?? detail.stmt ?? detail.call),
+      produces: one(detail.local ?? detail.block ?? detail.stmt ?? detail.call),
+    };
+    // an edit that names no entity at all (a `note`, `pe`'s or `promote`'s log record) is no site: it gets no step,
+    // and the record cites none
+    if (!consumes.length && !produces.length) return undefined;
+    // a dropped block's reason is its unreachability, not an entity or a fact: the correspondence of a block that
+    // is gone carries no reason, and an entry is the same whether the fill or a step gave it
+    const premises =
+      kind === 'unreachable'
+        ? []
+        : ((detail.because as unknown[]) ?? []).filter((p): p is string => typeof p === 'string');
+    this.steps.push({
+      by: { decision: kind },
+      consumes: [...new Set(consumes)],
+      produces: [...new Set(produces)],
+      premises: [...new Set(premises)].sort(),
+      relation:
+        kind === 'remove' || kind === 'unreachable'
+          ? 'removed'
+          : consumes.length && produces.length
+            ? 'modified'
+            : produces.length
+              ? 'inserted'
+              : 'retained',
+      ...(typeof detail.note === 'string' ? { note: detail.note } : {}),
+    });
+    this.pending.push(this.steps.length - 1);
+    return this.steps.length - 1;
   }
 
   private may(kind: WriteKind, what: string): void {
@@ -200,7 +323,25 @@ export class Tx {
   private because(opts: MakeOptions): string[] {
     return (opts.because ?? []).map(b => id(b as Ref)!);
   }
+  /** Kinds that are their own reason: the statement or block they are about is the step's site. */
+  private static readonly OWN: ReadonlySet<string> = new Set([
+    'remove',
+    'unreachable',
+    'move',
+    'retarget',
+    'merge',
+    'note',
+    'insert',
+  ]);
+
   record(kind: string, detail: Record<string, unknown>): Edit {
+    // a `replace` records the value rewrite the current field's walk made: its steps are the ones it just pushed; a
+    // `local`/`block` edit cites the step that made the entity. A structural edit is its own step.
+    const own = Tx.OWN.has(kind);
+    const cited = !own && this.pending.length ? [...this.pending] : null;
+    // an edit that names no entity (a `note`, `pe`'s or `promote`'s log record) cites no step
+    const fresh = cited ? undefined : this.editStep(kind, detail);
+    const made = cited ?? (fresh === undefined ? undefined : [fresh]);
     const e: Edit = {
       id: `edit:r${this.rev}.${this.edits.length}`,
       rev: this.rev,
@@ -208,7 +349,9 @@ export class Tx {
       fn: this.fn.name,
       kind,
       ...detail,
+      ...(made && made.length ? { steps: made } : {}),
     };
+    this.pending = [];
     this.edits.push(e);
     return e;
   }
@@ -217,7 +360,7 @@ export class Tx {
   /** A constant; an f32 constant (`type: 'f32'`) is given as its bits. */
   const(n: number, opts: MakeOptions = {}): string {
     this.may('values', 'made a constant');
-    return this.st.add<ValueRec>({
+    const vid = this.st.add<ValueRec>({
       id: this.st.fresh(`v:${this.fn.name}`),
       kind: 'value',
       fn: this.fn.id,
@@ -227,6 +370,8 @@ export class Tx {
       imm: n | 0,
       origin: this.origin(id(opts.from) ?? this.cur, opts),
     }).id;
+    this.made(vid, id(opts.from) ?? this.cur, opts, 'make');
+    return vid;
   }
   /** The type a made value has: given, or the local's for a get, or f32 for the f32 operators. */
   private typeOf(op: ValueOp, opts: MakeOptions): TypeClass {
@@ -251,7 +396,9 @@ export class Tx {
     };
     if (this.typeOf(op, opts) === 'f32') rec.type = 'f32';
     if (opts.imm !== undefined) rec.imm = opts.imm;
-    return this.st.add(rec).id;
+    const vid = this.st.add(rec).id;
+    this.made(vid, id(opts.from) ?? this.cur, opts, 'make');
+    return vid;
   }
   get(local: number | string | { index: number }, opts: MakeOptions = {}): string {
     return this.make('get', { imm: this.local_(local), ...opts });
@@ -287,7 +434,7 @@ export class Tx {
   // statements
   set(local: number | string, value: Ref, opts: MakeOptions = {}): string {
     this.may('stmts', 'made a statement');
-    return this.st.add<StmtRec>({
+    const sid = this.st.add<StmtRec>({
       id: this.st.fresh(`s:${this.fn.name}`),
       kind: 'stmt',
       fn: this.fn.id,
@@ -296,16 +443,20 @@ export class Tx {
       value: id(value),
       origin: this.origin(id(opts.from) ?? id(value), opts),
     }).id;
+    this.made(sid, id(opts.from) ?? id(value), opts, 'set');
+    return sid;
   }
   stmt(fields: Partial<StmtRec> & { op: StmtRec['op'] }, opts: MakeOptions = {}): string {
     this.may('stmts', 'made a statement');
-    return this.st.add({
+    const sid = this.st.add({
       id: this.st.fresh(`s:${this.fn.name}`),
       kind: 'stmt',
       fn: this.fn.id,
       ...fields,
       origin: this.origin(id(opts.from), opts),
     } as StmtRec).id;
+    this.made(sid, id(opts.from), opts, 'stmt');
+    return sid;
   }
   blockOf(sid: string): BlockRec | undefined {
     return this.fn.blocks.find(b => b.stmts.includes(sid));
@@ -425,6 +576,7 @@ export class Tx {
     };
     this.st.add(b);
     this.fn.blocks.push(b);
+    this.made(b.id, id(opts.from), opts, 'block');
     this.record('block', { block: b.id, because: this.because(opts) });
     return b.id;
   }
@@ -451,6 +603,7 @@ export class Tx {
         if (v.type) rec.type = v.type;
         if (v.imm !== undefined) rec.imm = v.imm;
         cur = this.st.add(rec).id;
+        this.made(cur, vid, { note: 'rebuilt around a changed argument' }, 'rebuild');
       }
       this.cur = cur;
       const r = visit(valueHandle(this.st, cur, { stmt: this.sid ?? undefined }));
@@ -477,6 +630,8 @@ export class Tx {
             }
           }
       }
+    // a value made before the walk (the `tx.get` handed to `tx.replace`) was cited by the first record it changed
+    this.pending = [];
     this.sid = null;
   }
   /** Replace one value wherever it occurs (it has one user), rebuilding its parents. */
@@ -515,17 +670,7 @@ export class Tx {
               : b.succ;
       b.succ = [...new Set(succ)];
     }
-    const gone = prune(this.st, this.fn);
-    for (const b of gone)
-      this.edits.push({
-        id: `edit:r${this.rev}.${this.edits.length}`,
-        rev: this.rev,
-        pass: this.pass.name,
-        fn: this.fn.name,
-        kind: 'unreachable',
-        block: b.id,
-        because: ['cfg'],
-      });
+    for (const b of prune(this.st, this.fn)) this.record('unreachable', { block: b.id, because: ['cfg'] });
   }
 }
 

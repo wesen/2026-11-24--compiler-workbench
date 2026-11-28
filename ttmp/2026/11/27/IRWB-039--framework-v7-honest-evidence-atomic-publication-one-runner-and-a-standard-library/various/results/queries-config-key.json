@@ -1,0 +1,20 @@
+{
+ "IRWB-065-A": {
+  "task": "queries",
+  "config": "g-h",
+  "model": "lunaroute/glm-5.3",
+  "effort": "high",
+  "round": "v7-queries-g-h",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ },
+ "IRWB-065-B": {
+  "task": "queries",
+  "config": "ds-x",
+  "model": "lunaroute/deepseek-4.1-flash",
+  "effort": "xhigh",
+  "round": "v7-queries-ds-x",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ }
+}

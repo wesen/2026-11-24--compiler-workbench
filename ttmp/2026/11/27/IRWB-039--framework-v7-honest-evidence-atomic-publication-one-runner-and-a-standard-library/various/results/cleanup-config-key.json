@@ -1,0 +1,10 @@
+{
+ "IRWB-055": {
+  "task": "cleanup",
+  "config": "tl",
+  "model": "gpt-6.1-terra",
+  "effort": "low",
+  "round": "v7-cleanup-tl",
+  "harness": "codex"
+ }
+}

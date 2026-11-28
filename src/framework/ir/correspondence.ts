@@ -9,6 +9,31 @@ import type {
   TraceStep,
 } from './types.js';
 import { compareText, IRError, IRBudgetError, limit, refKey, requireText, sameRevision } from './common.js';
+/** Coverage demanded of a correspondence's mapped entities. */
+export type Coverage = 'partial' | 'nonempty' | 'source' | 'target' | 'both';
+
+/** Check coverage over the correspondence sides and entries supplied by the caller. */
+export function checkCoverage(
+  correspondence: Pick<EntityCorrespondence, 'sourceEntities' | 'targetEntities'> & {
+    readonly entries: readonly Pick<CorrespondenceEntry, 'from' | 'to'>[];
+  },
+  coverage: Coverage,
+): 'empty' | 'source' | 'target' | undefined {
+  const { sourceEntities, targetEntities, entries } = correspondence;
+  if (
+    coverage === 'nonempty' &&
+    (sourceEntities.length || targetEntities.length) &&
+    !entries.some(e => e.from.length || e.to.length)
+  )
+    return 'empty';
+  const source = new Set(entries.flatMap(e => [...e.from]));
+  const target = new Set(entries.flatMap(e => [...e.to]));
+  if ((coverage === 'source' || coverage === 'both') && sourceEntities.some(id => !source.has(id)))
+    return 'source';
+  if ((coverage === 'target' || coverage === 'both') && targetEntities.some(id => !target.has(id)))
+    return 'target';
+  return undefined;
+}
 function revision(value: RevisionRef): void {
   requireText(value.artifact, 'Correspondence artifact');
   requireText(value.revision, 'Correspondence revision');
@@ -94,9 +119,7 @@ export function validateCorrespondence(input: EntityCorrespondence): EntityCorre
     sourceEntities,
     targetEntities,
     // sorted by canonical text; each entry's text is its key, computed once above (IRWB-004)
-    entries: [...entries]
-      .sort(([a], [b]) => compareText(a, b))
-      .map(([, entry]) => entry),
+    entries: [...entries].sort(([a], [b]) => compareText(a, b)).map(([, entry]) => entry),
   });
 }
 export function makeCorrespondence(

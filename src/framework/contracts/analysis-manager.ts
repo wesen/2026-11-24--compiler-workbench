@@ -1,11 +1,12 @@
 import { canonical, fingerprint, immutable } from '../core/data.js';
 import type { Artifact, EntityRef } from '../core/types.js';
 import { diffGraphs } from '../ir/diff.js';
+import { checkCoverage } from '../ir/correspondence.js';
 import { Check, JsonValue, definitionRef, describeDefinition, validateArtifact } from './definitions.js';
 import { MemoryResources } from './effects.js';
 import { assuranceOf } from './differential.js';
 import { ContractRegistry } from './registry.js';
-import { driveAsync, driveSync, wait, type Steps } from './steps.js';
+import { driveAsync, driveSync, wait, type Steps } from '../core/steps.js';
 import type {
   AnalysisDefinition,
   AnalysisRecord,
@@ -1222,20 +1223,18 @@ export class AnalysisManager {
           if (!actual.has(id)) throw new ContractError('correspondence', `Unknown ${label} entity ${id}`);
     }
     if (coverage !== undefined) {
-      const source = c.sourceEntities ?? [],
-        target = c.targetEntities ?? [],
-        entries = c.entities ?? [];
-      const mappedSource = new Set(entries.flatMap(e => [...e.from]));
-      const mappedTarget = new Set(entries.flatMap(e => [...e.to]));
-      if (
-        coverage === 'nonempty' &&
-        (source.length || target.length) &&
-        !entries.some(e => e.from.length || e.to.length)
-      )
-        throw new ContractError('correspondence', 'Correspondence mapping is empty');
-      if ((coverage === 'source' || coverage === 'both') && source.some(id => !mappedSource.has(id)))
+      const failure = checkCoverage(
+        {
+          sourceEntities: c.sourceEntities ?? [],
+          targetEntities: c.targetEntities ?? [],
+          entries: c.entities ?? [],
+        },
+        coverage,
+      );
+      if (failure === 'empty') throw new ContractError('correspondence', 'Correspondence mapping is empty');
+      if (failure === 'source')
         throw new ContractError('correspondence', 'Correspondence does not cover every source entity');
-      if ((coverage === 'target' || coverage === 'both') && target.some(id => !mappedTarget.has(id)))
+      if (failure === 'target')
         throw new ContractError('correspondence', 'Correspondence does not cover every target entity');
     }
     if (

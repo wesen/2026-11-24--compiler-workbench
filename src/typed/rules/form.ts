@@ -19,8 +19,8 @@
  *               { const: num }     tx.const; num is a number, { log2: k } or { eval: op, args } (the evaluator)
  *               { op, args }       tx.make, sub-templates first, left to right
  */
-import type { NodePattern } from '../../framework/ir/patterns.js';
-import { capture, entity, op as nodeOp } from '../../framework/ir/patterns.js';
+import type { Pattern } from '../../stdlib/term/types.js';
+import { patternVars as termPatternVars, templateVars as termTemplateVars } from '../../stdlib/term/terms.js';
 import { SYMBOL } from '../listing.js';
 import type { ValueOp } from '../model.js';
 
@@ -160,29 +160,19 @@ export function ruleSet(
 }
 
 // ---------- well-formedness ----------
-/** The variables a pattern binds (var, constVar), in left-to-right order, and the repeats (same). */
-export function patternVars(
+// The queries are the standard library's (src/stdlib/term/terms.ts) over the same shapes: `Pat` and `Tpl`
+// are the library's `Pattern` and `Template<Num>` structurally, so one implementation serves both domains.
+export const patternVars: (
   p: Pat,
-  out: { binds: string[]; repeats: string[] } = { binds: [], repeats: [] },
-) {
-  if ('var' in p) out.binds.push(p.var);
-  else if ('constVar' in p) out.binds.push(p.constVar);
-  else if ('same' in p) out.repeats.push(p.same);
-  else if ('op' in p) for (const a of p.args) patternVars(a, out);
-  return out;
-}
-/** The variables a template uses, in left-to-right order (with repetition), and the constant variables it reads. */
-export function templateVars(t: Tpl, out: { uses: string[]; consts: string[] } = { uses: [], consts: [] }) {
-  if ('var' in t) out.uses.push(t.var);
-  else if ('const' in t) {
-    const n = t.const;
-    if (typeof n === 'object') {
-      if ('log2' in n) out.consts.push(n.log2);
-      else out.consts.push(...n.args);
-    }
-  } else for (const a of t.args) templateVars(a, out);
-  return out;
-}
+  out?: { binds: string[]; repeats: string[] },
+) => {
+  binds: string[];
+  repeats: string[];
+} = termPatternVars;
+export const templateVars: (
+  t: Tpl,
+  out?: { uses: string[]; consts: string[] },
+) => { uses: string[]; consts: string[] } = termTemplateVars;
 
 function checkRule(r: Rule): void {
   const fail = (m: string) => {
@@ -226,7 +216,7 @@ function checkRule(r: Rule): void {
 // ---------- text ----------
 const numText = (n: Num): string =>
   typeof n === 'number' ? String(n) : 'log2' in n ? `log2 ${n.log2}` : `${n.eval}(${n.args.join(', ')})`;
-export function patText(p: Pat): string {
+export function patText(p: Pattern): string {
   if ('var' in p) return p.var;
   if ('constVar' in p) return `#${p.constVar}`;
   if ('const' in p) return String(p.const);
@@ -262,27 +252,3 @@ export const COMPARE_INVERSE: readonly (readonly [ValueOp, ValueOp])[] = [
   ['geu', 'ltu'],
 ];
 export const inversionNote = (a: ValueOp, b: ValueOp) => `!(${SYMBOL[a]}) is ${SYMBOL[b]}`;
-
-// ---------- the framework's pattern language ----------
-/**
- * The rule's pattern as a framework `NodePattern` (src/framework/ir/patterns.ts), for listing and for matching on a
- * projection with `searchPattern`. A variable becomes a capture, a constant literal `entity('value.const', { imm })`,
- * a constant variable a capture of a const entity. `exact` is false when the pattern has a repeat: the framework's
- * `sameAs` binds the same entity again, and its `equalContent` compares one entity's attributes (including its
- * origin), neither of which is simplify's structural equality, so the converted pattern matches a superset.
- */
-export function toNodePattern(r: Rule): { pattern: NodePattern; exact: boolean } {
-  let exact = true;
-  const conv = (p: Pat): NodePattern => {
-    if ('var' in p) return capture(p.var);
-    if ('constVar' in p) return capture(p.constVar, entity('value.const'));
-    if ('const' in p) return entity('value.const', { imm: p.const });
-    if ('same' in p) {
-      exact = false;
-      return capture(`${p.same}'`);
-    }
-    return nodeOp(p.op, ...p.args.map(conv));
-  };
-  const pattern = conv(r.lhs);
-  return { pattern, exact };
-}

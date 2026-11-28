@@ -1,0 +1,24 @@
+after	bytecode-vm	1.21ms	1 fns
+after	f32-dsp	1.59ms	3 fns
+after	lz-roundtrip	4.23ms	4 fns
+after	regex-nfa	6.13ms	2 fns
+after	sha-chacha	6.29ms	5 fns
+after	median-total	19.45ms
+opt1	bytecode-vm	0.53ms	1 fns
+opt1	f32-dsp	0.83ms	3 fns
+opt1	lz-roundtrip	0.97ms	4 fns
+opt1	regex-nfa	1.22ms	2 fns
+opt1	sha-chacha	1.64ms	5 fns
+opt1	median-total	5.19ms
+opt2-rr	bytecode-vm	0.46ms	1 fns
+opt2-rr	f32-dsp	0.80ms	3 fns
+opt2-rr	lz-roundtrip	1.04ms	4 fns
+opt2-rr	regex-nfa	1.13ms	2 fns
+opt2-rr	sha-chacha	1.88ms	5 fns
+opt2-rr	median-total	5.32ms
+opt1-again	bytecode-vm	0.48ms	1 fns
+opt1-again	f32-dsp	0.63ms	3 fns
+opt1-again	lz-roundtrip	0.74ms	4 fns
+opt1-again	regex-nfa	0.87ms	2 fns
+opt1-again	sha-chacha	1.24ms	5 fns
+opt1-again	median-total	3.97ms

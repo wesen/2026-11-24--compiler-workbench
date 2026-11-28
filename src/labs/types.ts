@@ -1,5 +1,5 @@
 import type { Artifact } from '../framework/core/types.js';
-import type { DatabaseSnapshot } from '../framework/core/records.js';
+import type { DatabaseSnapshot } from './records.js';
 import type { ContractSnapshot } from '../framework/contracts/index.js';
 import type {
   AdapterDescriptor,
@@ -8,8 +8,8 @@ import type {
   IRGraph,
   TransformationResult,
 } from '../framework/ir/types.js';
-import type { MatchExplanation, PatternDescriptor, PatternMatch } from '../framework/ir/patterns.js';
-import type { RewriteStep } from '../framework/ir/rewrites.js';
+import type { MatchExplanation, PatternDescriptor, PatternMatch } from './patterns.js';
+import type { RewriteStep } from './rewrites.js';
 import type { StrategyExecution, StrategyPlan } from '../framework/strategy/index.js';
 export type IRLabDomain = 'expressions' | 'scenes' | 'meshes' | 'constraints';
 export interface IRLabDescriptor {

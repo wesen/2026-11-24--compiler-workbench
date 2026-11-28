@@ -19,6 +19,14 @@
  * (`argumentFor`); otherwise the rule's strength is what its 32-bit methods give.
  */
 import { fingerprint } from '../../framework/core/data.js';
+import {
+  enumerateCases,
+  exhaustiveCases,
+  sampleCases,
+  type CaseSemantics,
+  type Counterexample as TermCounterexample,
+  type Rng,
+} from '../../stdlib/term/verify.js';
 import { VALUE_SIGNATURES } from '../ir.js';
 import { patternVars, templateVars, type Guard, type Pat, type Rule, type Tpl } from './form.js';
 import { log2 } from './compile.js';
@@ -162,19 +170,6 @@ function guardsHold(guards: readonly Guard[], slot: Map<string, number>, env: Ar
   return true;
 }
 
-class Rng {
-  constructor(private s: number) {
-    if (!this.s) this.s = 0x2545f491;
-  }
-  next(): number {
-    let x = this.s;
-    x ^= x << 13;
-    x ^= x >>> 17;
-    x ^= x << 5;
-    return (this.s = x | 0);
-  }
-}
-
 // ---------- the verifier ----------
 export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
   const vars = varsOf(r),
@@ -185,7 +180,7 @@ export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
   const base = { rule: r.name, version: r.version, fingerprint: ruleFingerprint(r) };
   const show = (o: number) => (o === TRAP ? ('trap' as const) : o);
   const sides = (w: number) => [compileSide(r.lhs, slot, w), compileSide(r.rhs, slot, w)] as const;
-  const failWith = (method: MethodName, env: ArrayLike<number>, l: number, rr: number, w: number) => {
+  const counterWith = (method: MethodName, env: readonly number[], l: number, rr: number, w: number) => {
     counter = {
       bindings: Object.fromEntries(vars.map((x, i) => [x.name, env[i]])),
       lhs: show(l),
@@ -194,6 +189,37 @@ export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
       width: w,
     };
   };
+  // a campaign's disagreement, as the library reports it, recorded the way the evidence shows it
+  const failWith = (method: MethodName, c: TermCounterexample<number, number>) =>
+    counterWith(method, c.env, c.lhs, c.rhs, c.w);
+  // the campaigns run in the standard library (stdlib/term/verify.ts); Typed supplies the semantics:
+  // the variables' generated values, the noTrap side condition, the two compiled sides, and that outcomes
+  // agree exactly (a trap is the number TRAP, so a trap equals only a trap). `ofIndex` is the sign-extended
+  // form a full-range enumeration assigns (the i32 and f32 bit patterns the evaluator reads).
+  const campaign = (
+    L: (env: readonly number[]) => number,
+    R: (env: readonly number[]) => number,
+    of: (
+      x: Var,
+      w: number,
+    ) => {
+      domain: readonly number[] | null;
+      values: readonly number[];
+      draw(w: number, rng: Rng): number;
+    },
+  ): CaseSemantics<number, number> => ({
+    variables: vars.map(x => ({
+      name: x.name,
+      domain: (w: number) => of(x, w).domain,
+      values: (w: number) => of(x, w).values,
+      draw: (w: number, rng: Rng) => of(x, w).draw(w, rng),
+      ofIndex: i => i | 0,
+    })),
+    holds: (env, w) => guardsHold(guards, slot, env, w),
+    lhs: env => L(env),
+    rhs: env => R(env),
+    agree: (l, r) => l === r,
+  });
   const done = (): RuleEvidence => {
     if (counter || reason)
       return {
@@ -260,7 +286,7 @@ export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
         const trap = opW(r.lhs.op, env, w) === TRAP;
         if (guardsHold(guards, slot, env, w)) {
           if (trap) {
-            failWith('by-construction', env, TRAP, TRAP, w);
+            counterWith('by-construction', env, TRAP, TRAP, w);
             return false;
           }
         } else if (!trap) conservative++;
@@ -338,19 +364,17 @@ export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
   ) {
     const [L, R] = sides(1);
     const ok = timed('bitwise-w1', () => {
-      let cases = 0;
-      for (const env of product(vars.map(() => [0, -1]))) {
-        cases++;
-        const l = L(env),
-          rr = R(env);
-        if (l !== rr) {
-          failWith('bitwise-w1', env, l, rr, 1);
-          return { verdict: 'fail', cases };
-        }
+      const res = enumerateCases(
+        campaign(L, R, () => ({ domain: [0, -1], values: [0, -1], draw: () => 0 })),
+        1,
+      );
+      if (res.verdict === 'fail') {
+        failWith('bitwise-w1', res.counterexample!);
+        return { verdict: 'fail', cases: res.cases };
       }
       return {
         verdict: 'pass',
-        cases,
+        cases: res.cases,
         detail: 'each result bit depends only on the same bit of each operand',
       };
     });
@@ -370,19 +394,19 @@ export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
   if (widthGeneric && total8 <= (opts.maxW8 ?? 2 ** 24) && !byConstruction) {
     const [L, R] = sides(8);
     const ok = timed('exhaustive-w8', () => {
-      let cases = 0;
-      const doms = vars.map(x => domainAt(x, 8) ?? range(minOf(8), maxOf(8)));
-      for (const env of product(doms)) {
-        if (!guardsHold(guards, slot, env, 8)) continue;
-        cases++;
-        const l = L(env),
-          rr = R(env);
-        if (l !== rr) {
-          failWith('exhaustive-w8', env, l, rr, 8);
-          return { verdict: 'fail', cases };
-        }
+      const res = enumerateCases(
+        campaign(L, R, (x, w) => ({
+          domain: domainAt(x, w) ?? range(minOf(w), maxOf(w)),
+          values: [],
+          draw: () => 0,
+        })),
+        8,
+      );
+      if (res.verdict === 'fail') {
+        failWith('exhaustive-w8', res.counterexample!);
+        return { verdict: 'fail', cases: res.cases };
       }
-      return { verdict: 'pass', cases };
+      return { verdict: 'pass', cases: res.cases };
     });
     if (!ok) return done();
   }
@@ -390,41 +414,35 @@ export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
   // 6. sampled at 32 bits: boundary values crossed, then random assignments (f32: special values)
   {
     const [L, R] = sides(32);
-    const rng = new Rng(opts.seed ?? 7);
     const B = boundaryI32(),
       S = opts.specials ?? F32_SPECIALS;
     const values = (x: Var) => (x.type === 'f32' ? S : (domainAt(x, 32) ?? B));
-    const draw = (x: Var): number => {
+    const drawOf = (x: Var): ((w: number, rng: Rng) => number) => {
       const d = domainAt(x, 32);
-      if (d) return d[(rng.next() >>> 0) % d.length];
-      if (x.type === 'f32') return (rng.next() & 7) === 0 ? S[(rng.next() >>> 0) % S.length] : rng.next();
-      return (rng.next() & 3) === 0 ? rng.next() % 17 | 0 : rng.next();
+      if (d) return (_w, rng) => d[(rng.next() >>> 0) % d.length];
+      if (x.type === 'f32')
+        return (_w, rng) => ((rng.next() & 7) === 0 ? S[(rng.next() >>> 0) % S.length] : rng.next());
+      return (_w, rng) => ((rng.next() & 3) === 0 ? rng.next() % 17 : rng.next()) | 0;
     };
     const method: MethodName = hasF32 ? 'f32-special' : 'random-32';
+    const crossed = vars.reduce((n, x) => n * values(x).length, 1);
     const ok = timed(method, () => {
-      let cases = 0;
-      const test = (env: number[]): boolean => {
-        if (!guardsHold(guards, slot, env, 32)) return true;
-        cases++;
-        const l = L(env),
-          rr = R(env);
-        if (l !== rr) {
-          failWith(method, env, l, rr, 32);
-          return false;
-        }
-        return true;
-      };
-      const crossed = vars.reduce((n, x) => n * values(x).length, 1);
-      if (crossed <= 200000) {
-        for (const env of product(vars.map(values))) if (!test(env)) return { verdict: 'fail', cases };
-      } else
-        for (let i = 0; i < 200000; i++)
-          if (!test(vars.map(x => { const vs = values(x); return vs[(rng.next() >>> 0) % vs.length]; }))) return { verdict: 'fail', cases }; // prettier-ignore
-      for (let i = 0; i < (opts.random ?? 1e5); i++)
-        if (!test(vars.map(draw))) return { verdict: 'fail', cases };
+      const res = sampleCases(
+        campaign(L, R, (x, _w) => ({
+          domain: domainAt(x, 32),
+          values: values(x),
+          draw: drawOf(x),
+        })),
+        32,
+        { random: opts.random ?? 1e5, ...(opts.seed !== undefined ? { seed: opts.seed } : {}) },
+      );
+      if (res.verdict === 'fail') {
+        failWith(method, res.counterexample!);
+        return { verdict: 'fail', cases: res.cases };
+      }
       return {
         verdict: 'pass',
-        cases,
+        cases: res.cases,
         detail: `boundary values crossed (${Math.min(crossed, 200000)}), then random`,
       };
     });
@@ -436,36 +454,15 @@ export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
   if (!proved && !byConstruction && total32 <= 2 ** 32 && (total32 <= 2 ** 20 || opts.exhaustive32)) {
     const [L, R] = sides(32);
     timed('exhaustive-32', () => {
-      let cases = 0;
-      const full = vars.findIndex(x => !domainAt(x, 32));
-      const doms = vars.map(x => domainAt(x, 32));
-      const rest = product(doms.map((d, i) => (i === full ? [0] : d!)));
-      const env = new Array<number>(vars.length).fill(0);
-      for (const fixed of rest) {
-        for (let i = 0; i < vars.length; i++) env[i] = fixed[i];
-        if (full < 0) {
-          if (!guardsHold(guards, slot, env, 32)) continue;
-          cases++;
-          const l = L(env),
-            rr = R(env);
-          if (l !== rr) {
-            failWith('exhaustive-32', env, l, rr, 32);
-            return { verdict: 'fail', cases };
-          }
-          continue;
-        }
-        for (let x = 0; x < 4294967296; x++) {
-          env[full] = x | 0;
-          const l = L(env),
-            rr = R(env);
-          if (l !== rr) {
-            failWith('exhaustive-32', env, l, rr, 32);
-            return { verdict: 'fail', cases: cases + x };
-          }
-        }
-        cases += 4294967296;
+      const res = exhaustiveCases(
+        campaign(L, R, x => ({ domain: domainAt(x, 32), values: [], draw: () => 0 })),
+        32,
+      );
+      if (res.verdict === 'fail') {
+        failWith('exhaustive-32', res.counterexample!);
+        return { verdict: 'fail', cases: res.cases };
       }
-      return { verdict: 'pass', cases, detail: premise(vars) };
+      return { verdict: 'pass', cases: res.cases, detail: premise(vars) };
     });
   } else if (!proved && !byConstruction)
     methods.push({

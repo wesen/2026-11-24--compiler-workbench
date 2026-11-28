@@ -1,5 +1,5 @@
 import { canonical, fingerprint, immutable } from '../core/data.js';
-import { driveAsync, driveSync, wait, type Steps } from '../contracts/steps.js';
+import { driveAsync, driveSync, wait, type Steps } from '../core/steps.js';
 import type {
   AlgorithmContext,
   AlgorithmKind,
@@ -157,7 +157,7 @@ export function executeSync(
     `Plan ${plan?.id}`,
   );
 }
-/** The interpreter as steps (contracts/steps.ts): it yields what it would `await`. */
+/** The interpreter as steps (core/steps.ts): it yields what it would `await`. */
 export function* executeSteps(
   plan: StrategyPlan,
   registry: AlgorithmRegistry,

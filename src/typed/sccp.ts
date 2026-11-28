@@ -18,14 +18,14 @@
  * The pass is not in PASSES and its pipeline not in PIPELINES (O2 and the registries stay as they are); it runs
  * through `Program.apply(pass)` with `runPasses`.
  */
-import { cfgOf } from './analyses.js';
+import { solveFor } from '../stdlib/flow/solve-for.js';
 import { BOT, TOP, flatLattice, type Flat } from '../stdlib/lattice/lattices.js';
 import { F32_FOLDABLE, F32_RESULT } from './f32.js';
 import { typeClass, type StmtRec, type Store, type ValueRec, type WorkFn } from './model.js';
 import { PASSES, PIPELINES, typedPass, type TypedPass } from './passes.js';
 import { evalOp } from './rules/compile.js';
 import { FOLD_I32 } from './rules/fold.js';
-import { ssaOf, VIRTUAL_ENTRY, type SsaFn } from './ssa.js';
+import { VIRTUAL_ENTRY, type SsaFn } from './ssa.js';
 
 /** A constant's bits and the type it is read as; f32 values are carried as IEEE bit patterns, so both are integers. */
 export type Const = { readonly v: number; readonly t: 'i32' | 'f32' };
@@ -46,79 +46,118 @@ export interface SccpResult {
   /** Executable edges as `pred>block` ('^entry>entry' included). */
   readonly edges: ReadonlySet<string>;
   readonly blocks: ReadonlySet<string>;
+  /** Batches of scheduled equations evaluated by the solver. */
   readonly rounds: number;
 }
 
 /** The SCCP fixpoint of one function, on its SSA form. */
 export function sccpOf(st: Store, f: WorkFn, ssa: SsaFn): SccpResult {
-  const L = new Map<string, Lat>();
-  // A parameter varies (nothing above this function is known); every other name starts unknown, i.e. not yet seen to
-  // execute, which is the lattice's bottom.
-  for (const [n, d] of Object.entries(ssa.names))
-    L.set(
-      n,
-      d.kind === 'param' ? TOP : d.kind === 'init' ? constant(0, typeClass(f.locals[d.local].type)) : BOT,
-    );
-  const edges = new Set<string>([`${VIRTUAL_ENTRY}>${ssa.entry}`]),
-    blocks = new Set<string>([ssa.entry]);
-  const rpo = cfgOf(f).rpo.filter(b => !ssa.unreachable.includes(b));
-  const evalTree = (vid: string): Lat => {
+  // Intern the equation keys so repeated reads of an edge refer to the same unknown.
+  type Edge = { from: string; to: string; branches: StmtRec[] };
+  type Unknown = string | Edge | { block: string };
+  const blockOf = new Map(f.blocks.map(b => [b.id, { block: b.id }]));
+  const incoming = new Map<string, Edge[]>();
+  const outgoing = new Map<string, Edge[]>();
+  const edgesById = new Map<string, Edge>();
+  const phis = new Map(Object.values(ssa.phis).flatMap(ps => ps.map(p => [p.name, p])));
+  const unreachable = new Set(ssa.unreachable);
+  for (const b of f.blocks) {
+    if (unreachable.has(b.id)) continue;
+    for (const sid of b.stmts) {
+      const branch = st.get(sid) as StmtRec;
+      const targets =
+        branch.op === 'br' ? [branch.to!] : branch.op === 'br_if' ? [branch.then!, branch.else!] : [];
+      for (const to of new Set(targets)) {
+        const id = `${b.id}>${to}`;
+        const old = edgesById.get(id);
+        if (old) {
+          old.branches.push(branch);
+          continue;
+        }
+        const edge = { from: b.id, to, branches: [branch] };
+        edgesById.set(id, edge);
+        const preds = incoming.get(to) ?? [];
+        preds.push(edge);
+        incoming.set(to, preds);
+        const succs = outgoing.get(b.id) ?? [];
+        succs.push(edge);
+        outgoing.set(b.id, succs);
+      }
+    }
+  }
+  const executable = constant(1, 'i32');
+  type Get = (key: Unknown) => Lat;
+  const evalTree = (vid: string, get: Get): Lat => {
     const v = st.get(vid) as ValueRec;
     if (v.op === 'const') return constant(v.imm as number, v.type === 'f32' ? 'f32' : 'i32');
-    if (v.op === 'get') return L.get(ssa.uses[vid]) ?? BOT;
+    if (v.op === 'get') {
+      const name = ssa.uses[vid];
+      return name === undefined ? BOT : get(name);
+    }
     if (!FOLDS.has(v.op)) return TOP;
-    const args = v.args.map(evalTree);
+    const args = v.args.map(a => evalTree(a, get));
     if (args.some(a => a === TOP)) return TOP;
     if (args.some(a => a === BOT)) return BOT;
     const xs = args.map(a => constantOf(a)!.v);
     if ((v.op === 'div' || v.op === 'rem') && (xs[1] === 0 || (xs[0] === MIN && xs[1] === -1))) return TOP;
     return constant(evalOp(v.op, xs) | 0, F32_RESULT.has(v.op) ? 'f32' : 'i32');
   };
-  let changed = true,
-    rounds = 0;
-  const set = (name: string, val: Lat) => {
-    if (!flat.equal(L.get(name)!, val)) {
-      L.set(name, val);
-      changed = true;
-    }
-  };
-  const mark = (from: string, to: string) => {
-    const e = `${from}>${to}`;
-    if (edges.has(e)) return;
-    edges.add(e);
-    blocks.add(to);
-    changed = true;
-  };
-  while (changed) {
-    changed = false;
-    rounds++;
-    for (const b of rpo) {
-      if (!blocks.has(b)) continue;
-      for (const phi of ssa.phis[b] ?? []) {
-        let val: Lat = BOT;
-        for (const [pred, a] of Object.entries(phi.args))
-          if (edges.has(`${pred}>${b}`)) val = meet(val, L.get(a)!);
-        set(phi.name, val);
-      }
-      for (const sid of (st.get(b) as { stmts: string[] }).stmts) {
-        const s = st.get(sid) as StmtRec;
-        if (s.op === 'set') set(ssa.defs[sid], evalTree(s.value!));
-        else if (s.op === 'br') mark(b, s.to!);
-        else if (s.op === 'br_if') {
-          const c = evalTree(s.cond!),
-            k = constantOf(c);
-          // A constant condition marks the arm it takes; a varying one (the top) both arms; an unknown one neither,
-          // because until its name is a value the branch is not yet seen to execute.
-          if (k) mark(b, k.v !== 0 ? s.then! : s.else!);
-          else if (c === TOP) {
-            mark(b, s.then!);
-            mark(b, s.else!);
-          }
-        }
-      }
-    }
+  const names = Object.keys(ssa.names);
+  const definitions = new Map<string, string[]>();
+  for (const name of names) {
+    const block = ssa.names[name].block;
+    const defs = definitions.get(block) ?? [];
+    defs.push(name);
+    definitions.set(block, defs);
   }
-  return { values: L, edges, blocks, rounds };
+  const solution = solveFor<Unknown, Lat>(
+    {
+      lattice: flat,
+      rhs(key, get) {
+        if (typeof key !== 'string') {
+          if ('block' in key) {
+            let value = key.block === ssa.entry ? executable : BOT;
+            for (const edge of incoming.get(key.block) ?? []) value = meet(value, get(edge));
+            if (value !== BOT) {
+              // Evaluate definitions and follow only executable successors. A later edge change
+              // reschedules this block even when the block itself was already executable.
+              for (const name of definitions.get(key.block) ?? []) get(name);
+              for (const edge of outgoing.get(key.block) ?? [])
+                if (get(edge) !== BOT) get(blockOf.get(edge.to)!);
+            }
+            return value;
+          }
+          if (get(blockOf.get(key.from)!) === BOT) return BOT;
+          for (const branch of key.branches) {
+            if (branch.op === 'br') return executable;
+            const c = evalTree(branch.cond!, get);
+            const k = constantOf(c);
+            if (c === TOP || (k && key.to === (k.v ? branch.then : branch.else))) return executable;
+          }
+          return BOT;
+        }
+        const d = ssa.names[key];
+        if (d.kind === 'param') return TOP;
+        if (d.kind === 'init') return constant(0, typeClass(f.locals[d.local].type));
+        if (d.kind === 'set') return get(blockOf.get(d.block)!) === BOT ? BOT : evalTree(d.value!, get);
+        let value: Lat = BOT;
+        for (const [pred, arg] of Object.entries(phis.get(key)!.args)) {
+          const edge = edgesById.get(`${pred}>${d.block}`);
+          if (pred === VIRTUAL_ENTRY || (edge && get(edge) !== BOT)) value = meet(value, get(arg));
+        }
+        return value;
+      },
+    },
+    [blockOf.get(ssa.entry)!, ...(definitions.get(VIRTUAL_ENTRY) ?? [])],
+    { evaluations: Infinity },
+  );
+  const values = new Map(names.map(n => [n, solution.values.get(n) ?? BOT]));
+  const edges = new Set([`${VIRTUAL_ENTRY}>${ssa.entry}`]);
+  for (const [id, edge] of edgesById) if (solution.values.get(edge) === executable) edges.add(id);
+  const blocks = new Set(
+    [...blockOf.values()].filter(b => solution.values.get(b) === executable).map(b => b.block),
+  );
+  return { values, edges, blocks, rounds: solution.rounds };
 }
 
 /** The `set` statements (and initial values) a constant name rests on, through phi arguments on executable edges. */
@@ -149,10 +188,11 @@ export const sccp: TypedPass = typedPass({
   name: 'sccp',
   about:
     'sparse conditional constant propagation: a read whose SSA name is constant on the executable edges becomes that constant',
+  needs: { ssa: 'ssa' },
   writes: ['values'],
   preserves: ['cfg', 'dominators', 'loops'],
-  body({ st, f, tx }) {
-    const ssa = ssaOf(st, f),
+  body({ st, f, tx, facts }) {
+    const ssa = facts.ssa!,
       res = sccpOf(st, f, ssa);
     for (const b of f.blocks) {
       if (!res.blocks.has(b.id)) continue;

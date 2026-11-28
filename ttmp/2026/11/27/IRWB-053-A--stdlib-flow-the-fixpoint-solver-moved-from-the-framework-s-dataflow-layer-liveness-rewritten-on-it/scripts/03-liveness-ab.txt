@@ -1,0 +1,6 @@
+bytecode-vm	old median 0.198 min 0.119	new median 0.493 min 0.403
+f32-dsp	old median 0.633 min 0.367	new median 0.615 min 0.500
+lz-roundtrip	old median 0.955 min 0.653	new median 0.847 min 0.685
+regex-nfa	old median 1.514 min 1.050	new median 1.172 min 0.788
+sha-chacha	old median 1.381 min 1.138	new median 1.155 min 0.960
+15 fns, 200 rounds: TOTAL old 4.68ms (min 3.33)	new 4.28ms (min 3.34)	ratio median 0.91	min 1.00

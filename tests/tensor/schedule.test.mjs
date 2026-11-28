@@ -1,13 +1,12 @@
-// IRWB-033-D: the schedule IR, its passes' legality, the order analysis and the printer, without the GPU.
+// IRWB-033-D, IRWB-057: the schedule IR, the legality of its plans and the printer, without the GPU.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { createIRArtifact } from '../../dist/framework/ir/index.js';
-import { applyNativePassSync, definePass } from '../../dist/framework/passes/index.js';
+import { applyTransformationSync } from '../../dist/framework/passes/index.js';
 import { compileTix, cudaSource } from '../../dist/tensor/index.js';
-import { planFusion } from '../../dist/tensor/fusion.js';
 import * as S from '../../dist/tensor/schedule.js';
-import { lowerSchedule, scheduleFunction } from '../../dist/tensor/strategy.js';
+import { chooseFusion, chooseLoops, lowerSchedule, scheduleFunction } from '../../dist/tensor/strategy.js';
 import { variantForm } from '../../dist/tensor/cuda-contraction.js';
 
 const corpus = name =>
@@ -42,12 +41,9 @@ test('the corpus schedules: contractions leave block mode and become tiled kerne
         ],
       );
     }
-    assert.ok(
-      Object.values(S.accumulationOrder(s))
-        .flat()
-        .every(o => o.startsWith('lexicographic(')),
-      name,
-    );
+    // IRWB-057: every variant keeps each output's accumulation order (was: `accumulationOrder` by simulation)
+    for (const k of s.kernels.filter(k => k.kind === 'contraction'))
+      for (const v of k.variants) assert.equal(S.accumulationViolation(v), undefined, name);
   }
   const conv = lowerSchedule(corpus('conv2d'), true).value.kernels[0];
   assert.deepEqual(conv.dims, { b: [], m: ['i0', 'i2', 'i3'], n: ['i1'], r: ['i4', 'i5', 'i6'] });
@@ -61,8 +57,10 @@ test('the corpus schedules: contractions leave block mode and become tiled kerne
     score.variants[1].stages.map(s => s.fast),
     ['r', 'r'],
   );
-  // fuse: false is the unfused plan, no pass applied
-  assert.deepEqual(scheduleFunction(corpus('mlp'), planFusion(corpus('mlp')), false).steps, []);
+  // fuse: false is the unfused schedule: the plan is not run
+  const unfused = scheduleFunction(corpus('mlp'), false);
+  assert.equal(unfused.execution, undefined);
+  assert.deepEqual(summary(unfused.schedule.value), ['pointwise:h', 'pointwise:g', 'pointwise:y']);
 });
 
 test('tileable contractions are recognised from the IR, and others say why not', () => {
@@ -82,67 +80,94 @@ test('tileable contractions are recognised from the IR, and others say why not',
   assert.deepEqual(batched.dims, { b: ['i0'], m: ['i1'], n: ['i2'], r: ['i3'] });
 });
 
-test('each pass refuses an illegal step before it runs, with the reason', () => {
-  let s = S.initialSchedule(corpus('matmul'), planFusion(corpus('matmul')));
-  assert.throws(() => S.applyStep(S.isolatePass, s, {}), {
-    code: 'illegal',
-    message: /no block-mode kernel/,
-  });
-  s = S.applyStep(S.contractionPass, s, { kernel: 'k0' }).artifact;
-  s = S.applyStep(S.variantPass, s, { kernel: 'k0' }).artifact;
-  const v = { kernel: 'k0', variant: 1 };
-  s = S.applyStep(S.splitPass, s, { ...v, loop: 'r.0', factor: 8 }).artifact;
-  const refuse = (pass, params, pattern) =>
-    assert.throws(() => S.applyStep(pass, s, params), { code: 'illegal', message: pattern });
-  refuse(S.splitPass, { ...v, loop: 'r.1', factor: 3 }, /3 does not divide 8/);
-  refuse(
-    S.reorderPass,
-    { ...v, order: ['b.0', 'm.0', 'n.0', 'r.1', 'r.0'] },
-    /reduction loops r.0,r.1 would become r.1,r.0/,
+// IRWB-057: the per-pass `legal` checks became `loopsEligible`, one check of the whole loop plan. The reasons a
+// plan is refused for are the ones the passes gave.
+const matmulPlan = () => {
+  const fn = corpus('matmul');
+  const fused = applyTransformationSync(S.fusePass, S.initialSchedule(fn), { params: chooseFusion(fn) });
+  // matmul is one statement: the fusion plan is the unfused one, so nothing changed
+  assert.equal(fused.changed, false);
+  return { schedule: fused.artifact, plan: structuredClone(chooseLoops(fused.artifact.value)) };
+};
+test('eligible refuses an illegal loop plan before anything is prepared, with the reason', () => {
+  const { schedule, plan } = matmulPlan();
+  assert.deepEqual(S.loopsEligible(schedule.value, plan), { ok: true });
+  const refuse = (change, pattern) => {
+    const changed = structuredClone(plan);
+    change(changed.kernels[0], changed);
+    let prepared = false;
+    const probe = { ...S.loopsPass, prepare: () => ((prepared = true), undefined) };
+    assert.throws(() => applyTransformationSync(probe, schedule, { params: changed }), {
+      code: 'illegal',
+      message: pattern,
+    });
+    assert.equal(prepared, false);
+  };
+  const loopOf = (k, variant, id) => k.variants[variant].loops.find(l => l.id === id);
+  refuse(k => {
+    const loops = k.variants[1].loops;
+    const [i, j] = [loops.findIndex(l => l.id === 'r.0'), loops.findIndex(l => l.id === 'r.1')];
+    [loops[i], loops[j]] = [loops[j], loops[i]];
+  }, /k0 variant 1: loop r.1 is outside the loops that order it/);
+  refuse(k => (loopOf(k, 0, 'r.0').bind = 'thread'), /r.0 is bound to thread.*reassociation/);
+  refuse(k => (loopOf(k, 1, 'r.1').bind = 'block.z'), /block.z is bound twice/);
+  refuse(k => (loopOf(k, 1, 'm.0').bind = 'unroll'), /m.0 is bound to unroll and has no fixed number/);
+  refuse(k => (loopOf(k, 1, 'm.0').factor = 4), /m.0 has a fixed number of iterations/);
+  refuse(k => (k.variants[1].stages[0].at = 'm.0'), /m.0 is not a reduction loop/);
+  refuse(k => (k.variants[1].stages[1].operand = 'm'), /the m operand is staged twice/);
+  refuse(k => (loopOf(k, 1, 'r.1').factor = 1024), /the tile \(\d+ floats\) does not fit/);
+  refuse(k => (k.select = [{ variant: 1, minBlocks: 2 }]), /last entry/);
+  refuse(k => (k.select = [{ variant: 7, minBlocks: 0 }]), /names a missing variant/);
+  refuse(k => (k.kernel = 'k9'), /k9 is not a pointwise kernel/);
+  refuse((k, p) => p.kernels.push(structuredClone(k)), /k0 is scheduled twice/);
+  // a kernel without a tileable contraction has no loop nest to plan
+  const softmax = lowerSchedule(corpus('softmax'), true).value;
+  assert.match(
+    S.loopsEligible(softmax, { kernels: [{ ...plan.kernels[0], kernel: 'k0' }] }).reason,
+    /k0 is not a pointwise kernel/,
   );
-  refuse(S.bindPass, { ...v, loop: 'r.1', target: 'thread.x' }, /reassociate/);
-  refuse(S.bindPass, { ...v, loop: 'm.0', target: 'unroll' }, /no fixed number/);
-  refuse(S.stagePass, { ...v, operand: 'm', at: 'm.0', fast: 'r' }, /not a reduction loop/);
-  refuse(S.selectPass, { kernel: 'k0', rule: [{ variant: 1, minBlocks: 2 }] }, /last entry/);
-  const split = S.applyStep(S.splitPass, s, { ...v, loop: 'r.0', factor: 2 });
-  const entry = split.correspondence.entries.find(e => e.relation === 'split');
-  assert.deepEqual(entry, { from: ['k0/v1/r.0'], to: ['k0/v1/r.0', 'k0/v1/r.1'], relation: 'split' });
-  assert.ok(split.correspondence.entries.some(e => e.relation === 'renamed' && e.to[0] === 'k0/v1/r.2'));
 });
 
-test('the order gate rejects a step that changes any output accumulation order, which legality would not see', () => {
-  let s = S.initialSchedule(corpus('matmul'), planFusion(corpus('matmul')));
-  s = S.applyStep(S.contractionPass, s, { kernel: 'k0' }).artifact;
-  s = S.applyStep(S.variantPass, s, { kernel: 'k0' }).artifact;
-  s = S.applyStep(S.splitPass, s, { kernel: 'k0', variant: 1, loop: 'r.0', factor: 4 }).artifact;
-  // a rogue pass that swaps the factors of r.0 and r.1 (r = r.0 + 4 r.1 instead of 4 r.0 + r.1): no loop moves
-  const rogue = definePass({
-    id: 'rogue',
-    version: '1',
-    description: 'swap reduction levels',
-    ir: S.ScheduleIR,
-    adapter: S.scheduleAdapter,
-    writes: { entities: ['kernel', 'variant', 'loop', 'stage'], relations: ['contains'] },
-    run: ({ before }) => {
-      const value = structuredClone(before.value);
-      const loops = value.kernels[0].variants[1].loops;
-      const r0 = loops.find(l => l.id === 'r.0'),
-        r1 = loops.find(l => l.id === 'r.1');
-      Object.assign(r0, { id: 'r.1', level: 1, factor: 4 });
-      Object.assign(r1, { id: 'r.0', level: 0, factor: null });
-      return { native: value };
-    },
-  });
-  assert.throws(() => applyNativePassSync(rogue, s, S.orderGate), {
+// IRWB-057: the order gate (`accumulationOrder` compared before and after each pass, by simulating three extent
+// vectors) is gone. `eligible` rejects the plan; `conforms` rejects a `prepare` that does not produce the plan.
+test('a prepare that does not realize the plan is rejected, and the plan it realized is not eligible', () => {
+  const { schedule, plan } = matmulPlan();
+  // a rogue prepare that swaps the levels of r.0 and r.1 (r = r.0 + 8 r.1 instead of 8 r.0 + r.1): no loop moves
+  const swap = value => {
+    const loops = value.kernels[0].variants[1].loops;
+    const r0 = loops.find(l => l.id === 'r.0'),
+      r1 = loops.find(l => l.id === 'r.1');
+    Object.assign(r0, { id: 'r.1', level: 1, factor: 8, bind: 'unroll' });
+    Object.assign(r1, { id: 'r.0', level: 0, factor: null, bind: 'serial' });
+    return value;
+  };
+  const honest = S.loopsPass.prepare({ before: schedule, params: plan });
+  const rogue = { ...S.loopsPass, prepare: () => ({ native: swap(structuredClone(honest.native)) }) };
+  assert.throws(() => applyTransformationSync(rogue, schedule, { params: plan }), {
     code: 'contractRejected',
-    message: /accumulation order of y changed.*r in the order 0 4 8 1 5 9/,
+    message: /the kernels are not the loop nests of the plan/,
   });
+  assert.equal(applyTransformationSync(S.loopsPass, schedule, { params: plan }).changed, true);
   assert.match(
-    S.orderViolation({
-      loops: [{ id: 'r.0', dim: 'r', level: 0, factor: null, bind: 'thread.x' }],
-      stages: [],
-    }),
-    /bound to thread.x/,
+    S.loopsEligible(schedule.value, swap(structuredClone(plan))).reason,
+    /loop r.1 is outside the loops that order it/,
+  );
+  // the same for fusion: softmax's four statements in one kernel is the plan
+  const fn = corpus('softmax');
+  const initial = S.initialSchedule(fn);
+  const apart = {
+    ...S.fusePass,
+    prepare: () => ({ native: { fn, kernels: [...initial.value.kernels].reverse() } }),
+  };
+  assert.throws(() => applyTransformationSync(apart, initial, { params: chooseFusion(fn) }), {
+    code: 'contractRejected',
+    message: /the kernels are not the groups of the plan/,
+  });
+  const fused = applyTransformationSync(S.fusePass, initial, { params: chooseFusion(fn) });
+  assert.deepEqual(summary(fused.artifact.value), ['rows:m,e,s,y']);
+  assert.deepEqual(
+    fused.correspondence.entries.find(e => e.relation === 'fused'),
+    { from: ['k0', 'k1', 'k2', 'k3'], to: ['k0'], relation: 'fused' },
   );
 });
 
@@ -159,4 +184,26 @@ test('the printer only prints: a schedule outside its form is rejected, fuse: fa
   assert.equal([...source.matchAll(/__global__/g)].length, 1);
   assert.match(source, /__launch_bounds__\(V == 1 \? 256 : V == 2 \? 64 : V == 3 \? 256 : 256\) k0/);
   assert.match(source, /static int variant_mode = -1;/);
+});
+
+test('launch coverage diagnoses a shadowed arm and an uncovered launch', () => {
+  const fn = corpus('matmul');
+  const schedule = S.initialSchedule(fn).value;
+  const plan = structuredClone(chooseLoops(schedule));
+  const kernel = plan.kernels[0];
+  kernel.select = [{ variant: 1, minBlocks: 1 }, ...kernel.select];
+  assert.match(S.loopsEligible(schedule, plan).reason, /k0: unreachable launch arm 1 \(variant 1\)/);
+  kernel.select = kernel.select.slice(1, -1);
+  assert.match(S.loopsEligible(schedule, plan).reason, /k0: uncovered launch with no tiled variant fitting/);
+});
+
+test('schedule validation reports a gate with no reachable fallback', () => {
+  const schedule = structuredClone(lowerSchedule(corpus('softmax'), true).value);
+  const { guard } = schedule.kernels[0].select[0];
+  guard.fullRow = 1;
+  guard.heavy = [];
+  assert.throws(
+    () => createIRArtifact(S.scheduleAdapter, 'always-fused', schedule),
+    /unreachable unfused launch arm/,
+  );
 });

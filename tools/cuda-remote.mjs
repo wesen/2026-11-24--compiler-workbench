@@ -11,6 +11,10 @@
 // --timed takes an exclusive lock on the GPU (flock ~/irwb-cuda/.gpu.lock) for the run, so concurrent timed
 // users do not disturb each other's timings. Untimed runs do not wait for it.
 // Prints one JSON object: { host, hash, compiled, compileMs, runMs, exit, stdout, stderr, outputs }.
+// Each ssh step is retried (IRWB-054) when the connection itself is what failed: sshd on the GPU machine allows ten
+// unauthenticated connections at a time (MaxStartups 10:30:100) and drops the rest, and a GPU test suite holds more
+// than that open at once. The retry repeats the whole job in a fresh remote directory, so a dropped run cannot leave a
+// half-written result behind; failures of the remote commands themselves (a compile, the program) are not retried.
 // Environment: CUDA_REMOTE_HOST (default manuel@bling, the Tailscale name; bling.local resolves only on the home
 // LAN), CUDA_REMOTE_NVCC (default /usr/local/cuda-13.0/bin/nvcc).
 // Inside the Codex sandbox, ssh needs network access (-c sandbox_workspace_write.network_access=true); without it,
@@ -60,75 +64,111 @@ for (const f of files) {
   h.update(JSON.stringify([f, bytes.length])).update(bytes);
 }
 const hash = h.digest('hex');
-const remote = 'irwb-cuda/run/' + randomUUID();
 const ssh = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', '--', host];
 const q = s => "'" + String(s).replaceAll("'", "'\\''") + "'";
 
+// A connection sshd dropped, as opposed to a command that failed: the remote work never started, so the job can be
+// repeated. ssh reports these on stderr and exits 255; the same errors also kill a channel that was already open.
+const dropped =
+  /kex_exchange_identification|ssh_exchange_identification|Connection closed|Connection reset|Connection timed out|Connection refused|No route to host|Network is unreachable|Broken pipe|closed by remote host|client_loop|Timeout, server|Control socket/;
+class StrayConnection extends Error {}
+const transportFailure = (error, text, status) =>
+  ['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'ENETUNREACH', 'EHOSTUNREACH', 'EPIPE'].includes(error?.code) ||
+  dropped.test(text) ||
+  (status === 255 && !text);
+function sshCall(what, args, options) {
+  const r = spawnSync('ssh', [...ssh, ...args], options);
+  if (r.status === 0) return r;
+  const said = [r.error?.message, r.stderr?.toString(), r.stdout?.toString()]
+    .filter(Boolean)
+    .join('\n')
+    .trim();
+  const message = `${what}: ${said || 'exit ' + r.status}`;
+  throw transportFailure(r.error, said, r.status) ? new StrayConnection(message) : new Error(message);
+}
+const attempts = 6;
+const sleep = ms => new Promise(done => setTimeout(done, ms));
+
 const tar = spawnSync('tar', ['-C', dir, '-cf', '-', '--', ...files], { maxBuffer: 1 << 30 });
 if (tar.status !== 0) throw new Error('tar: ' + (tar.error ?? tar.stderr));
-let cleaned = false;
-try {
-  const put = spawnSync('ssh', [...ssh, `mkdir -p ~/${remote} && tar -C ~/${remote} -xf -`], {
-    input: tar.stdout,
-  });
-  if (put.status !== 0) throw new Error('ssh copy: ' + (put.error ?? put.stderr));
-
-  // Hold the compile lock until the cached binary is linked into this job.
-  const lock = opts.includes('--timed') ? 'flock ~/irwb-cuda/.gpu.lock ' : '';
-  const script = [
-    'set -e',
-    `cd ~/${remote}`,
-    `cache=~/irwb-cuda/build/${hash}`,
-    'compiled=0; c0=$(date +%s%N)',
-    'mkdir -p "$cache"',
-    'exec 9>"$cache/.lock"',
-    'flock 9',
-    'if [ ! -x "$cache/prog" ]; then',
-    `  ${q(nvcc)} -O3 ${q('-arch=' + arch)} -o prog.tmp main.cu ${linkFlags.map(q).join(' ')} || exit 97`,
-    '  mv prog.tmp "$cache/prog"',
-    '  compiled=1',
-    'fi',
-    'ln "$cache/prog" prog',
-    'exec 9>&-',
-    'c1=$(date +%s%N); mkdir -p out',
-    `r0=$(date +%s%N); status=0; ${lock}./prog ${progArgs.map(q).join(' ')} || status=$?; r1=$(date +%s%N)`,
-    'printf "\\n@@meta %s %s %s %s\\n" "$compiled" "$(( (c1 - c0) / 1000000 ))" "$(( (r1 - r0) / 1000000 ))" "$status"',
-  ].join('\n');
-  const run = spawnSync('ssh', [...ssh, 'bash -s'], { input: script, maxBuffer: 1 << 28, encoding: 'utf8' });
-  const meta = run.status === 0 && /\n@@meta (\d) (\d+) (\d+) (\d+)\n?$/.exec(run.stdout ?? '');
-  const result = {
-    host,
-    hash,
-    compiled: meta ? meta[1] === '1' : false,
-    compileMs: meta ? Number(meta[2]) : null,
-    runMs: meta ? Number(meta[3]) : null,
-    exit: meta ? Number(meta[4]) : run.status || 1,
-    stdout: meta ? run.stdout.slice(0, meta.index) : (run.stdout ?? ''),
-    stderr: run.error?.message ?? run.stderr ?? '',
-    outputs: [],
+for (let attempt = 1; ; ++attempt) {
+  const remote = 'irwb-cuda/run/' + randomUUID();
+  // Removed by the fetch below, on success; a failed attempt removes its own directory, and says so only if it could
+  // not: a cleanup connection is dropped like any other.
+  let cleaned = false;
+  const cleanUp = async () => {
+    for (let i = 0; !cleaned && i < 3; ++i) {
+      if (spawnSync('ssh', [...ssh, `rm -rf ~/${remote}`], { stdio: 'ignore', timeout: 60_000 }).status === 0)
+        return;
+      await sleep(150 * 2 ** i * (0.75 + Math.random() / 2));
+    }
   };
+  try {
+    sshCall('ssh copy', [`mkdir -p ~/${remote} && tar -C ~/${remote} -xf -`], { input: tar.stdout });
 
-  if (meta) {
-    const get = spawnSync('ssh', [...ssh, `tar -C ~/${remote}/out -cf - . && rm -rf ~/${remote}`], {
-      maxBuffer: 1 << 30,
-    });
-    if (get.status !== 0) throw new Error('ssh fetch: ' + (get.error ?? get.stderr));
-    cleaned = true;
-    const out = join(dir, 'out');
-    mkdirSync(out, { recursive: true });
-    execFileSync('tar', ['-C', out, '-xf', '-'], { input: get.stdout });
-    const collect = d => {
-      for (const entry of readdirSync(d)) {
-        const p = join(d, entry);
-        if (statSync(p).isDirectory()) collect(p);
-        else result.outputs.push(relative(out, p));
-      }
+    // Hold the compile lock until the cached binary is linked into this job.
+    const lock = opts.includes('--timed') ? 'flock ~/irwb-cuda/.gpu.lock ' : '';
+    const script = [
+      'set -e',
+      `cd ~/${remote}`,
+      `cache=~/irwb-cuda/build/${hash}`,
+      'compiled=0; c0=$(date +%s%N)',
+      'mkdir -p "$cache"',
+      'exec 9>"$cache/.lock"',
+      'flock 9',
+      'if [ ! -x "$cache/prog" ]; then',
+      `  ${q(nvcc)} -O3 ${q('-arch=' + arch)} -o prog.tmp main.cu ${linkFlags.map(q).join(' ')} || exit 97`,
+      '  mv prog.tmp "$cache/prog"',
+      '  compiled=1',
+      'fi',
+      'ln "$cache/prog" prog',
+      'exec 9>&-',
+      'c1=$(date +%s%N); mkdir -p out',
+      `r0=$(date +%s%N); status=0; ${lock}./prog ${progArgs.map(q).join(' ')} || status=$?; r1=$(date +%s%N)`,
+      'printf "\\n@@meta %s %s %s %s\\n" "$compiled" "$(( (c1 - c0) / 1000000 ))" "$(( (r1 - r0) / 1000000 ))" "$status"',
+    ].join('\n');
+    const run = sshCall('ssh run', ['bash -s'], { input: script, maxBuffer: 1 << 28, encoding: 'utf8' });
+    const meta = run.status === 0 && /\n@@meta (\d) (\d+) (\d+) (\d+)\n?$/.exec(run.stdout ?? '');
+    const result = {
+      host,
+      hash,
+      compiled: meta ? meta[1] === '1' : false,
+      compileMs: meta ? Number(meta[2]) : null,
+      runMs: meta ? Number(meta[3]) : null,
+      exit: meta ? Number(meta[4]) : run.status || 1,
+      stdout: meta ? run.stdout.slice(0, meta.index) : (run.stdout ?? ''),
+      stderr: run.error?.message ?? run.stderr ?? '',
+      outputs: [],
     };
-    collect(out);
-    result.outputs.sort();
+
+    if (meta) {
+      const get = sshCall('ssh fetch', [`tar -C ~/${remote}/out -cf - . && rm -rf ~/${remote}`], {
+        maxBuffer: 1 << 30,
+      });
+      cleaned = true;
+      const out = join(dir, 'out');
+      mkdirSync(out, { recursive: true });
+      execFileSync('tar', ['-C', out, '-xf', '-'], { input: get.stdout });
+      const collect = d => {
+        for (const entry of readdirSync(d)) {
+          const p = join(d, entry);
+          if (statSync(p).isDirectory()) collect(p);
+          else result.outputs.push(relative(out, p));
+        }
+      };
+      collect(out);
+      result.outputs.sort();
+    }
+    process.stdout.write(JSON.stringify(result) + '\n');
+    if (result.exit !== 0) process.exitCode = 1;
+    await cleanUp();
+    break;
+  } catch (error) {
+    await cleanUp();
+    if (!(error instanceof StrayConnection) || attempt === attempts) throw error;
+    // Back off past the throttling burst: sshd drops for as long as the surplus connections keep arriving.
+    const delay = Math.round(Math.min(4000, 250 * 2 ** (attempt - 1)) * (0.75 + Math.random() / 2));
+    process.stderr.write(`cuda-remote: ${error.message.split('\n')[0]}; attempt ${attempt}/${attempts}, retrying in ${delay} ms\n`);
+    await sleep(delay);
   }
-  process.stdout.write(JSON.stringify(result) + '\n');
-  if (result.exit !== 0) process.exitCode = 1;
-} finally {
-  if (!cleaned) spawnSync('ssh', [...ssh, `rm -rf ~/${remote}`], { stdio: 'ignore' });
 }

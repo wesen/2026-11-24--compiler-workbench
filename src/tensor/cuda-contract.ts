@@ -11,25 +11,37 @@ import {
   type DifferentialEvidence,
 } from '../framework/contracts/index.js';
 import type { Artifact } from '../framework/core/types.js';
+import {
+  composeCorrespondence,
+  createIRArtifact,
+  defineAdapter,
+  makeCorrespondence,
+  openIR,
+  type CorrespondenceEntry,
+  type IREntity,
+} from '../framework/ir/index.js';
+import {
+  applyTransformation,
+  PassError,
+  transformation,
+  type CrossResult,
+} from '../framework/passes/index.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
-import { emitSchedule, takesGate, variantCount } from './cuda-source.js';
-import { lowerSchedule } from './strategy.js';
+import { emitScheduleProgram, type CudaKernel } from './cuda-source.js';
+import { scheduleFunction } from './strategy.js';
 import type { BufferValue } from './evaluate.js';
-import { TixIR } from './ir.js';
+import { TixIR, adapter } from './ir.js';
 import { selectFunction, type Module } from './model.js';
+import { scheduleAdapter, type Schedule } from './schedule.js';
 
-interface CudaKernel {
-  name: string;
-  mapping: 'thread' | 'block' | 'tiled';
-  statements: string[];
-  /** The host decides at launch between this kernel's block mode and its statements one by one (IRWB-030-E). */
-  gated?: boolean;
-}
-interface CudaUnit {
+export interface CudaUnit {
   fn: string;
   source: string;
-  /** The fusion plan the source follows: which statements each kernel computes (IRWB-029-D). */
+  /**
+   * The program's manifest (cuda-source.ts): which statements each kernel computes (IRWB-029-D), which kernels
+   * have a gate (IRWB-030-E) and how many variants a contraction kernel has.
+   */
   kernels: CudaKernel[];
 }
 
@@ -49,6 +61,7 @@ export const CudaIR = defineIR<CudaUnit>({
           typeof k?.name !== 'string' ||
           !['thread', 'block', 'tiled'].includes(k.mapping) ||
           !['boolean', 'undefined'].includes(typeof k.gated) ||
+          !(k.variants === undefined || (Number.isSafeInteger(k.variants) && k.variants > 0)) ||
           !Array.isArray(k.statements) ||
           !k.statements.length ||
           k.statements.some(s => typeof s !== 'string'),
@@ -56,6 +69,22 @@ export const CudaIR = defineIR<CudaUnit>({
     )
       throw Error('Invalid CUDA kernel list');
   },
+});
+const kernelEntities = (unit: CudaUnit): IREntity[] =>
+  unit.kernels.map(({ name, ...attributes }) => ({ id: name, kind: 'kernel', attributes }));
+/** IRWB-061: the unit as entities, one per kernel of its manifest, so the runner can build and relate it. */
+export const cudaAdapter = defineAdapter<CudaUnit>({
+  id: 'tensor.cuda.adapter',
+  version: '1',
+  description: 'The kernels of a CUDA translation unit, from its manifest',
+  kind: CudaIR.id,
+  schemaVersion: CudaIR.version,
+  validate: value => CudaIR.validate(value),
+  relationKinds: {},
+  entities: kernelEntities,
+  relations: () => [],
+  resolve: (unit, id) => kernelEntities(unit).find(e => e.id === id),
+  describe: (_, id) => ({ label: id }),
 });
 const FunctionName = defineType<string>({
   id: 'tensor.function-name',
@@ -78,6 +107,74 @@ const Fuse = defineType<boolean>({
 export function cudaArtifact(fn: string, source: string, kernels: CudaKernel[] = []): Artifact<CudaUnit> {
   return createArtifact(CudaIR, 'tix-cuda/' + fn, { fn, source, kernels });
 }
+
+/** The parameters of one lowering: the function, and whether its statements are fused into fewer kernels. */
+export interface CudaLoweringParams {
+  readonly fn: string;
+  readonly fuse: boolean;
+}
+const ref = (a: Artifact) => ({ artifact: a.id, revision: a.revision });
+const ids = (entities: readonly IREntity[]) => entities.map(e => e.id);
+const scheduleIds = (s: Artifact<Schedule>) => ids(openIR(s, scheduleAdapter).graph().entities);
+/**
+ * IRWB-033-D, IRWB-061: Tix -> schedule IR (one pointwise kernel per statement, then the checked fusion and loop
+ * passes) -> CUDA source; the schedule's kernels are the CUDA kernels. The correspondence from Tix entities to
+ * CUDA kernels is composed from the four links: statements to the initial kernels, each schedule pass's own
+ * (from the runner), and schedule kernels to the emitted kernels of the same name.
+ */
+function lowerTix(
+  baseline: Artifact<Module>,
+  entities: readonly IREntity[],
+  { fn, fuse }: CudaLoweringParams,
+): CrossResult<CudaUnit> {
+  const f = selectFunction(baseline.value, fn);
+  const { initial, schedule: scheduled, results } = scheduleFunction(f, fuse);
+  const { source, kernels } = emitScheduleProgram(scheduled.value);
+  const output = { fn, source, kernels },
+    outputId = 'tix-cuda/' + fn;
+  const unit = createIRArtifact(cudaAdapter, outputId, output);
+  const chain = [
+    makeCorrespondence(
+      ref(baseline),
+      ref(initial),
+      ids(entities),
+      scheduleIds(initial),
+      initial.value.kernels.map(k => ({
+        from: k.group.statements.map(s => fn + '/' + s),
+        to: [k.name],
+        relation: 'scheduled',
+      })),
+    ),
+    ...results.flatMap(r => (r.changed ? [r.correspondence!] : [])),
+    makeCorrespondence(
+      ref(scheduled),
+      ref(unit),
+      scheduleIds(scheduled),
+      kernels.map(k => k.name),
+      kernels.map(k => ({ from: [k.name], to: [k.name], relation: 'emitted' })),
+    ),
+  ];
+  const composed = chain.reduce((a, b) => composeCorrespondence(a, b));
+  // The composed relation, written one entry per kernel (a grouped entry denotes every pair of its two sides, so
+  // this is the same relation). The runner completes the rest: statements of other functions and parameters as
+  // removed.
+  const correspondence = kernels.flatMap(k => {
+    const mapped = composed.entries.filter(e => e.from.length && e.to.includes(k.name));
+    return mapped.length
+      ? [
+          {
+            from: [...new Set(mapped.flatMap(e => e.from))],
+            to: [k.name],
+            relation: [...new Set(mapped.map(e => e.relation))].join(' | '),
+          },
+        ]
+      : [];
+  });
+  return { output, outputId, correspondence, edits: kernels.length };
+}
+/** What a supplied unit's manifest claims: each kernel and the statements it computes. */
+const manifestEntries = ({ fn, kernels }: CudaUnit): CorrespondenceEntry[] =>
+  kernels.map(k => ({ from: k.statements.map(s => fn + '/' + s), to: [k.name], relation: 'emitted' }));
 
 /** The lowering as a framework correspondence: each kernel and the Tix statement entities it computes. */
 export function kernelCorrespondence(
@@ -130,15 +227,20 @@ interface Mode {
   gate?: Gate;
   variant?: number;
 }
-function modesOf(source: string): Mode[] {
-  const gate = takesGate(source),
-    variants = variantCount(source);
-  if (variants)
-    return Array.from({ length: variants }, (_, variant) => ({
-      variant,
-      ...(gate && { gate: variant % 2 ? ('unfused' as const) : ('fused' as const) }),
-    }));
-  return gate ? [{ gate: 'fused' }, { gate: 'unfused' }] : [{}];
+function modesOf(kernels: readonly CudaKernel[]): Mode[] {
+  const gates = new Set<NonNullable<Mode['gate']>>();
+  const variants = new Set<number>();
+  for (const kernel of kernels)
+    for (const arm of kernel.select ?? []) {
+      if ('gate' in arm) gates.add(arm.gate);
+      else variants.add(arm.variant);
+    }
+  const gateModes = [...gates];
+  const variantModes = [...variants].sort((a, b) => a - b);
+  return Array.from({ length: Math.max(1, gateModes.length, variantModes.length) }, (_, i) => ({
+    ...(gateModes.length && { gate: gateModes[i % gateModes.length] }),
+    ...(variantModes.length && { variant: variantModes[i % variantModes.length] }),
+  }));
 }
 type CudaSample = ReturnType<typeof cudaCases>[number] & Mode;
 
@@ -160,7 +262,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     cases: ({ baseline, fn, subject }, random): CudaSample[] => {
       const samples = cudaCases(selectFunction(baseline.value, fn), random);
       if (!samples.length) throw Error('No eligible CUDA check cases for ' + fn);
-      return samples.flatMap(s => modesOf(subject.value.source).map(mode => ({ ...s, ...mode })));
+      return samples.flatMap(s => modesOf(subject.value.kernels).map(mode => ({ ...s, ...mode })));
     },
     run: (side, _artifact, sample) => {
       if (side === 'baseline') return sample.reference;
@@ -177,14 +279,14 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     }),
     // The case list depends on the subject only through its modes.
     baselineKey: ({ baseline, fn, subject }) =>
-      JSON.stringify([baseline.revision, fn, modesOf(subject.value.source)]),
+      JSON.stringify([baseline.revision, fn, modesOf(subject.value.kernels)]),
     subjectKey: (_artifact, _case, { subject }) => JSON.stringify([subject.revision, profile]),
     async decide({ baseline, fn, subject }, cases, todo) {
       if (subject.value.fn !== fn)
         return todo.map(() => ({ v: 'disagree', reason: 'CUDA function differs' }));
       const pending = todo.map(i => cases[i]);
       const f = selectFunction(baseline.value, fn);
-      const { source } = subject.value;
+      const { source, kernels } = subject.value;
       const results = new Map<CudaSample, BufferValue>();
       const run = async (batch: CudaSample[], mode: Mode) => {
         if (!batch.length) return;
@@ -192,13 +294,13 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
           source,
           f,
           batch.map(c => c.inputs),
-          mode,
+          { ...mode, kernels },
         );
         if (out.length !== batch.length) throw Error('Wrong CUDA response case count');
         batch.forEach((c, i) => results.set(c, out[i]));
       };
       await Promise.all(
-        modesOf(source).map(mode =>
+        modesOf(kernels).map(mode =>
           run(
             pending.filter(c => c.gate === mode.gate && c.variant === mode.variant),
             mode,
@@ -211,10 +313,12 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
       });
     },
   });
-  const pass = defineTransformation({
+  // The contract: its ports, the correspondence it requires and the GPU check. The lowering itself is the
+  // transformation below; the runner prepares the unit and verifies it against this (IRWB-061).
+  const contract = defineTransformation({
     id: 'tensor.lower-cuda',
-    version: '2',
-    description: 'Lower a Tix function to CUDA, fused or one kernel per statement, and check it on the GPU',
+    version: '3',
+    description: 'A CUDA unit computes the current Tix f32 meaning of its function, checked on the GPU',
     inputs,
     outputs,
     cache: 'never',
@@ -237,21 +341,37 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         },
       },
     ],
-    run(_ctx, { baseline, fn, fuse }) {
-      // IRWB-033-D: through the schedule IR; its kernels are the CUDA kernels.
-      const schedule = lowerSchedule(selectFunction(baseline.value, fn), fuse).value;
-      const kernels = schedule.kernels.map(k => ({
-        name: k.name,
-        mapping: k.kind === 'contraction' ? ('tiled' as const) : k.group.mapping,
-        statements: k.group.statements,
-        ...(k.kind === 'rows' && k.group.gated && { gated: true }),
-      }));
-      const subject = cudaArtifact(fn, emitSchedule(schedule), kernels);
-      return { outputs: { subject }, correspondence: [kernelCorrespondence(baseline, subject)] };
-    },
+  });
+  /**
+   * `tensor.lower-cuda` as a transformation from `tensor.tix` to `tensor.cuda-source`. Its `ensures` answers from
+   * the GPU, so a checked application runs under the asynchronous driver; a pending one (`cudaSource`, index.ts)
+   * runs synchronously and leaves the check owed.
+   */
+  const lowering = transformation<Module, CudaUnit, {}, CudaLoweringParams>({
+    id: 'tensor.lower-cuda',
+    version: '3',
+    description: 'Lower a Tix function to CUDA, fused or one kernel per statement, and check it on the GPU',
+    from: { ir: TixIR, adapter },
+    to: { ir: CudaIR, adapter: cudaAdapter },
+    relation: 'exact',
+    prepare: ({ before, view, params }) => lowerTix(before, view.graph().entities, params),
+    bind: ({ before, candidate, params }) => ({
+      inputs: { baseline: before, fn: params.fn, fuse: params.fuse },
+      outputs: { subject: candidate },
+    }),
+    obligations: { ensures: [contract] },
+  });
+  /** The same transformation for a unit the caller supplies: the candidate is that unit, as its manifest says. */
+  const supplied = (candidate: Artifact<CudaUnit>): typeof lowering => ({
+    ...lowering,
+    prepare: () => ({
+      output: candidate.value,
+      outputId: candidate.id,
+      correspondence: manifestEntries(candidate.value),
+    }),
   });
 
-  return async (
+  const check = async (
     baseline: Artifact<Module>,
     fn: string,
     candidate?: Artifact<CudaUnit>,
@@ -261,13 +381,14 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     const manager = options?.manager ?? new AnalysisManager();
     const fuse = options?.fuse !== false;
     try {
-      if (candidate)
-        await manager.verifyTransformation({ baseline, fn, fuse }, { subject: candidate }, pass, [
-          kernelCorrespondence(baseline, candidate),
-        ]);
-      else await manager.execute(pass, { baseline, fn, fuse });
+      await applyTransformation(candidate ? supplied(candidate) : lowering, baseline, {
+        manager,
+        params: { fn, fuse },
+      });
       return { accepted: true, relation };
-    } catch (error) {
+    } catch (thrown) {
+      // the runner wraps the manager's rejection; its own error says whether the check answered or was unavailable
+      const error = thrown instanceof PassError && thrown.code === 'contractRejected' ? thrown.cause : thrown;
       const message = error instanceof Error ? error.message : String(error);
       if (error instanceof ContractError && error.code === 'postcondition') {
         const checks = manager.snapshot().executions.at(-1)?.checks;
@@ -281,6 +402,9 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
       return { accepted: false, relation, reason: 'CUDA evidence unavailable: ' + message };
     }
   };
+  return Object.assign(check, { lowering });
 }
 
 export const checkCudaLowering = createCudaLowering('cuda-remote:sm_121:-O3');
+/** `tensor.lower-cuda`, the transformation every lowering of a Tix function is an application of. */
+export const cudaLowering = checkCudaLowering.lowering;

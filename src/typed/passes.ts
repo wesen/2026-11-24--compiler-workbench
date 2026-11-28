@@ -33,6 +33,7 @@ import {
 import { F32_OPERANDS, F32_RESULT } from './f32.js';
 import { BlocksIR, blocksAdapter, blocksEntities, entityIdSet } from './ir.js';
 import { hash, meaningKept, type MeaningParams } from './evaluate.js';
+import { makeDerivation, type DerivationStep } from '../framework/ir/derivation.js';
 import { tableBody } from './rules/compile.js';
 import { FOLD_RULES } from './rules/fold.js';
 import { SIMPLIFY_RULES } from './rules/simplify.js';
@@ -124,7 +125,15 @@ const view = (name: AnalysisName, value: unknown, st: Store, fname: string): unk
   }
 };
 
-/** Correspondence entries from origins of new entities and the reasons of removals. */
+/**
+ * Correspondence entries from origins of new entities and the reasons of removals.
+ *
+ * IRWB-056-B: this is the reference the derivation is checked against. A pass whose `prepare` returns a derivation
+ * no longer computes its correspondence this way: the runner computes it from the steps, which also record the rule
+ * and the premises of each edit. `tests/typed/derivations.test.mjs` applies both to every O2 and `speed`
+ * application of the corpus and requires them to be equal; `tests/typed/edit-classes.test.mjs` reads the records the
+ * other way (classification as a query).
+ */
 export function revisionCorrespondence(
   before: TypedBlocks,
   after: TypedBlocks,
@@ -170,6 +179,34 @@ export function revisionCorrespondence(
   }));
 }
 
+/**
+ * The steps about the revision that was published: a step whose entities the output no longer has, and which no other
+ * step read, is dropped (a statement made and then merged away leaves no trace, and naming it would be naming an
+ * entity that is in neither revision). The edits that cited a dropped step lose the citation; every other index is
+ * shifted, so `Edit.steps` still addresses this list.
+ */
+function published(steps: readonly DerivationStep[], native: TypedBlocks, edits: readonly Edit[]) {
+  const target = entityIdSet(native),
+    needed = new Set<string>(),
+    kept: DerivationStep[] = [],
+    index = new Map<number, number>();
+  for (let i = steps.length - 1; i >= 0; i--) {
+    const s = steps[i];
+    if (s.produces.length && !s.produces.some(p => target.has(p) || needed.has(p))) continue;
+    index.set(i, kept.length);
+    kept.push(s);
+    for (const c of s.consumes) needed.add(c);
+  }
+  kept.reverse();
+  for (const [before, after] of index) index.set(before, kept.length - 1 - after);
+  for (const e of edits as Edit[])
+    if (e.steps)
+      (e as { steps?: readonly number[] }).steps = e.steps
+        .map(i => index.get(i))
+        .filter((i): i is number => i !== undefined);
+  return kept;
+}
+
 export type TypedPass = Pass<TypedBlocks, Record<string, any>, Record<string, unknown>> & {
   readonly typed: TypedPassSpec;
 };
@@ -198,12 +235,14 @@ export function typedPass(spec: TypedPassSpec): TypedPass {
       const st = Store.from(before.value),
         rev = before.value.rev + 1;
       const edits: Edit[] = [],
-        touched: string[] = [];
+        touched: string[] = [],
+        // IRWB-056-B: one step list for the application, shared by the transactions of its functions
+        steps: DerivationStep[] = [];
       for (const f of st.fns.values()) {
         const views: FactViews = {};
         for (const [alias, name] of Object.entries(spec.needs ?? {}))
           views[alias] = view(name, facts[alias], st, f.name);
-        const tx = new Tx(st, f, { name: spec.name, writes: spec.writes }, rev);
+        const tx = new Tx(st, f, { name: spec.name, writes: spec.writes }, rev, steps);
         spec.body({ st, f, tx, facts: views, params: (params ?? {}) as Record<string, unknown> });
         tx.commit();
         if (tx.edits.length) {
@@ -219,9 +258,12 @@ export function typedPass(spec: TypedPassSpec): TypedPass {
         {},
       );
       const report: RevisionReport = { pass: spec.name, rev, edits, fns: touched, kinds };
+      // The runner computes the correspondence from the steps. No coverage policy is declared: a rewrite that
+      // produces an entity the input already had (`x + 0` becomes `x`) maps nothing, and the correspondence it
+      // implies is the input's own identity and the entities it lost — which is exactly what it said before.
       return {
         native,
-        correspondence: revisionCorrespondence(before.value, native, edits),
+        derivation: makeDerivation(spec.name, published(steps, native, edits)),
         edits: edits.length,
         report,
       };
@@ -278,7 +320,7 @@ export const fold = typedPass({
   about: 'constant folding: an operator whose operands are constants becomes a constant',
   writes: ['values'],
   preserves: ['cfg', 'dominators', 'loops', 'liveness', 'reaching'],
-  body: tableBody(FOLD_RULES.rules),
+  body: tableBody(FOLD_RULES.rules, undefined, FOLD_RULES.name),
 });
 
 /**
@@ -295,7 +337,7 @@ export const simplify = typedPass({
   about: 'algebraic identities: x+0, x*1, x*2^k, x-x, !!x and inverted comparisons',
   writes: ['values'],
   preserves: ['cfg', 'dominators', 'loops'],
-  body: tableBody(SIMPLIFY_RULES.rules),
+  body: tableBody(SIMPLIFY_RULES.rules, undefined, SIMPLIFY_RULES.name),
 });
 
 export const constprop = typedPass({
@@ -1151,7 +1193,7 @@ export const identities = typedPass({
   about: 'identities found from hot shapes: (x >> 3) << 3, (x & 15) < 8 and (x << 1) << 1 as one operation',
   writes: ['values'],
   preserves: ['cfg', 'dominators', 'loops'],
-  body: tableBody(IDENTITY_RULES.rules),
+  body: tableBody(IDENTITY_RULES.rules, undefined, IDENTITY_RULES.name),
 });
 
 export const substMem = typedPass({

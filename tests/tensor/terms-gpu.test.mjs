@@ -5,6 +5,8 @@ import { seededRandom } from '../../dist/framework/contracts/index.js';
 import { checkLowering, compileTix, cudaSource, runTix, runTixCuda } from '../../dist/tensor/index.js';
 import { checkCudaLowering, cudaArtifact } from '../../dist/tensor/cuda-contract.js';
 import { runCudaBatch } from '../../dist/tensor/cuda-runtime.js';
+import { emitScheduleProgram } from '../../dist/tensor/cuda-source.js';
+import { lowerSchedule } from '../../dist/tensor/strategy.js';
 import { planFusion } from '../../dist/tensor/fusion.js';
 
 const words = ({ data }) => new Uint32Array(data.buffer, data.byteOffset, data.length);
@@ -92,8 +94,7 @@ test('GB10: the exact check rejects a reversed fold over terms, a misplaced term
   const p = compileTix(
     'fn f(x:f32[N,C]):f32[N,C] { s[i] = sum(j) x[i,j] / 3; y[i,j] = x[i,j] - s[i]; return y; }',
   );
-  const source = cudaSource(p, 'f');
-  const kernels = [{ name: 'k0', mapping: 'block', statements: ['s', 'y'] }];
+  const { source, kernels } = emitScheduleProgram(lowerSchedule(p.current.value.functions[0], true).value);
   const mutants = {
     // thread 0 adds the terms from the last to the first
     fused: source.replace('__fadd_rn(v1, q1_0[t])', '__fadd_rn(v1, q1_0[c1_0 - 1 - t])'),

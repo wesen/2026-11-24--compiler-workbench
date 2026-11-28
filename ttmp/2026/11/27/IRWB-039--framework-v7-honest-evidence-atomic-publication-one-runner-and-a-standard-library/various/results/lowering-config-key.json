@@ -1,0 +1,10 @@
+{
+ "IRWB-061": {
+  "task": "lowering",
+  "config": "fa",
+  "model": "fable",
+  "effort": "default",
+  "round": "v7-lowering-fa",
+  "harness": "claude-code-subagent"
+ }
+}

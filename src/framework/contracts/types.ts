@@ -1,4 +1,5 @@
 import type { Artifact, EntityRef } from '../core/types.js';
+import type { Coverage } from '../ir/correspondence.js';
 export interface VersionRef {
   readonly id: string;
   readonly version: string;
@@ -120,7 +121,8 @@ export interface Preservation {
   readonly mode: 'check' | 'transfer';
   readonly correspondence?: string;
 }
-export type CorrespondenceCoverage = 'partial' | 'nonempty' | 'source' | 'target' | 'both';
+/** The coverage demanded of a correspondence: the one vocabulary of `ir/correspondence.ts` (F41). */
+export type CorrespondenceCoverage = Coverage;
 export interface CorrespondenceRequirement {
   readonly id: string;
   readonly from: string;

@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { AnalysisManager } from '../../dist/framework/contracts/index.js';
 import { compileTix, cudaSource, optimizeTix } from '../../dist/tensor/index.js';
-import { emitCuda, takesGate } from '../../dist/tensor/cuda-source.js';
+import { emitCuda, emittedKernels } from '../../dist/tensor/cuda-source.js';
 import { createCudaLowering } from '../../dist/tensor/cuda-contract.js';
 import { evaluate } from '../../dist/tensor/evaluate.js';
 import { gate, planFusion } from '../../dist/tensor/fusion.js';
@@ -158,18 +158,32 @@ test('the lowering records which statements each kernel computes, and fused and 
       accepted: true,
       relation: 'exact',
     });
-    const checks = manager.snapshot().executions.at(-1).checks;
+    const execution = manager.snapshot().executions.at(-1),
+      checks = execution.checks;
     totals.push(checks.find(c => c.phase === 'ensures').evidence.total);
     const correspondence = checks.find(c => c.phase === 'correspondence');
     assert.equal(correspondence.ok, true);
     assert.equal(correspondence.evidence.relation, 'statements-to-kernels');
-    // IRWB-030-E: the record says which kernels the host may also run statement by statement
-    assert.deepEqual(correspondence.evidence.evidence.gated, fuse ? [true] : [false, false, false, false]);
+    // IRWB-030-E: the record says which kernels the host may also run statement by statement. IRWB-061: the
+    // lowering runs on the pass runner, whose correspondence record has the runner's evidence, so the flag is read
+    // from the kernels of the recorded output (the unit's manifest)
     assert.deepEqual(
-      correspondence.evidence.entities,
-      fuse
-        ? [{ from: ['softmax/m', 'softmax/e', 'softmax/s', 'softmax/y'], to: ['k0'] }]
-        : ['m', 'e', 's', 'y'].map((s, i) => ({ from: ['softmax/' + s], to: ['k' + i] })),
+      execution.outputs.subject.value.kernels.map(k => k.gated === true),
+      fuse ? [true] : [false, false, false, false],
+    );
+    // IRWB-061: the runner's correspondence is in canonical order (entries and their ids sorted), so the same
+    // statement-to-kernel entries are compared in that order
+    const sorted = entries =>
+      entries
+        .map(e => ({ from: [...e.from].sort(), to: [...e.to].sort() }))
+        .sort((a, b) => (a.from[0] < b.from[0] ? -1 : 1));
+    assert.deepEqual(
+      sorted(correspondence.evidence.entities),
+      sorted(
+        fuse
+          ? [{ from: ['softmax/m', 'softmax/e', 'softmax/s', 'softmax/y'], to: ['k0'] }]
+          : ['m', 'e', 's', 'y'].map((s, i) => ({ from: ['softmax/' + s], to: ['k' + i] })),
+      ),
     );
   }
   // IRWB-030-E: the fused softmax kernel has a gate, so every sample is a case on each side and the program
@@ -281,11 +295,20 @@ test('a block-mode kernel is one definition that also holds its statements in st
   }
   assert.match(source, /const bool fused_k0 = gate_mode \? gate_mode == 1 : /);
   assert.match(source, /"--gate=fused"/);
-  assert.equal(takesGate(source), true);
+  // The manifest retains the same gate and now records the policy and both launch arms.
+  assert.deepEqual(emittedKernels(source), [
+    {
+      name: 'k0',
+      mapping: 'block',
+      statements: ['m', 'e', 's', 'y'],
+      gated: true,
+      select: [{ gate: 'fused', guard: { ...gate, heavy: [] } }, { gate: 'unfused' }],
+    },
+  ]);
   // thread-mode fusion and the unfused lowering have no gate and keep stage 2's main
   const chain = compileTix('fn f(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]; return z; }');
   for (const plain of [cudaSource(chain, 'f'), cudaSource(program, 'softmax', { fuse: false })]) {
-    assert.equal(takesGate(plain), false);
+    assert.ok(emittedKernels(plain).every(k => !k.gated));
     assert.doesNotMatch(plain, /gate/);
   }
 });

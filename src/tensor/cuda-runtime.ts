@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { emittedKernels, type CudaKernel } from './cuda-source.js';
 import { plain, value, type Fn } from './model.js';
 
 export type CudaInputs = Record<string, { shape: number[]; data: Float32Array }>;
@@ -108,11 +109,21 @@ export async function runCudaBatch(
   fn: Fn,
   cases: readonly CudaInputs[],
   /**
-   * `gate` forces every gated kernel of the source to one side; only for sources that take it (`takesGate`).
-   * `variant` forces every contraction kernel to that variant (`takesVariant`, IRWB-033-D).
+   * `gate` forces every gated kernel of the source to one side, and `variant` every contraction kernel to that
+   * variant (IRWB-033-D); only for programs whose manifest has such kernels. `kernels` is the program's manifest
+   * (cuda-source.ts), which names the gate choices the program reports; by default the manifest printed with
+   * `source` in this process.
    */
-  options?: { host?: string; benchmark?: boolean; gate?: 'fused' | 'unfused'; variant?: number },
+  options?: {
+    host?: string;
+    benchmark?: boolean;
+    gate?: 'fused' | 'unfused';
+    variant?: number;
+    kernels?: readonly CudaKernel[];
+  },
 ): Promise<CudaResult[]> {
+  const kernels = options?.kernels ?? emittedKernels(source);
+  if (!kernels) throw Error('No manifest for this CUDA source: pass its kernels');
   const request = encodeCudaCases(fn, cases);
   const dir = await mkdtemp(join(tmpdir(), 'irwb-tix-cuda-'));
   try {
@@ -143,7 +154,7 @@ export async function runCudaBatch(
       await readFile(join(dir, 'out', 'results.bin')),
       cases.length,
       fn.shape.length,
-      [...source.matchAll(/const bool fused_(k\d+) =/g)].map(m => m[1]),
+      kernels.filter(k => k.select?.some(arm => 'gate' in arm)).map(k => k.name),
     );
   } finally {
     await rm(dir, { recursive: true, force: true });

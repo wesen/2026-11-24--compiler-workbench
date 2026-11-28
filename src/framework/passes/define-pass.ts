@@ -5,7 +5,8 @@
  * Here: `PassError`, the context a pass body receives, the result of an application, and the helpers the runner
  * calls in order: `prepareNative` (the candidate, its change set and its correspondence from a native result),
  * `enforceWrites` (any change outside the declared kinds is `undeclaredWrite`), `publishAccepted` (F33's one
- * publication point) and `discardEvidence` (the rollback of a deferred contract execution).
+ * publication point) and `discardEvidence` (the rollback of a deferred contract execution). IRWB-061 adds
+ * `prepareCross`, the candidate of a transformation whose output is another IR.
  *
  * F33: publication is one step. The candidate is prepared on a store the caller cannot see, the contract runs with
  * `deferCommit`, and only after the preservation claims pass does `publishAccepted` make the revision the store's
@@ -17,6 +18,12 @@ import { canonical } from '../core/data.js';
 import { createIRArtifact, openIR } from '../ir/index.js';
 import { diff } from '../ir/diff.js';
 import { makeCorrespondence } from '../ir/correspondence.js';
+import {
+  correspondenceFromDerivation,
+  validateDerivation,
+  type Derivation,
+  type DerivationCoverage,
+} from '../ir/derivation.js';
 import type {
   ChangeSet,
   CorrespondenceEntry,
@@ -74,6 +81,13 @@ export interface PassRunContext<S, N extends Needs, P> {
 export interface NativeResult<S> {
   readonly native: S;
   readonly correspondence?: readonly CorrespondenceEntry[];
+  /**
+   * IRWB-056-B: the producer's derivation. When present, the correspondence is computed from its steps instead of
+   * from `correspondence`, and `coverage` says what the steps must account for (F35's vocabulary). A result gives
+   * one or the other, never both: the correspondence has exactly one source.
+   */
+  readonly derivation?: Derivation;
+  readonly coverage?: DerivationCoverage;
   /** How many edits the pass made, for reporting (Compiler Workbench shows edits per pass). */
   readonly edits?: number;
   /** Domain report (e.g. the edit records of a Compiler Workbench revision), passed through to the result. */
@@ -110,13 +124,16 @@ export interface PreservationOutcome {
   readonly evidence: unknown;
 }
 
-export interface PassResult<S> {
+/** `Out` is the output's IR; it differs from `S` only for a cross-IR transformation (IRWB-061). */
+export interface PassResult<S, Out = S> {
   readonly pass: { readonly id: string; readonly version: string };
   readonly changed: boolean;
   readonly before: Artifact<S>;
-  readonly artifact: Artifact<S>;
+  readonly artifact: Artifact<Out>;
   readonly changes?: ChangeSet;
   readonly correspondence?: EntityCorrespondence;
+  /** IRWB-056-B: the producer's record of why, next to the edits and the correspondence. */
+  readonly derivation?: Derivation;
   readonly edits: number;
   readonly preserved: readonly PreservationOutcome[];
   readonly contract?: unknown;
@@ -145,12 +162,32 @@ export function undeclaredWrites(
  * v6's semantic correspondence record for an entity correspondence between two revisions. The analysis manager
  * matches records to a contract's `correspondence` requirements by `id` and `relation`, so the runner builds one
  * record per requirement (default: `entities` / `generic-ir-edit`, as v6's own labs name it).
+ *
+ * IRWB-061: `universe` restricts the record to the entities a contract's port types declare (`IRType.entities`),
+ * when those are fewer than the adapter's projection lists. A relation restricted to a subset of each side: ids
+ * outside it leave every entry, and an entry left with neither side is dropped.
  */
 export function semanticCorrespondence(
   c: EntityCorrespondence,
   id = 'entities',
   relation = 'generic-ir-edit',
+  universe: { readonly source?: readonly string[]; readonly target?: readonly string[] } = {},
 ): Correspondence {
+  if (universe.source || universe.target) {
+    const keep = (ids: readonly string[], within?: readonly string[]) => {
+      if (!within) return ids;
+      const set = new Set(within);
+      return ids.filter(x => set.has(x));
+    };
+    c = {
+      ...c,
+      sourceEntities: keep(c.sourceEntities, universe.source),
+      targetEntities: keep(c.targetEntities, universe.target),
+      entries: c.entries
+        .map(e => ({ ...e, from: keep(e.from, universe.source), to: keep(e.to, universe.target) }))
+        .filter(e => e.from.length || e.to.length),
+    };
+  }
   return {
     id,
     from: { artifact: c.from.artifact, revision: c.from.revision },
@@ -180,16 +217,92 @@ export function prepareNative<S>(
   // the runner publishes it, and the evidence about it, once every check has accepted it.
   const afterView = openIR(after, pass.adapter);
   const changes = diff(view, afterView);
-  const correspondence = makeCorrespondence(
-    { artifact: before.id, revision: before.revision },
-    { artifact: after.id, revision: after.revision },
-    // the projections' entity ids, in order (what `view.entities()` names, without a reference per entity)
-    view.graph().entities.map(e => e.id),
-    afterView.graph().entities.map(e => e.id),
-    produced.correspondence ?? [],
-  );
+  const from = { artifact: before.id, revision: before.revision },
+    to = { artifact: after.id, revision: after.revision };
+  // the projections' entity ids, in order (what `view.entities()` names, without a reference per entity)
+  const source = view.graph().entities.map(e => e.id),
+    target = afterView.graph().entities.map(e => e.id);
+  // IRWB-056-B: one source for the correspondence. A derivation is checked for its sites and mapped under its
+  // declared coverage; without one, the entries the pass supplies are completed as before.
+  if (produced.derivation && produced.correspondence)
+    throw new PassError('badResult', 'A result gives a derivation or correspondence entries, not both');
+  const correspondence = produced.derivation
+    ? correspondenceFromDerivation(
+        validateDerivation(produced.derivation, source, target),
+        from,
+        to,
+        source,
+        target,
+        { coverage: produced.coverage },
+      )
+    : makeCorrespondence(from, to, source, target, produced.correspondence ?? []);
   const edits = produced.edits ?? changes.entities.length;
-  return { after, changes, correspondence, edits };
+  return {
+    after,
+    changes,
+    correspondence,
+    edits,
+    ...(produced.derivation ? { derivation: produced.derivation } : {}),
+  };
+}
+
+/** What a cross-IR `prepare` returns: the output's native value, its lineage, and how it relates to the input. */
+export interface CrossResult<Out> {
+  readonly output: Out;
+  /** The lineage (artifact id) of the output; `TransformationOptions.outputId` replaces it. */
+  readonly outputId: string;
+  /** Entries from input entities to output entities. No diff exists across IRs, so these or a derivation. */
+  readonly correspondence?: readonly CorrespondenceEntry[];
+  readonly derivation?: Derivation;
+  readonly coverage?: DerivationCoverage;
+  readonly edits?: number;
+  readonly report?: unknown;
+}
+
+/**
+ * IRWB-061: the candidate of a cross-IR transformation. The output is wrapped with the output IR's adapter, and the
+ * producer's entries (or derivation) are completed over both projections' entity lists, which also checks that
+ * every id they name exists on its side.
+ */
+export function prepareCross<In, Out>(
+  pass: { readonly id: string; readonly to: { readonly adapter: IRAdapter<Out> } },
+  view: IRView<In>,
+  produced: CrossResult<Out>,
+  id: string,
+) {
+  if (!produced || typeof produced !== 'object' || !('output' in produced))
+    throw new PassError('badResult', `Pass ${pass.id}: a cross-IR prepare returns { output, outputId }`);
+  if (produced.derivation && produced.correspondence)
+    throw new PassError('badResult', 'A result gives a derivation or correspondence entries, not both');
+  if (!produced.derivation && !produced.correspondence)
+    throw new PassError(
+      'badResult',
+      `Pass ${pass.id}: a cross-IR result needs correspondence entries or a derivation`,
+    );
+  const before = view.artifact;
+  const after = createIRArtifact(pass.to.adapter, id, produced.output);
+  const from = { artifact: before.id, revision: before.revision },
+    to = { artifact: after.id, revision: after.revision };
+  const source = view.graph().entities.map(e => e.id),
+    target = openIR(after, pass.to.adapter)
+      .graph()
+      .entities.map(e => e.id);
+  const correspondence = produced.derivation
+    ? correspondenceFromDerivation(
+        validateDerivation(produced.derivation, source, target),
+        from,
+        to,
+        source,
+        target,
+        { coverage: produced.coverage },
+      )
+    : makeCorrespondence(from, to, source, target, produced.correspondence!);
+  return {
+    after,
+    correspondence,
+    edits: produced.edits ?? 0,
+    ...(produced.derivation ? { derivation: produced.derivation } : {}),
+  };
 }
 
 export function enforceWrites(pass: Pick<PassSpec<unknown, Needs>, 'writes' | 'id'>, changes: ChangeSet) {
@@ -211,12 +324,15 @@ export function discardEvidence(prepared: PreparedTransformation | undefined, re
  * contract's prepared execution and facts are committed inside that same atomic publication, so the head never
  * outlives the evidence that justified it; without a store the evidence is the whole publication. A store refusal
  * (a stale head, a colliding lineage) propagates as its own `IRError` after the evidence is rolled back.
+ *
+ * `base` is the head the revision replaces: the input when the output continues its lineage, the output lineage's
+ * own head when a cross-IR output has one (IRWB-061), and nothing when the output opens a lineage.
  */
-export function publishAccepted<S>(
+export function publishAccepted(
   pass: { readonly id: string },
   store: IRStore | undefined,
-  before: Artifact<S>,
-  after: Artifact<S>,
+  base: Artifact | undefined,
+  after: Artifact,
   prepared: PreparedTransformation | undefined,
   generation: number | undefined,
 ): void {
@@ -230,7 +346,7 @@ export function publishAccepted<S>(
   }
   try {
     store.publish(after, {
-      ...(after.id === before.id ? { base: before, generation } : {}),
+      ...(base ? { base, generation } : {}),
       ...(acceptance ? { acceptance } : {}),
     });
   } catch (e) {

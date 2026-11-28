@@ -34,6 +34,7 @@ import { ingestProject, projectSource, type ProjectSource } from './project.js';
 import { USER_PASSES } from './builder.js';
 import type { Edit } from './tx.js';
 import { createIRArtifact } from '../framework/ir/adapters.js';
+import type { Derivation } from '../framework/ir/derivation.js';
 import { blocksAdapter } from './ir.js';
 import { ingest, type IngestOptions } from './lift.js';
 
@@ -57,6 +58,8 @@ export interface Revision {
   readonly artifact: Artifact<TypedBlocks>;
   readonly edits: readonly Edit[];
   readonly correspondence?: EntityCorrespondence;
+  /** IRWB-056-B: the producer's steps for this revision, next to the edits and the correspondence. */
+  readonly derivation?: Derivation;
   readonly ms: number;
   readonly fns?: readonly string[];
   readonly note?: string;
@@ -296,6 +299,7 @@ export class Program {
       artifact: r.artifact,
       edits: report.edits,
       correspondence: r.correspondence,
+      ...(r.derivation ? { derivation: r.derivation } : {}),
       ms,
       fns: report.fns,
       assumptions: JSON.parse(JSON.stringify(this.assumptions)),

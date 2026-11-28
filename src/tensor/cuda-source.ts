@@ -1,11 +1,4 @@
-import {
-  gateRule,
-  outerReductions,
-  unfusedPlan,
-  type FusionGroup,
-  type FusionPlan,
-  type Reduce,
-} from './fusion.js';
+import { outerReductions, unfusedPlan, type FusionGroup, type FusionPlan, type Reduce } from './fusion.js';
 import {
   plain,
   visit,
@@ -18,7 +11,15 @@ import {
   type Tensor,
 } from './model.js';
 import { emitContraction } from './cuda-contraction.js';
-import type { ContractionKernel, Schedule } from './schedule.js';
+import {
+  scheduleKernels,
+  type ContractionKernel,
+  type GateSelect,
+  type LaunchSelect,
+  type Schedule,
+  type ScheduleKernel,
+} from './schedule.js';
+import { sha256 } from '../framework/core/data.js';
 
 const support = String.raw`
 #include <cuda_runtime.h>
@@ -146,8 +147,6 @@ const gatedMain = main.replace(
 );
 if (gatedMain === main) throw Error('The CUDA main no longer has the benchmark flag line');
 const gateSupport = '\nstatic int gate_mode = 0;';
-/** Whether a generated program has a gated kernel, and so takes --gate=fused|unfused. */
-export const takesGate = (source: string) => source.includes(gateSupport);
 
 // IRWB-033-D: a source with contraction kernels also takes --variant=N, which forces every contraction kernel to its
 // variant N where that variant can launch (the contract); --gate=* as for gated kernels.
@@ -158,13 +157,33 @@ const variantMain = gatedMain.replace(
       else throw std::runtime_error("unknown argument");`,
 );
 if (variantMain === gatedMain) throw Error('The gated CUDA main no longer has the unknown-argument line');
-/** Whether a generated program has a contraction kernel, and so takes --variant=N. */
-export const takesVariant = (source: string) => source.includes(variantSupport);
-/** The number of variants of the source's contraction kernels (the largest), or 0 without one. */
-export const variantCount = (source: string) =>
-  takesVariant(source)
-    ? Math.max(...[...source.matchAll(/if constexpr \(V == (\d+)\)/g)].map(m => +m[1])) + 1
-    : 0;
+
+/**
+ * IRWB-057: the manifest of a generated program, produced with its source: one entry per kernel, in launch order.
+ * The host program's interface follows from it, so nothing reads the source text to find it:
+ *   - a `gated` kernel decides at launch between its block mode and its statements one by one. The program then
+ *     takes --gate=fused|unfused, and after each case's result it writes one byte per gated kernel, in manifest
+ *     order: 1 when the kernel ran fused;
+ *   - a kernel with `variants` is a contraction kernel with that many variants; the program then takes --variant=N.
+ */
+export interface CudaKernel {
+  name: string;
+  mapping: 'thread' | 'block' | 'tiled';
+  statements: string[];
+  select?: LaunchSelect;
+  gated?: boolean;
+  variants?: number;
+}
+export interface CudaProgram {
+  source: string;
+  kernels: CudaKernel[];
+}
+
+// The manifests of the sources printed in this process, by the source's hash. `cudaSource` (index.ts) returns the
+// source alone, so a caller that holds only that text finds its manifest here (`emittedKernels`).
+const manifests = new Map<string, CudaKernel[]>();
+/** The manifest of a source this process printed, or undefined for any other text. */
+export const emittedKernels = (source: string): CudaKernel[] | undefined => manifests.get(sha256(source));
 
 function affine(a: Affine, name: (key: string) => string): string {
   const terms = a.terms.map(([key, coefficient]) =>
@@ -394,6 +413,7 @@ function emitGroup(
   dimensions: ReadonlyMap<string, string>,
   tensors: ReadonlyMap<string, Tensor>,
   tensorName: (name: string) => string,
+  select: GateSelect | undefined,
 ) {
   const { kernel, depth } = group;
   const members = group.statements.map(n => tensors.get(n) as Statement);
@@ -580,6 +600,20 @@ function emitGroup(
     const hostRow = [...owners.map(n => lengthOf(n, hostDim)), ...(staging.length ? [area(count)] : [])].join(
       ' + ',
     );
+    const {
+      fullRow,
+      smallGrid,
+      heavyLanes: [numerator, denominator],
+      heavy,
+    } = select![0].guard;
+    const rowGuard = `(longest_${kernel} >= ${fullRow} || grid_${kernel} <= ${smallGrid})`;
+    const guard = [
+      rowGuard,
+      ...heavy.map(
+        n =>
+          `resident_${kernel} * std::min<U>(threads_${kernel}, ${lengthOf(n, hostDim)}) * ${denominator} >= ${numerator} * sm_threads`,
+      ),
+    ].join(' && ');
     host.push(
       `  const U grid_${kernel} = ${product(first.shape.slice(0, depth).map(hostDim))};`,
       `  const U row_${kernel} = (${hostRow}) * sizeof(float);`,
@@ -592,14 +626,7 @@ function emitGroup(
       // Blocks of this kernel that fit on one SM, by its block, thread and shared-memory limits (each block's
       // shared memory includes the device's reserved part: 1 KiB on the GB10).
       `  const U resident_${kernel} = std::min<U>({sm_blocks, sm_threads / threads_${kernel}, shared_${kernel} ? sm_shared / (row_${kernel} + sm_reserved) : sm_blocks});`,
-      `  const bool fused_${kernel} = gate_mode ? gate_mode == 1 : ${gateRule({
-        grid: `grid_${kernel}`,
-        longest: `longest_${kernel}`,
-        lanes: group.heavy.map(
-          n => `resident_${kernel} * std::min<U>(threads_${kernel}, ${lengthOf(n, hostDim)})`,
-        ),
-        slots: 'sm_threads',
-      })};`,
+      `  const bool fused_${kernel} = gate_mode ? gate_mode == 1 : ${guard};`,
       `  DeviceBuffer scratch_${kernel}(fused_${kernel} && !shared_${kernel} ? grid_${kernel} * (row_${kernel} / sizeof(float)) : 0);`,
       ...members
         .filter(m => !stored.has(m.name))
@@ -666,6 +693,16 @@ export function emitCuda(
   /** IRWB-033-D: the schedule's contraction kernels, printed from their variants. */
   contractions: ReadonlyMap<string, ContractionKernel> = new Map(),
 ): string {
+  return emitProgram(
+    fn,
+    scheduleKernels(plan).map(k => contractions.get(k.name) ?? k),
+  ).source;
+}
+/** `emitCuda` with the program's manifest. */
+function emitProgram(fn: Fn, scheduled: readonly ScheduleKernel[]): CudaProgram {
+  const groups = scheduled.map(k => k.group);
+  const gateNames = scheduled.flatMap(k => (k.kind === 'rows' && k.select ? [k.name] : []));
+  const hasVariants = scheduled.some(k => k.kind === 'contraction');
   const all = [...fn.params, ...fn.statements];
   const tensors = new Map(all.map(t => [t.name, t]));
   const names = new Map(all.map((t, i) => [t.name, `t${i}`]));
@@ -681,16 +718,17 @@ export function emitCuda(
       bindings.push(`  const I ${d} = shape_${name(p.name)}[${i}];`);
     }
   }
-  const kernels = plan.groups.map(g =>
-    contractions.has(g.kernel)
-      ? emitContraction(contractions.get(g.kernel)!, fn, dims, tensors, name, (load, reduced) =>
+  const kernels = scheduled.map(k => {
+    const g = k.group;
+    return k.kind === 'contraction'
+      ? emitContraction(k, fn, dims, tensors, name, (load, reduced) =>
           kernelWriter(dims, load, undefined, undefined, reduced),
         )
       : g.statements.length === 1
         ? emitKernel(tensors.get(g.statements[0]) as Statement, g.kernel, dims, tensors, name)
-        : emitGroup(g, dims, tensors, name),
-  );
-  const stored = new Set(plan.groups.flatMap(g => g.stored));
+        : emitGroup(g, dims, tensors, name, k.kind === 'rows' ? k.select : undefined);
+  });
+  const stored = new Set(groups.flatMap(g => g.stored));
   const host = ['static void run_case(FILE* input, FILE* output, bool benchmark) {'];
   for (const p of fn.params) {
     const t = name(p.name);
@@ -716,7 +754,7 @@ export function emitCuda(
       host.push(`  const std::array<I, ${s.shape.length}> shape_${t}{${dimsText}};`);
       if (stored.has(s.name)) host.push(`  DeviceBuffer ${t}(elements(shape_${t}));`);
     }
-    if (plan.groups.some(g => g.mapping === 'block'))
+    if (groups.some(g => g.mapping === 'block'))
       host.push(
         '  int shared_limit = 0, sm_shared_bytes = 0, sm_block_limit = 0, reserved_bytes = 0;',
         '  check(cudaDeviceGetAttribute(&reserved_bytes, cudaDevAttrReservedSharedMemoryPerBlock, 0));',
@@ -729,7 +767,7 @@ export function emitCuda(
         '  const U sm_shared = sm_shared_bytes, sm_blocks = sm_block_limit, sm_threads = device.maxThreadsPerMultiProcessor;',
         '  const U sm_reserved = std::max(reserved_bytes, 1);',
       );
-    if (contractions.size)
+    if (hasVariants)
       host.push(
         '  int sm_count = 0;',
         '  check(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, 0));',
@@ -751,35 +789,42 @@ export function emitCuda(
     `  write(output, shape_${result}.data(), shape_${result}.size());`,
     `  write(output, ${buffer}.data(), ${buffer}.size());`,
     '  write(output, &gpu_ms, 1);',
-    ...plan.groups
-      .filter(g => g.statements.length > 1 && g.mapping === 'block')
-      .map(g => `  { const unsigned char choice = fused_${g.kernel} ? 1 : 0; write(output, &choice, 1); }`),
+    ...gateNames.map(
+      name => `  { const unsigned char choice = fused_${name} ? 1 : 0; write(output, &choice, 1); }`,
+    ),
     '}',
   );
-  const fused = plan.groups.some(g => g.statements.length > 1) ? [fusedSupport] : [];
-  const gated = plan.groups.some(g => g.statements.length > 1 && g.mapping === 'block');
+  const fused = groups.some(g => g.statements.length > 1) ? [fusedSupport] : [];
+  const gated = gateNames.length > 0;
   if (gated) fused.push(gateSupport);
-  if (contractions.size) fused.push(variantSupport);
-  if (contractions.size && !gated) fused.push('\nstatic int gate_mode{0};');
-  return [
+  if (hasVariants) fused.push(variantSupport);
+  if (hasVariants && !gated) fused.push('\nstatic int gate_mode{0};');
+  const source = [
     support,
     ...fused,
     ...kernels.map(k => k.code),
     host.join('\n'),
-    contractions.size ? variantMain : gated ? gatedMain : main,
+    hasVariants ? variantMain : gated ? gatedMain : main,
   ].join('\n\n');
+  const manifest = scheduled.map(
+    (k): CudaKernel => ({
+      name: k.name,
+      mapping: k.kind === 'contraction' ? 'tiled' : k.group.mapping,
+      statements: k.group.statements,
+      ...('select' in k && k.select && { select: k.select }),
+      ...(k.kind === 'rows' && k.select && { gated: true }),
+      ...(k.kind === 'contraction' && { variants: k.variants.length }),
+    }),
+  );
+  manifests.set(sha256(source), manifest);
+  return { source, kernels: manifest };
 }
 
 /** IRWB-033-D: print a schedule. With no contraction kernel this is `emitCuda` of the schedule's fusion plan. */
 export function emitSchedule(schedule: Schedule): string {
-  const plan: FusionPlan = {
-    fn: schedule.fn.name,
-    groups: schedule.kernels.map(k => k.group),
-    refusals: [],
-    termRefusals: [],
-  };
-  const contractions = new Map(
-    schedule.kernels.flatMap(k => (k.kind === 'contraction' ? [[k.name, k] as const] : [])),
-  );
-  return emitCuda(schedule.fn, plan, contractions);
+  return emitScheduleProgram(schedule).source;
+}
+/** `emitSchedule` with the program's manifest. */
+export function emitScheduleProgram(schedule: Schedule): CudaProgram {
+  return emitProgram(schedule.fn, schedule.kernels);
 }
