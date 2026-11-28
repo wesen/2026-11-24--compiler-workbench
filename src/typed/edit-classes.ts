@@ -160,7 +160,14 @@ export function normalize(t: Tree, index: RuleIndex<ValueHandle, Guard>, fired: 
   const m = firstMatch(index, handle(n) as unknown as ValueHandle);
   if (!m) return n;
   fired.push(m.rule.name);
-  return (instantiateIn(m.rule.rhs, m.bindings, treeBuilder, handle(n) as unknown as ValueHandle) as unknown as TreeHandle).tree;
+  return (
+    instantiateIn(
+      m.rule.rhs,
+      m.bindings,
+      treeBuilder,
+      handle(n) as unknown as ValueHandle,
+    ) as unknown as TreeHandle
+  ).tree;
 }
 
 /** The verified tables an edit may be an instance of. */

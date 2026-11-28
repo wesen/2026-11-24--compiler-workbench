@@ -16,8 +16,19 @@
  * the provenance a made value carries, the derivation step a rule firing records, and the note its template's
  * `{k}`/`{log2 k}` placeholders are filled from.
  */
-import { instantiate as instantiateIn, type Builder, type ConstantValue, type Pattern, type Template } from '../../stdlib/term/pattern.js';
-import { firstMatch as firstMatchIn, indexRules as indexRulesIn, type Rule as LibraryRule, type RuleIndex } from '../../stdlib/term/rules.js';
+import {
+  instantiate as instantiateIn,
+  type Builder,
+  type ConstantValue,
+  type Pattern,
+  type Template,
+} from '../../stdlib/term/pattern.js';
+import {
+  firstMatch as firstMatchIn,
+  indexRules as indexRulesIn,
+  type Rule as LibraryRule,
+  type RuleIndex,
+} from '../../stdlib/term/rules.js';
 import type { Bindings as BindingsOf } from '../../stdlib/term/pattern.js';
 import { binop } from '../evaluate.js';
 import { F32_FOLDABLE, f32Op } from '../f32.js';
@@ -215,12 +226,7 @@ export function compileRules(
     const active = { by, premises, site, ...(note ? { note } : {}) };
     return tx.withRule(active, () => {
       const made = tx.steps.length;
-      const out = instantiateIn(
-        m.rule.rhs,
-        m.bindings,
-        builderFor(tx, typedRule, v, m.bindings),
-        v,
-      );
+      const out = instantiateIn(m.rule.rhs, m.bindings, builderFor(tx, typedRule, v, m.bindings), v);
       // the rule produced an entity it consumed again: the rewrite is recorded, though no entity was made
       if (tx.steps.length === made) tx.inPlace(active, site, out.id);
       return out.id;

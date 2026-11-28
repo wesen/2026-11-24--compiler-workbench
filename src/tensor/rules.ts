@@ -84,7 +84,9 @@ export type ExprGuard = { readonly singleDimAxis: true };
 
 /** The domain's guard hook: read off the matched node, which is where a reduction's axes are. */
 const guardHolds = (g: ExprGuard, _b: Bindings<Expr>, node: Expr): boolean =>
-  g.singleDimAxis ? node.kind === 'reduce' && node.axes.length === 1 && node.axes[0].extent.kind === 'dim' : false;
+  g.singleDimAxis
+    ? node.kind === 'reduce' && node.axes.length === 1 && node.axes[0].extent.kind === 'dim'
+    : false;
 
 /** `expr` with every read of `name` at `indices` replaced by `body`'s loads at those indices. */
 export function replaceIndices(expr: Expr, bindings: Map<string, Affine>): Expr {
@@ -96,7 +98,8 @@ export function replaceIndices(expr: Expr, bindings: Map<string, Affine>): Expr 
 /** A reduction over one dimension, split into a sum over blocks of a sum over the block's lanes. */
 function splitBody(body: Expr, node: Extract<Expr, { kind: 'reduce' }>): Expr {
   const [{ id, extent }] = node.axes;
-  if (extent.kind !== 'dim') throw new Error('split-sum: the guard admitted a reduction whose axis is not a dimension');
+  if (extent.kind !== 'dim')
+    throw new Error('split-sum: the guard admitted a reduction whose axis is not a dimension');
   const { dim } = extent,
     block = id + '/block',
     lane = id + '/lane',
@@ -124,8 +127,7 @@ export const splitSumRule: Rule<Expr, ExprGuard> = {
   lhs: { op: 'reduce:sum', args: [{ var: 'body' }] },
   where: [{ singleDimAxis: true }],
   rhs: {
-    build: (b, node) =>
-      splitBody(b.get('body')!, node as Extract<Expr, { kind: 'reduce' }>),
+    build: (b, node) => splitBody(b.get('body')!, node as Extract<Expr, { kind: 'reduce' }>),
   },
 };
 
@@ -134,7 +136,11 @@ export const splitSumRule: Rule<Expr, ExprGuard> = {
  * substituted by the read's indices. Whether that is legal — the producer is pointwise and read exactly once — is a
  * property of the statement list, which the pass checks before it builds this rule; the rewrite itself is local.
  */
-export function inlineRule(producer: { readonly name: string; readonly expr: Expr; readonly axes: readonly Axis[] }): Rule<Expr, ExprGuard> {
+export function inlineRule(producer: {
+  readonly name: string;
+  readonly expr: Expr;
+  readonly axes: readonly Axis[];
+}): Rule<Expr, ExprGuard> {
   const lhs: Pattern<Expr> = { op: loadLabel(producer.name, producer.axes.length), args: [] };
   const rhs: Template<Expr> = {
     build: (b, node) => {

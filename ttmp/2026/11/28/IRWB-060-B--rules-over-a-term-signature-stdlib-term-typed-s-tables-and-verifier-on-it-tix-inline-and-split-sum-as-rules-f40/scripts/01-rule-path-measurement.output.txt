@@ -1,0 +1,12 @@
+IRWB-060-B decision point, run on 2026-11-28 (3 interleaved rounds, minimum per project):
+
+IRWB-060-B decision point: the library's rule path against the pre-change matcher
+corpus: 50 Typed projects, O2; 3 interleaved rounds, minimum per project
+  rule passes (fold, simplify, identities), today's matcher      1665 ms
+  rule passes, the library (stdlib/term)                         1625 ms
+  difference                                                      -40 ms  (-2.4 % of the rule passes)
+  O2 compile time, whole pipeline                               14100 ms
+  difference as a share of O2 compile time                    -0.28 %
+  threshold: more than about 10 % of compile time withdraws the Typed port
+  largest per-project differences: chess-search 60.5 ms, lz-roundtrip 12.4 ms, bytecode-vm 11.0 ms
+  the two paths give the same revision on 50/50 projects

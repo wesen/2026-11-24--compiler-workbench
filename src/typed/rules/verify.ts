@@ -153,7 +153,12 @@ function domainAt(x: Var, w: number): number[] | null {
 }
 const sizeAt = (x: Var, w: number) => domainAt(x, w)?.length ?? 2 ** w;
 
-function guardsHold(guards: readonly Guard[], slot: ReadonlyMap<string, number>, env: ArrayLike<number>, w: number) {
+function guardsHold(
+  guards: readonly Guard[],
+  slot: ReadonlyMap<string, number>,
+  env: ArrayLike<number>,
+  w: number,
+) {
   for (const g of guards)
     if ('noTrap' in g) {
       const a = env[slot.get(g.noTrap[0])!],
@@ -373,11 +378,17 @@ export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
       doms = vars.map(x => domainAt(x, 8) ?? range(minOf(8), maxOf(8)));
     const ok = timed('exhaustive-w8', () => {
       const { result, counterexample } = onCases(
-        r, vars, 'exhaustive-w8', 8,
+        r,
+        vars,
+        'exhaustive-w8',
+        8,
         function* () {
           for (const env of product(doms)) yield env;
         },
-        L, R, guards, slot, // prettier-ignore
+        L,
+        R,
+        guards,
+        slot, // prettier-ignore
       );
       if (counterexample) counter = counterexample;
       return result;
@@ -402,7 +413,10 @@ export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
     const crossed = vars.reduce((n, x) => n * values(x).length, 1);
     const ok = timed(method, () => {
       const { result, counterexample } = onCases(
-        r, vars, method, 32,
+        r,
+        vars,
+        method,
+        32,
         function* () {
           if (crossed <= 200000) {
             for (const env of product(vars.map(values))) yield env;
@@ -411,7 +425,10 @@ export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
               yield vars.map(x => { const vs = values(x); return vs[(rng.next() >>> 0) % vs.length]; }); // prettier-ignore
           for (let i = 0; i < (opts.random ?? 1e5); i++) yield vars.map(draw);
         },
-        L, R, guards, slot, // prettier-ignore
+        L,
+        R,
+        guards,
+        slot, // prettier-ignore
       );
       if (counterexample) counter = counterexample;
       return result.verdict === 'pass'

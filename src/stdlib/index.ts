@@ -80,14 +80,7 @@ export type { Budget, Equations, Solution as LocalSolution } from './flow/solve-
 export { equalStructure, size, structuralHash, structuralKey } from './term/signature.js';
 export type { Signature } from './term/signature.js';
 export { instantiate, match, patternOp, patternVariables, templateVariables } from './term/pattern.js';
-export type {
-  Bindings,
-  Builder,
-  ConstantValue,
-  OpPattern,
-  Pattern,
-  Template,
-} from './term/pattern.js';
+export type { Bindings, Builder, ConstantValue, OpPattern, Pattern, Template } from './term/pattern.js';
 export { firstMatch, indexRules } from './term/rules.js';
 export type { MatchOptions, MatchResult, Rule, RuleIndex } from './term/rules.js';
 export { verifyRule } from './term/verify.js';

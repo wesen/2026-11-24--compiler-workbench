@@ -112,11 +112,7 @@ export function instantiate<T>(tpl: Template<T>, b: Bindings<T>, build: Builder<
       return bound;
     }
     if ('const' in t)
-      return build.constant(
-        typeof t.const === 'number' ? t.const : t.const.compute(b),
-        t.attrs,
-        outermost,
-      );
+      return build.constant(typeof t.const === 'number' ? t.const : t.const.compute(b), t.attrs, outermost);
     if ('build' in t) return t.build(b, node as T);
     return build.operator(
       t.op,
