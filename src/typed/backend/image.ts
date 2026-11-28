@@ -334,17 +334,36 @@ export function imageCorrespondence(
   blocks: Artifact<TypedBlocks>,
   image: Artifact<Rv32Image>,
 ): EntityCorrespondence {
-  const src = image.value.source;
+  const source = blocksEntities(blocks.value).map(e => e.id),
+    target = imageEntities(image.value).map(e => e.id);
+  return makeCorrespondence(
+    { artifact: blocks.id, revision: blocks.revision },
+    { artifact: image.id, revision: image.revision },
+    source,
+    target,
+    coverEntries(blocks, image.value, image.id),
+  );
+}
+
+/**
+ * The entries an image declares about the typed.blocks revision it was lowered from: `covered-by` and `retained`
+ * (see `imageCorrespondence`, which completes them). The lowering transformation returns these, and the runner
+ * completes them over both projections (IRWB-061).
+ */
+export function coverEntries(
+  blocks: Artifact<TypedBlocks>,
+  image: Rv32Image,
+  imageId = `img:${image.program}`,
+): CorrespondenceEntry[] {
+  const src = image.source;
   if (!src || src.revision !== blocks.revision)
     fail(
       'wrongSource',
-      `${image.id} was lowered from ${src ? src.artifact + '@' + src.revision.slice(0, 12) : 'no typed.blocks revision'}, not ${blocks.id}@${blocks.revision.slice(0, 12)}`,
+      `${imageId} was lowered from ${src ? src.artifact + '@' + src.revision.slice(0, 12) : 'no typed.blocks revision'}, not ${blocks.id}@${blocks.revision.slice(0, 12)}`,
     );
-  const source = blocksEntities(blocks.value).map(e => e.id),
-    target = imageEntities(image.value).map(e => e.id);
-  const sourceSet = new Set(source);
+  const sourceSet = new Set(blocksEntities(blocks.value).map(e => e.id));
   const covering = new Map<string, string[]>();
-  for (const m of image.value.insns)
+  for (const m of image.insns)
     for (const c of m.covers) {
       if (!sourceSet.has(c)) fail('wrongSource', `${m.id} covers ${c}, which ${blocks.id} does not contain`);
       covering.set(c, [...(covering.get(c) ?? []), m.id]);
@@ -354,14 +373,8 @@ export function imageCorrespondence(
     to,
     relation: 'covered-by',
   }));
-  for (const name of image.value.fnOrder)
+  for (const name of image.fnOrder)
     if (sourceSet.has(`fn:${name}`))
       entries.push({ from: [`fn:${name}`], to: [`fn:${name}`], relation: 'retained' });
-  return makeCorrespondence(
-    { artifact: blocks.id, revision: blocks.revision },
-    { artifact: image.id, revision: image.revision },
-    source,
-    target,
-    entries,
-  );
+  return entries;
 }
