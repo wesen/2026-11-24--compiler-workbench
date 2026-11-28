@@ -8,7 +8,7 @@ and these are the places where that shows.
 
 The kernel's pass manager is asynchronous: `p.apply`, `p.pipeline`,
 `p.dryRun`, `p.actions` and `p.verify` run passes through the
-framework's `applyPass`, whose analyses and contracts are async.
+framework's asynchronous pass driver (`applyTransformation`).
 
 - In scripts (`scripts/*.js`), UI scripts' queries, button handlers and
   tasks, the console and the agent's eval, these calls are synchronous,

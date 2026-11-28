@@ -1,7 +1,7 @@
 /**
  * Passes written from inside the workbench: Compiler Workbench's builder,
  *   wb.pass('add-self').about('x + x becomes x * 2').writes('values').preserves('cfg', …).run((fn, tx, facts) => …)
- * producing an ordinary framework pass (`typedPass` → `definePass`). A user pass is held to the same rules as a
+ * producing an ordinary framework pass (`typedPass` → `transformation`). A user pass is held to the same rules as a
  * built-in one: its transaction refuses undeclared write kinds and reasonless removals, the framework refuses
  * changes outside the declared entity kinds, checks every preservation claim (audit mode included), and gates the
  * result with the meaning contract against r0. Built-in passes stay read-only; user passes are registered beside

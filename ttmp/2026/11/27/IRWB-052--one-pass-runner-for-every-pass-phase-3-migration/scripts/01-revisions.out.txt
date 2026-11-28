@@ -1,0 +1,4 @@
+tix inline: 6 programs, 2 changed, 0 differences between the applyNativePassSync wrapper, sync driver, async driver, optimizeTix (a plan)
+typed strength: 53 inputs (r0 of each project and each input O2 gave strength), 6 changed, 0 differences between the applyPass wrapper, async driver, sync driver (revision, edits, preservation outcomes, recorded contract executions)
+  contract executions recorded under the synchronous driver: 6
+  changed at: chess-search@r0, chess-search@r7, sha-chacha@r0, sha-chacha@r7, strength@r0, strength@r4

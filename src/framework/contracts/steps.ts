@@ -24,7 +24,9 @@ export function* wait<T>(value: T | PromiseLike<T>): Steps<T> {
 
 /** Run to the end, awaiting each yielded value; a rejection is thrown into the generator at its yield. */
 export async function driveAsync<T>(steps: Steps<T>): Promise<T> {
-  let step = steps.next();
+  return awaitFrom(steps, steps.next());
+}
+async function awaitFrom<T>(steps: Steps<T>, step: IteratorResult<unknown, T>): Promise<T> {
   while (!step.done) {
     let answer: unknown;
     try {
@@ -34,6 +36,21 @@ export async function driveAsync<T>(steps: Steps<T>): Promise<T> {
       continue;
     }
     step = steps.next(answer);
+  }
+  return step.value;
+}
+
+/**
+ * IRWB-052: run without waiting for as long as the steps answer with values, and return the result; at the first
+ * yielded promise, continue as `driveAsync` and return a promise of the result. For a function whose signature is
+ * `T | Promise<T>` (an invariant's `check`, an analysis's `run`) and which should answer a synchronous caller
+ * whenever nothing it asked for was asynchronous.
+ */
+export function drive<T>(steps: Steps<T>): T | Promise<T> {
+  let step = steps.next();
+  while (!step.done) {
+    if (isThenable(step.value)) return awaitFrom(steps, step);
+    step = steps.next(step.value);
   }
   return step.value;
 }

@@ -464,7 +464,7 @@ export function meaningKeptStrong(
 }
 
 const contracts = new Map<string, TransformationDefinition<any, any>>();
-/** The optimization contract with the version-2 meaning check; pass it to `applyPass` as `contract` to opt in. */
+/** The optimization contract with the version-2 meaning check; give it to an application as an `ensures` obligation to opt in. */
 export function strongOptimizationContract(params: StrongParams = {}): TransformationDefinition<any, any> {
   const check = meaningKeptStrong(params);
   let c = contracts.get(check.version);
