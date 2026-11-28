@@ -122,3 +122,24 @@ None of these is visible in a pass/fail score.
   - F33: discard preservation analyses of a rejected candidate (GLM's approach).
   - Library: phase 2c (graph, lattice, ssa).
   - Phase 3: the runner spike.
+
+## Step 3: lane 0 merged; lanes A–E launched in parallel
+
+The user: "can we parallelize?", then "alright, do it."
+
+- **Lane 0** (`3ba86fc`, tag `v7-p2-base`):
+  - A rejected application now also invalidates the preservation checks' analyses of the candidate, after IRWB-045-B (GLM).
+  - The F33 test gained an assertion, which fails without the fix and passes with it.
+  - Suites green; baselines unchanged.
+- **Lanes,** all on `v7-p2-base`, briefs `various/prompts/{graph,lattice,affine,num,spike}/common.md` (`d5cb30b`), launcher `scripts/06-launch-lanes.sh`. The briefs carry the two fixes from the matrix: update a test that asserts the behaviour being changed and say so; never modify the coordinator's ticket (the baselines are the oracle).
+
+  | Lane | Ticket | Work | Cells |
+  |---|---|---|---|
+  | A | IRWB-047 | `stdlib/graph`: DFS orders, dominators (Cooper–Harvey–Kennedy), natural loops; clients `typed/analyses.ts` and the solver's `depthFirst` | GLM high, DeepSeek xhigh |
+  | B | IRWB-048 | `stdlib/lattice`: set, flat, interval (with thresholds), map; clients `framework/dataflow` and SCCP | GLM high, DeepSeek xhigh |
+  | C | IRWB-049 | `stdlib/affine`: exact affine forms (R3's rounding case), distance vectors; clients `tensor/model.ts` and `joinDepth` | GLM high, DeepSeek xhigh |
+  | D | IRWB-050 | `stdlib/num`: binary32 with an explicit profile (RV32F `maximumNumber` against Tix's NaN-propagating `maximum`) | GLM high, DeepSeek xhigh |
+  | E | IRWB-051 | phase 3 spike: one runner, two drivers, a transformation type; port Tix `inline` and one Typed pass with needs and preserves; settle `analyseSync` by measurement | Codex Sol low, Astra low; Fable (Agent tool; wrapper `prompts/spike/claude/IRWB-051-C.md`) |
+
+  - Disjoint files by construction. A and B are split so that the fixpoint solver (`solver.ts`) moves only after both. C does not touch `evaluate.ts`; D does not touch `model.ts`.
+  - Caps: two hours for the library lanes, three for the spike.
