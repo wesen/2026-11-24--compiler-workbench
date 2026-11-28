@@ -27,6 +27,10 @@ topics:
       description: GPU backends (CUDA on the GB10 machine)
     - slug: agents
       description: Coding agents as designers and implementers; model comparisons
+    - slug: stdlib
+      description: the standard library of compiler algorithms
+    - slug: liveness
+      description: liveness and other dataflow over the control-flow graph
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes

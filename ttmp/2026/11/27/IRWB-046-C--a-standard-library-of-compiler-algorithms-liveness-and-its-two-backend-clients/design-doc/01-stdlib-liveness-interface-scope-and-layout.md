@@ -195,6 +195,11 @@ unreachable block's span created — each of which changes which register linear
 the trap is not only "the live-out set of a dead block differs": the wrong scope silently changes allocation
 decisions on a function whose unreachable code crosses a call.
 
+Probe 02 (`scripts/02-unreachable-blocks-in-corpus.mjs`) asks whether the corpus can catch this: over 100
+project-pipelines (every corpus project at `r0` and at the `speed` head) and 3,730 Typed basic blocks, **0 functions
+and 0 blocks are unreachable**. The baselines therefore say nothing about the scope, which is why §7's test asserts
+both scopes rather than only the one the clients use.
+
 Forward dataflow does not have this escape: for a backward problem the predecessor's facts are derived *from* the
 successor's, so an unreachable predecessor cannot pollute a reachable join, and the reachable blocks' facts are the
 same under both scopes. That is why the whole difference shows up as dead-block facts — and why a test that only
@@ -236,13 +241,17 @@ baselines cover only incidentally, for no gain this step; it is listed under Lat
 
 `tests/stdlib/imports.test.mjs`:
 
-- every module under `src/stdlib/` imports nothing from `src/framework/`, `src/typed/` or `src/tensor/` (read as
-  source: no build required, same technique as `tests/framework/layering.test.mjs`);
-- the layers of §3 hold: a module may import another stdlib module only from the same layer or a lower one.
+- every module under `src/stdlib/` imports nothing outside `src/stdlib/` — in particular nothing from `src/framework/`,
+  `src/typed/` or `src/tensor/`, and no Node builtin and no package (read as source: no build required, same
+  technique as `tests/framework/layering.test.mjs`);
+- the layers of §3 hold: a module may import another stdlib module only from the same layer or a lower one;
+- `src/stdlib/index.ts` re-exports every module the library contains, so a module cannot be added without a client
+  finding it.
 
 The second assertion is the one thing here beyond what the ticket asks for: without it "an obvious place for later
 primitives" is a comment, and the first `pe/` module that imports `flow/` would be found later than it should be. It
-is nine lines.
+is nine lines. Banning bare imports is the same argument one step further: an algorithm that reads a file, hashes
+with `node:crypto` or takes the clock is not a library algorithm, and the day one is needed is the day to say why.
 
 The existing `tests/typed/` backend tests must pass unchanged — they assert allocation, images and the byte
 identities of the corpus, so they check the extraction as a side effect.

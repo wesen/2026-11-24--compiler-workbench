@@ -1,3 +1,22 @@
+---
+Title: 'Diary: src/stdlib and liveness'
+Ticket: IRWB-046-C
+Status: active
+Topics:
+    - stdlib
+    - framework
+    - liveness
+DocType: reference
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: "Chronological record of IRWB-046-C: the readings, the probes, the two hand-computation slips the reference test caught, and every check that was run."
+LastUpdated: 2026-11-27T00:00:00.000000000-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
 # Diary — IRWB-046-C
 
 ## Entry 1 — read the ground, then wrote the design
@@ -45,3 +64,58 @@ edits, the tests, the alternatives, and the Later list. Decisions taken there:
   that is really a schedule change.
 - `physicalOccupancy()`'s bitmask sweep stays; it is a third copy in a different representation and is not one of the
   two clients the step names.
+
+## Entry 2 — the primitive and the two clients
+
+Wrote `src/stdlib/flow/liveness.ts` and `src/stdlib/index.ts` as the design says: `LivenessShape` (blockCount,
+successors, items, reads, writes), required `LivenessScope`, result with `liveIn`/`liveOut` and
+`walkBackwards(block, visit)`.
+
+Two implementation notes that are not in the design:
+
+- the fixpoint compares sets by content (`sameSet`) rather than by size as the clients did. Under monotonicity the two
+  are equivalent, but content comparison needs no monotonicity argument to read correctly.
+- `reachableFrom()` is a plain stack walk and is only called for scope `'entryReachable'`; scope `'all'` passes
+  `null` and the sweep visits every block, as the clients did.
+
+`regalloc.ts`: added `machineLiveness(code, blocks?)` beside `machineBlocks` (the shape binding plus scope `'all'`
+with its reason), and `intervals()` now reads `liveIn`/`liveOut` from it. `Intervals.liveOut` retyped to
+`readonly ReadonlySet<number>[]`; `grep` says nothing in `src/`, `site-src/`, `tools/` or `tests/` reads it.
+`coalesce.ts`: the two sweeps became `live.walkBackwards(k, …)` around the edge building, and `usesOf` left the
+import list. tsc clean on the first try (`npm run check`).
+
+## Entry 3 — the tests, and two tests of my own hand computation
+
+`tests/stdlib/liveness.test.mjs`: hand-computed sets, the unreachable block under both scopes, `'entryReachable'`
+from a non-zero entry, and 40 seeded random graphs against a search-based reference (the definition: some path to a
+read with no write in between). Eight tests, and the reference caught nothing in the primitive — it caught **my
+hand computation**, twice:
+
+- I asserted block 0's live-in of the diamond was `{a}`; `a = 1` is a definition in block 0, so it is `{}`. The
+  primitive was right.
+- I asserted both of block 2's items had `{a, b}` live after them; after `a = g(b)` the register holding `b` is dead
+  (that was its last use), so both are `{a}`. The primitive was right (and the reference agrees, since it passes now).
+
+`tests/stdlib/imports.test.mjs`: no import outside `src/stdlib/` (this is what makes `src/framework/`, `src/typed/`
+and `src/tensor/` unreachable from the library, and it also bans Node builtins — a library algorithm that needs the
+clock or the filesystem is not one), the layer direction from the index's table, and that the index re-exports every
+module. Probed by adding two throwaway modules (one importing `../../framework/dataflow/solver.js`, one in `graph/`
+importing `../flow/liveness.js`): both failed with the offending path named, and both passed after deletion.
+
+Then the expensive checks. `npm run build`, then the baselines script: **no differences** (5m05s). The typed suite:
+188 tests, 183 pass, 0 fail, 3 `todo` (F36, F37, F38 — other steps'). Framework: 242 / 238 / 0 fail / 4 todo
+(F33 ×2, F34, F35). Workbench: 25 / 24 / 0 fail. Tensor without gpu: 45 / 44 / 0 fail / 1 todo (F27). `npm run
+check` clean; `npm run format:check` reports 9 files, all of them already unformatted before this step (checked with
+`git diff --stat` — none of them mine); `node tools/build-site.mjs` builds (131 source files, it bundles
+`src/typed`).
+
+## Entry 4 — probe 02, the uncomfortable measurement
+
+`scripts/02-unreachable-blocks-in-corpus.mjs`, over 100 project-pipelines (every corpus project at `r0` and at the
+`speed` head) and 3,730 Typed basic blocks: **0 functions and 0 blocks are unreachable**. So no corpus project can
+tell one liveness scope from the other, and the baselines prove nothing about the scope. The test is the only guard;
+that is why it asserts both scopes. 2m45s to run.
+
+Also wrote `reference/02-report.md`, with the three places where the brief and the repository disagree: there is no
+`todo` test for this step (so none was removed), `physicalOccupancy()`'s bitmask sweep is a third copy that stays, and
+the layering of the later modules is mine because design doc D is not in this worktree.
