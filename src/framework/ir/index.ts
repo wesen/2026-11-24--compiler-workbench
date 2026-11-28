@@ -7,4 +7,5 @@ export * from './traversal.js';
 export * from './diff.js';
 export * from './correspondence.js';
 export * from './derivation.js';
+export * from './attribution.js';
 export * from './readers.js';
