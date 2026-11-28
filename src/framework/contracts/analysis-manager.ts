@@ -5,7 +5,7 @@ import { Check, JsonValue, definitionRef, describeDefinition, validateArtifact }
 import { MemoryResources } from './effects.js';
 import { assuranceOf } from './differential.js';
 import { ContractRegistry } from './registry.js';
-import { driveAsync, driveSync, wait, type Steps } from './steps.js';
+import { driveAsync, driveSync, wait, type Steps } from '../core/steps.js';
 import type {
   AnalysisDefinition,
   AnalysisRecord,

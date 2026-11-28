@@ -11,7 +11,7 @@
 import { fingerprint } from '../core/data.js';
 import { ContractError } from './analysis-manager.js';
 import { defineInvariant } from './definitions.js';
-import { drive, driveAsync, wait, type Steps } from './steps.js';
+import { drive, driveAsync, wait, type Steps } from '../core/steps.js';
 import type { CheckResult, InvariantDefinition, PortValue, PortValues, Ports } from './types.js';
 
 /** A small deterministic generator (mulberry32), so a reported counterexample can be run again from its seed. */
@@ -63,7 +63,11 @@ export interface DifferentialSpec<P extends Ports, Case, Outcome> {
    * program, a hash of the code the case can reach). Used only together with `baselineKey`: a decided verdict is
    * kept under (baseline key, case index, subject key) and replayed instead of evaluating the case again.
    */
-  readonly subjectKey?: (subject: PortValue<P[keyof P]>, kase: Case, inputs: PortValues<P>) => string | undefined;
+  readonly subjectKey?: (
+    subject: PortValue<P[keyof P]>,
+    kase: Case,
+    inputs: PortValues<P>,
+  ) => string | undefined;
   /**
    * IRWB-004 F4: decide the cases at the indices `todo` elsewhere (e.g. on worker threads), returning one verdict
    * per index, in the order of `todo`, exactly as `run`, `inconclusive` and `compare` would decide them; or
@@ -129,14 +133,18 @@ export function differential<P extends Ports, Case, Outcome>(
       return evidence instanceof Promise ? evidence.then(result) : result(evidence);
     },
   });
-  const out = Object.assign(Object.create(null), inv, { method: 'sampled' as const }) as DifferentialInvariant<P>;
+  const out = Object.assign(Object.create(null), inv, {
+    method: 'sampled' as const,
+  }) as DifferentialInvariant<P>;
   SPECS.set(out, spec as DifferentialSpec<any, any, any>);
   return out;
 }
 
 const SPECS = new WeakMap<object, DifferentialSpec<any, any, any>>();
 /** IRWB-004 F4: the specification a differential invariant was made from (a worker decides cases with it). */
-export function differentialSpec<P extends Ports>(inv: DifferentialInvariant<P>): DifferentialSpec<P, any, any> {
+export function differentialSpec<P extends Ports>(
+  inv: DifferentialInvariant<P>,
+): DifferentialSpec<P, any, any> {
   const spec = SPECS.get(inv);
   if (!spec) throw new Error(`${inv.id} is not a differential invariant of this realm`);
   return spec;
@@ -179,13 +187,21 @@ export function differentialStats(reset = false): Readonly<typeof STATS> {
 function caseDigest(cases: readonly unknown[]): string {
   function encode(value: unknown): unknown {
     if (value === null) return ['null'];
-    if (typeof value === 'number')
-      return ['number', Object.is(value, -0) ? '-0' : String(value)];
-    if (typeof value === 'string' || typeof value === 'boolean' || typeof value === 'bigint' || value === undefined)
+    if (typeof value === 'number') return ['number', Object.is(value, -0) ? '-0' : String(value)];
+    if (
+      typeof value === 'string' ||
+      typeof value === 'boolean' ||
+      typeof value === 'bigint' ||
+      value === undefined
+    )
       return [typeof value, String(value)];
     if (ArrayBuffer.isView(value)) {
       const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
-      return ['view', Object.getPrototypeOf(value).constructor.name, Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')];
+      return [
+        'view',
+        Object.getPrototypeOf(value).constructor.name,
+        Array.from(bytes, b => b.toString(16).padStart(2, '0')).join(''),
+      ];
     }
     if (value instanceof ArrayBuffer)
       return ['buffer', Array.from(new Uint8Array(value), b => b.toString(16).padStart(2, '0')).join('')];
@@ -194,7 +210,12 @@ function caseDigest(cases: readonly unknown[]): string {
     if (value instanceof Map) return ['map', [...value].map(([k, v]) => [encode(k), encode(v)])];
     if (value instanceof Set) return ['set', [...value].map(encode)];
     if (typeof value === 'object')
-      return ['object', Object.keys(value).sort().map(k => [k, encode((value as Record<string, unknown>)[k])])];
+      return [
+        'object',
+        Object.keys(value)
+          .sort()
+          .map(k => [k, encode((value as Record<string, unknown>)[k])]),
+      ];
     throw new Error('Unsupported differential case value');
   }
   return fingerprint(encode(cases));
@@ -214,8 +235,7 @@ function prepare<P extends Ports, Case, Outcome>(
     if (reuse.caseDigest !== caseDigest(current))
       throw new ContractError('baseline-key', `Differential baseline key ${bk} produced different cases`);
     REUSE.delete(key);
-  }
-  else {
+  } else {
     const cases = spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count);
     reuse = {
       key,
@@ -365,16 +385,18 @@ function* differentialSteps<P extends Ports, Case, Outcome>(
       STATS.replayed++;
     } else todo.push(i);
   }
-  const batchKey = spec.decide && reuse && todo.length && todo.every(i => keys[i] !== undefined)
-    ? JSON.stringify([reuse.key, todo.map(i => keys[i])])
-    : undefined;
+  const batchKey =
+    spec.decide && reuse && todo.length && todo.every(i => keys[i] !== undefined)
+      ? JSON.stringify([reuse.key, todo.map(i => keys[i])])
+      : undefined;
   const pending = batchKey === undefined ? undefined : IN_FLIGHT.get(batchKey);
   const elsewhere = pending ?? (todo.length ? spec.decide?.(inputs, cases, todo) : undefined);
   if (elsewhere) {
     if (batchKey !== undefined && !pending) IN_FLIGHT.set(batchKey, elsewhere);
     try {
       const decided = yield* wait(elsewhere);
-      if (decided.length !== todo.length) throw new Error(`${spec.id}: decide returned ${decided.length} of ${todo.length}`);
+      if (decided.length !== todo.length)
+        throw new Error(`${spec.id}: decide returned ${decided.length} of ${todo.length}`);
       todo.forEach((i, k) => (verdicts[i] = decided[k]));
       if (pending) STATS.replayed += todo.length;
       else STATS.delegated += todo.length;

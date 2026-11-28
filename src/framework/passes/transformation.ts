@@ -11,7 +11,7 @@
  *   - `obligations`: `requires` (checks on the input), `ensures` (checks on the candidate: a function, or a v6
  *     transformation contract) and `preserves` (analyses whose results it claims survive).
  *
- * `runTransformation` is the runner, written once as a generator of steps (contracts/steps.ts). It delegates to
+ * `runTransformation` is the runner, written once as a generator of steps (core/steps.ts). It delegates to
  * the analysis manager's own steps for `needs`, `preserves` and a contract, so both drivers use the manager's
  * cache and records. `applyTransformation` drives it asynchronously and `applyTransformationSync` synchronously;
  * the synchronous driver stops only when a step actually answers with a promise (an asynchronous analysis,
@@ -28,7 +28,7 @@ import { canonical } from '../core/data.js';
 import { openIR } from '../ir/index.js';
 import type { ChangeSet, EntityCorrespondence, IREdit, IRStore, IRView } from '../ir/index.js';
 import type { AnalysisManager } from '../contracts/analysis-manager.js';
-import { wait, driveAsync, driveSync, type Steps } from '../contracts/steps.js';
+import { wait, driveAsync, driveSync, type Steps } from '../core/steps.js';
 import type {
   AnalysisDefinition,
   AnalysisRecord,

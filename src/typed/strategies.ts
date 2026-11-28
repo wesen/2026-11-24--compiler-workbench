@@ -17,6 +17,7 @@ import {
   apply,
   chooseBest,
   fork,
+  identityAlgorithm,
   literal,
   plan,
   repeatUntilStable,
@@ -140,13 +141,7 @@ export function strategyRegistry(
         onResult: opts.onResult as never,
       }),
     );
-  register({
-    id: 'typed.keep',
-    version: '1',
-    kind: 'transform',
-    description: 'the program as it is',
-    run: (_c, input) => input,
-  });
+  register(identityAlgorithm);
   register({
     id: 'typed.metrics',
     version: '1',
@@ -168,7 +163,7 @@ export function passesNode(id: string, passes: string | readonly string[]): Stra
   if (!names) throw new Error(`unknownPipeline: no pipeline "${passes}"`);
   return names.length
     ? sequence(id, ...names.map((n, i) => passNode(id, n, i)))
-    : apply(`${id}/keep`, algorithm('typed.keep', '1'));
+    : apply(`${id}/keep`, algorithm(identityAlgorithm.id, identityAlgorithm.version));
 }
 
 /** Run each named candidate on the program and keep the best by `metric` (subject to constraints). */
@@ -349,7 +344,7 @@ export function searchPlan(
               `${fn}:${n}`,
               ...names.map((x, i) => apply(`${fn}:${n}/${i}:${x}`, algorithm(`typed.${x}@${fn}`, '1'))),
             )
-          : apply(`${fn}:${n}/keep`, algorithm('typed.keep', '1')),
+          : apply(`${fn}:${n}/keep`, algorithm(identityAlgorithm.id, identityAlgorithm.version)),
       };
     });
     return chooseBest(

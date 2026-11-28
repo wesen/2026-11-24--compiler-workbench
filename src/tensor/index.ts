@@ -5,13 +5,11 @@ import { passAlgorithm, type PassLike } from '../framework/passes/index.js';
 import {
   AlgorithmRegistry,
   algorithm,
-  apply,
-  attempt,
   executeSync,
+  identityAlgorithm,
+  passSequence,
   plan,
-  sequence,
   StrategyExecutionError,
-  type StrategyAlgorithm,
 } from '../framework/strategy/index.js';
 import { evaluate, type Inputs, type Precision, type BufferValue } from './evaluate.js';
 import { adapter } from './ir.js';
@@ -39,13 +37,6 @@ export function runTix(
 ): BufferValue {
   return evaluate(selectFunction(program.current.value, fn), inputs, options?.precision ?? 'f32');
 }
-const keep: StrategyAlgorithm = {
-  id: 'tix.keep',
-  version: '1',
-  kind: 'transform',
-  description: 'the program as it is',
-  run: (_ctx, input) => input,
-};
 /**
  * Apply the named passes in order. The list is a strategy plan: a sequence with one `attempt` per pass, whose
  * fallback keeps the program when the pass's meaning gate rejects the candidate. The plan runs under the
@@ -53,20 +44,15 @@ const keep: StrategyAlgorithm = {
  */
 export function optimizeTix(program: TixProgram, passes: string[]) {
   const { origin } = program;
-  const registry = new AlgorithmRegistry().register(keep);
+  const registry = new AlgorithmRegistry().register(identityAlgorithm);
   const nodes = passes.map((pass, i) => {
     const definition = pass === 'inline' ? inlinePass : pass === 'split-sum' ? splitPass : undefined;
     if (!definition) throw Error('Unknown pass ' + pass);
     if (!registry.has(definition)) registry.register(tixAlgorithm(definition, { origin }));
-    return attempt(
-      `${i}?`,
-      apply(`${i}`, algorithm(definition.id, definition.version)),
-      apply(`${i}/keep`, algorithm(keep.id, keep.version)),
-      { codes: ['contract-rejected'] },
-    );
+    return { id: `${i}`, algorithm: algorithm(definition.id, definition.version), tolerate: true };
   });
   const execution = executeSync(
-    plan('tix.optimize', sequence('passes', ...nodes)),
+    plan('tix.optimize', passSequence('passes', nodes)),
     registry,
     program.current,
   );
