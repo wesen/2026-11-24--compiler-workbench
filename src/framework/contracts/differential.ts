@@ -11,6 +11,7 @@
 import { fingerprint } from '../core/data.js';
 import { ContractError } from './analysis-manager.js';
 import { defineInvariant } from './definitions.js';
+import { drive, driveAsync, wait, type Steps } from './steps.js';
 import type { CheckResult, InvariantDefinition, PortValue, PortValues, Ports } from './types.js';
 
 /** A small deterministic generator (mulberry32), so a reported counterexample can be run again from its seed. */
@@ -122,8 +123,10 @@ export function differential<P extends Ports, Case, Outcome>(
     description: spec.description,
     inputs: spec.inputs,
     check(_ctx, inputs): CheckResult | Promise<CheckResult> {
-      if (spec.decide) return runDifferentialAsync(spec, inputs, seed, maxCx).then(result);
-      return result(runDifferential(spec, inputs, seed, maxCx));
+      // IRWB-052: a promise only when `spec.decide` took the cases; otherwise the verdict is returned as a value,
+      // so a synchronous driver can run a contract whose check has an executor hook but no executor installed
+      const evidence = drive(differentialSteps(spec, inputs, seed, maxCx));
+      return evidence instanceof Promise ? evidence.then(result) : result(evidence);
     },
   });
   const out = Object.assign(Object.create(null), inv, { method: 'sampled' as const }) as DifferentialInvariant<P>;
@@ -336,12 +339,21 @@ export function runDifferential<P extends Ports, Case, Outcome>(
 }
 
 /** `runDifferential`, with the cases nobody decided yet handed to `spec.decide` (IRWB-004 F4). */
-export async function runDifferentialAsync<P extends Ports, Case, Outcome>(
+export function runDifferentialAsync<P extends Ports, Case, Outcome>(
   spec: DifferentialSpec<P, Case, Outcome>,
   inputs: PortValues<P>,
   seed = spec.seed ?? 1,
   maxCounterexamples = spec.maxCounterexamples ?? 5,
 ): Promise<DifferentialEvidence> {
+  return driveAsync(differentialSteps(spec, inputs, seed, maxCounterexamples));
+}
+/** The run as steps (steps.ts): it yields only when `spec.decide`, or a batch already in flight, has the cases. */
+function* differentialSteps<P extends Ports, Case, Outcome>(
+  spec: DifferentialSpec<P, Case, Outcome>,
+  inputs: PortValues<P>,
+  seed: number,
+  maxCounterexamples: number,
+): Steps<DifferentialEvidence> {
   const { cases, reuse } = prepare(spec, inputs, seed);
   const keys = memoKeys(spec, inputs, cases, reuse);
   const verdicts: Decided[] = new Array(cases.length);
@@ -361,7 +373,7 @@ export async function runDifferentialAsync<P extends Ports, Case, Outcome>(
   if (elsewhere) {
     if (batchKey !== undefined && !pending) IN_FLIGHT.set(batchKey, elsewhere);
     try {
-      const decided = await elsewhere;
+      const decided = yield* wait(elsewhere);
       if (decided.length !== todo.length) throw new Error(`${spec.id}: decide returned ${decided.length} of ${todo.length}`);
       todo.forEach((i, k) => (verdicts[i] = decided[k]));
       if (pending) STATS.replayed += todo.length;

@@ -1,0 +1,27 @@
+Tix inline on attention, trivial gate (the runner alone)
+  before: applyNativePassSync                          cpu 1.660 ms (0.926..1.985)   wall min 0.913 ms
+  after: sync driver                                   cpu 1.442 ms (1.151..2.022)   wall min 1.016 ms
+  after: async driver                                  cpu 1.497 ms (0.944..2.720)   wall min 0.829 ms
+  after: applyNativePassSync (wrapper)                 cpu 1.435 ms (0.824..1.833)   wall min 0.824 ms
+Tix inline on attention, with the meaning gate
+  before: applyNativePassSync                          cpu 14.817 ms (9.891..18.873)   wall min 9.486 ms
+  after: sync driver                                   cpu 14.109 ms (10.379..20.645)   wall min 10.091 ms
+  after: async driver                                  cpu 14.012 ms (9.854..30.735)   wall min 9.507 ms
+  before: optimizeTix([inline]) (a loop)               cpu 16.854 ms (10.379..19.326)   wall min 9.149 ms
+  after: optimizeTix([inline]) (a plan, sync driver)   cpu 16.089 ms (10.312..20.501)   wall min 9.830 ms
+Typed strength on strength r0, new manager each time, the optimization contract, preservation audited
+  before: applyPass                                    cpu 21.346 ms (17.235..31.327)   wall min 14.872 ms
+  after: async driver                                  cpu 20.272 ms (16.767..31.449)   wall min 14.626 ms
+  after: sync driver                                   cpu 20.463 ms (17.270..28.402)   wall min 14.715 ms
+Typed strength on strength r0, facts cached, no gate (the runner, cache hits, three transfers)
+  before: applyPass                                    cpu 11.192 ms (7.122..17.915)   wall min 6.902 ms
+  after: async driver                                  cpu 9.749 ms (8.499..23.978)   wall min 7.356 ms
+  after: sync driver                                   cpu 10.625 ms (6.728..12.367)   wall min 6.169 ms
+Typed strength on sha-chacha r0, new manager each time, the optimization contract, preservation audited
+  before: applyPass                                    cpu 268.850 ms (200.352..423.953)   wall min 184.574 ms
+  after: async driver                                  cpu 235.300 ms (209.844..491.280)   wall min 190.423 ms
+  after: sync driver                                   cpu 248.279 ms (192.758..416.359)   wall min 181.680 ms
+Typed strength on sha-chacha r0, facts cached, no gate (the runner, cache hits, three transfers)
+  before: applyPass                                    cpu 169.626 ms (166.426..211.055)   wall min 130.665 ms
+  after: async driver                                  cpu 159.301 ms (139.112..237.244)   wall min 124.655 ms
+  after: sync driver                                   cpu 159.495 ms (146.076..314.460)   wall min 132.760 ms

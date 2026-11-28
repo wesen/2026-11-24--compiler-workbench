@@ -14,7 +14,7 @@ for (const id of projectIds()) {
   const revisions = [r0, ...run.steps.filter(s => s.changed).map(s => s.result.artifact)];
   for (const rev of revisions)
     for (const [name, pass] of Object.entries(PASSES)) {
-      if (!pass.preserves.length) continue;
+      if (!pass.obligations.preserves.length) continue;
       try { applications++; await applyPass(pass, rev, { manager, auditPreservation: true }); }
       catch (e) {
         if (e.code !== 'preserveViolated') continue;
