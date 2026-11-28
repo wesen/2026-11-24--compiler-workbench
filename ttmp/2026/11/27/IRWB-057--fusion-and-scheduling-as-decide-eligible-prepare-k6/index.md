@@ -19,7 +19,14 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Phase 4 of IRWB-039, concept K6: fusion and loop scheduling take their choices as plans (data) that a small
+`eligible` checks; the scheduling rule is a strategy plan under `executeSync`; a manifest printed with the CUDA
+source drives the runtime's gate names. Done; K6's unification holds for the pair.
+
+- Report: [analysis/01-report-fusion-and-scheduling-as-decide-eligible-prepare.md](./analysis/01-report-fusion-and-scheduling-as-decide-eligible-prepare.md)
+- Diary: [reference/01-diary.md](./reference/01-diary.md)
+- Probes: `scripts/01-schedule-oracle.mjs` (schedules and CUDA hashes of 310 lowerings, recorded on ab23152),
+  `scripts/02-schedule-cost.mjs` (scheduling time and pass applications, before and after)
 
 ## Key Links
 
