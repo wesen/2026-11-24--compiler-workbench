@@ -7,7 +7,11 @@ Topics:
 DocType: design-doc
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/framework/contracts/analysis-manager.ts
+      Note: Shared analysis and transfer lifecycle
+    - Path: repo://src/framework/passes/define-pass.ts
+      Note: Pass preparation and acceptance boundary
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T20:20:09.481110684-05:00

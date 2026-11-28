@@ -11,7 +11,18 @@
 import { defineTransformation } from '../framework/contracts/definitions.js';
 import type { TransformationDefinition } from '../framework/contracts/types.js';
 import type { CorrespondenceEntry } from '../framework/ir/types.js';
-import { definePass, type Pass } from '../framework/passes/define-pass.js';
+import {
+  differentialSpec,
+  differentialVerdict,
+  runDifferential,
+} from '../framework/contracts/differential.js';
+import {
+  definePass,
+  type NativeResult,
+  type Pass,
+  type PassRunContext,
+  type PassTransformation,
+} from '../framework/passes/define-pass.js';
 import type { DataflowResult } from '../framework/dataflow/analysis.js';
 import {
   ANALYSES,
@@ -174,7 +185,7 @@ export type TypedPass = Pass<TypedBlocks, Record<string, any>, Record<string, un
   readonly typed: TypedPassSpec;
 };
 
-export function typedPass(spec: TypedPassSpec): TypedPass {
+export function typedPass(spec: TypedPassSpec) {
   const needs = Object.fromEntries(
     Object.entries(spec.needs ?? {}).map(([alias, name]) => [alias, NEEDS[name]]),
   );
@@ -192,40 +203,46 @@ export function typedPass(spec: TypedPassSpec): TypedPass {
     needs,
     writes: { entities: [...writes.entities], relations: [...writes.relations] },
     preserves: (spec.preserves ?? []).map(n => NEEDS[n]),
-    run({ before, facts, params }) {
-      const st = Store.from(before.value),
-        rev = before.value.rev + 1;
-      const edits: Edit[] = [],
-        touched: string[] = [];
-      for (const f of st.fns.values()) {
-        const views: FactViews = {};
-        for (const [alias, name] of Object.entries(spec.needs ?? {}))
-          views[alias] = view(name, facts[alias], st, f.name);
-        const tx = new Tx(st, f, { name: spec.name, writes: spec.writes }, rev);
-        spec.body({ st, f, tx, facts: views, params: (params ?? {}) as Record<string, unknown> });
-        tx.commit();
-        if (tx.edits.length) {
-          edits.push(...tx.edits);
-          touched.push(f.name);
-        }
-      }
-      if (!edits.length) return;
-      st.rev = rev;
-      const native = st.toNative();
-      const kinds = edits.reduce<Record<string, number>>(
-        (m, e) => ((m[e.kind] = (m[e.kind] || 0) + 1), m),
-        {},
-      );
-      const report: RevisionReport = { pass: spec.name, rev, edits, fns: touched, kinds };
-      return {
-        native,
-        correspondence: revisionCorrespondence(before.value, native, edits),
-        edits: edits.length,
-        report,
-      };
-    },
+    run: prepare,
   });
-  return Object.freeze({ ...pass, typed: spec }) as TypedPass;
+  return Object.freeze({ ...pass, typed: spec, run: prepare });
+
+  function prepare({
+    before,
+    facts,
+    params,
+  }: Omit<
+    PassRunContext<TypedBlocks, Record<string, any>, Record<string, unknown>>,
+    'edit'
+  >): NativeResult<TypedBlocks> | void {
+    const st = Store.from(before.value),
+      rev = before.value.rev + 1;
+    const edits: Edit[] = [],
+      touched: string[] = [];
+    for (const f of st.fns.values()) {
+      const views: FactViews = {};
+      for (const [alias, name] of Object.entries(spec.needs ?? {}))
+        views[alias] = view(name, facts[alias], st, f.name);
+      const tx = new Tx(st, f, { name: spec.name, writes: spec.writes }, rev);
+      spec.body({ st, f, tx, facts: views, params: (params ?? {}) as Record<string, unknown> });
+      tx.commit();
+      if (tx.edits.length) {
+        edits.push(...tx.edits);
+        touched.push(f.name);
+      }
+    }
+    if (!edits.length) return;
+    st.rev = rev;
+    const native = st.toNative();
+    const kinds = edits.reduce<Record<string, number>>((m, e) => ((m[e.kind] = (m[e.kind] || 0) + 1), m), {});
+    const report: RevisionReport = { pass: spec.name, rev, edits, fns: touched, kinds };
+    return {
+      native,
+      correspondence: revisionCorrespondence(before.value, native, edits),
+      edits: edits.length,
+      report,
+    };
+  }
 }
 
 const contracts = new Map<string, TransformationDefinition<any, any>>();
@@ -334,6 +351,28 @@ export const constprop = typedPass({
       );
   },
 });
+
+export function constpropTransformation(
+  meaning: MeaningParams = {},
+): PassTransformation<TypedBlocks, Record<string, any>, Record<string, unknown>> {
+  const check = differentialSpec(meaningKept(meaning));
+  return {
+    id: constprop.id,
+    version: constprop.version,
+    ir: constprop.ir,
+    adapter: constprop.adapter,
+    writes: constprop.writes,
+    relation: 'exact',
+    eligible: constprop.legal,
+    prepare: constprop.run,
+    obligations: {
+      requires: constprop.needs ?? {},
+      ensures: (origin, _relation, _before, candidate) =>
+        differentialVerdict(runDifferential(check, { origin, candidate })),
+      preserves: constprop.preserves ?? [],
+    },
+  };
+}
 
 export const dce = typedPass({
   name: 'dce',

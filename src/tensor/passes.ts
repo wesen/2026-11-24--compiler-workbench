@@ -1,5 +1,5 @@
-import { definePass, type Pass } from '../framework/passes/index.js';
-import type { Relation } from './contract.js';
+import { definePass, type Pass, type PassTransformation } from '../framework/passes/index.js';
+import { meaningGate, type Relation } from './contract.js';
 import { adapter, TixIR } from './ir.js';
 import {
   add,
@@ -82,7 +82,15 @@ function split(fn: Fn): Fn {
 }
 export type TixPass = Pass<Module> & { readonly relation: Relation };
 
-function pass(name: string, relation: Relation, transform: (fn: Fn) => Fn): TixPass {
+const prepare =
+  (transform: (fn: Fn) => Fn) =>
+  ({ before }: { before: { value: Module } }) => ({
+    native: { functions: before.value.functions.map(transform) },
+  });
+
+const prepareInline = prepare(inline);
+
+function pass(name: string, relation: Relation, run: ReturnType<typeof prepare>): TixPass {
   return Object.freeze({
     ...definePass<Module>({
       id: 'tensor.' + name,
@@ -91,10 +99,25 @@ function pass(name: string, relation: Relation, transform: (fn: Fn) => Fn): TixP
       ir: TixIR,
       adapter,
       writes: { entities: ['tensor'], relations: ['reads', 'contains'] },
-      run: ({ before }) => ({ native: { functions: before.value.functions.map(transform) } }),
+      run,
     }),
     relation,
   });
 }
-export const inlinePass = pass('inline', 'exact', inline),
-  splitPass = pass('split-sum', 'tolerance', split);
+export const inlinePass = pass('inline', 'exact', prepareInline),
+  splitPass = pass('split-sum', 'tolerance', prepare(split));
+
+export const inlineTransformation: PassTransformation<Module, {}, unknown> = {
+  id: inlinePass.id,
+  version: inlinePass.version,
+  ir: TixIR,
+  adapter,
+  writes: inlinePass.writes,
+  relation: inlinePass.relation,
+  prepare: prepareInline,
+  obligations: {
+    requires: {},
+    ensures: (origin, relation, before, candidate) => meaningGate(origin, relation)(before, candidate),
+    preserves: [],
+  },
+};

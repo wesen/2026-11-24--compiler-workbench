@@ -97,6 +97,19 @@ export type DifferentialInvariant<P extends Ports> = InvariantDefinition<P> & {
   readonly method: 'sampled';
 };
 
+export function differentialVerdict(evidence: DifferentialEvidence): CheckResult {
+  return {
+    ok: evidence.status === 'agree',
+    reason:
+      evidence.status === 'agree'
+        ? `${evidence.agree}/${evidence.total} sampled cases agree (${evidence.inconclusive} inconclusive)`
+        : evidence.status === 'disagree'
+          ? `${evidence.disagree}/${evidence.total} sampled cases disagree`
+          : `no decided case among ${evidence.total} (all inconclusive)`,
+    evidence,
+  };
+}
+
 export function differential<P extends Ports, Case, Outcome>(
   spec: DifferentialSpec<P, Case, Outcome>,
 ): DifferentialInvariant<P> {
@@ -106,24 +119,14 @@ export function differential<P extends Ports, Case, Outcome>(
     throw new Error('Differential check needs distinct baseline and subject ports');
   const seed = spec.seed ?? 1,
     maxCx = spec.maxCounterexamples ?? 5;
-  const result = (evidence: DifferentialEvidence): CheckResult => ({
-    ok: evidence.status === 'agree',
-    reason:
-      evidence.status === 'agree'
-        ? `${evidence.agree}/${evidence.total} sampled cases agree (${evidence.inconclusive} inconclusive)`
-        : evidence.status === 'disagree'
-          ? `${evidence.disagree}/${evidence.total} sampled cases disagree`
-          : `no decided case among ${evidence.total} (all inconclusive)`,
-    evidence,
-  });
   const inv = defineInvariant<P>({
     id: spec.id,
     version: spec.version,
     description: spec.description,
     inputs: spec.inputs,
     check(_ctx, inputs): CheckResult | Promise<CheckResult> {
-      if (spec.decide) return runDifferentialAsync(spec, inputs, seed, maxCx).then(result);
-      return result(runDifferential(spec, inputs, seed, maxCx));
+      if (spec.decide) return runDifferentialAsync(spec, inputs, seed, maxCx).then(differentialVerdict);
+      return differentialVerdict(runDifferential(spec, inputs, seed, maxCx));
     },
   });
   const out = Object.assign(Object.create(null), inv, { method: 'sampled' as const }) as DifferentialInvariant<P>;

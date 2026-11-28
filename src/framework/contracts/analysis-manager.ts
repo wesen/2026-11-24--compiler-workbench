@@ -1,3 +1,4 @@
+import { driveAsync, driveSync, perform, type Effect } from './effect-driver.js';
 import { canonical, fingerprint, immutable } from '../core/data.js';
 import type { Artifact, EntityRef } from '../core/types.js';
 import { diffGraphs } from '../ir/diff.js';
@@ -525,12 +526,31 @@ export class AnalysisManager {
   ): Promise<AnalysisRecord<R>> {
     return this.analyseInternal(definition, subject, params);
   }
-  private async analyseInternal<S, R>(
+  /** Pure synchronous analysis, sharing revision keys, records and history with analyse. */
+  analyseSync<S, R>(
+    definition: AnalysisDefinition<S, R>,
+    subject: Artifact<S>,
+    params: unknown = null,
+  ): AnalysisRecord<R> {
+    return driveSync(this.analysisWork(definition, subject, params, undefined, true));
+  }
+  private analyseInternal<S, R>(
     definition: AnalysisDefinition<S, R>,
     subject: Artifact<S>,
     params: unknown,
     parent?: Frame,
   ): Promise<AnalysisRecord<R>> {
+    return driveAsync(this.analysisWork(definition, subject, params, parent));
+  }
+  private *analysisWork<S, R>(
+    definition: AnalysisDefinition<S, R>,
+    subject: Artifact<S>,
+    params: unknown,
+    parent?: Frame,
+    sync = false,
+  ): Generator<Effect, AnalysisRecord<R>, unknown> {
+    if (sync && definition.effects.length)
+      throw new Error(`Synchronous analysis ${definition.id} requires a pure definition`);
     if (parent) this.checkActive(parent);
     this.registry.register(definition);
     subject = this.snapshotArtifact(subject, definition.input);
@@ -573,8 +593,9 @@ export class AnalysisManager {
     const frame = this.freshFrame(definition.effects, store, parent);
     frame.stack = [...(parent?.stack ?? []), `a:${key}`];
     try {
-      const value = immutable(await definition.run(this.context(frame), immutable(subject), captured));
-      await this.drain(frame);
+      const context = this.context(frame, { open: !sync });
+      const value = immutable(yield* perform(() => definition.run(context, immutable(subject), captured)));
+      if (!sync) yield* perform(() => this.drain(frame));
       definition.output.validate(value);
       this.checkActive(frame);
       if (this.epoch(definition, subject) !== epoch)
@@ -624,7 +645,7 @@ export class AnalysisManager {
       );
       return record;
     } finally {
-      await Promise.allSettled([...frame.pending]);
+      if (!sync) yield* perform(() => Promise.allSettled([...frame.pending]));
       frame.active = false;
     }
   }
@@ -935,7 +956,17 @@ export class AnalysisManager {
   ): Promise<AnalysisRecord<R>> {
     return this.preserveInternal(definition, from, to, correspondence, undefined, params);
   }
-  private async preserveInternal<S, R>(
+  /** Transfer a pure analysis using a synchronous, context-free verification rule. */
+  preserveSync<S, R>(
+    definition: AnalysisDefinition<S, R>,
+    from: Artifact<S>,
+    to: Artifact<S>,
+    correspondence: Correspondence,
+    params: unknown = null,
+  ): AnalysisRecord<R> {
+    return driveSync(this.preservationWork(definition, from, to, correspondence, undefined, params, true));
+  }
+  private preserveInternal<S, R>(
     definition: AnalysisDefinition<S, R>,
     from: Artifact<S>,
     to: Artifact<S>,
@@ -943,6 +974,19 @@ export class AnalysisManager {
     parent?: Frame,
     params: unknown = null,
   ): Promise<AnalysisRecord<R>> {
+    return driveAsync(this.preservationWork(definition, from, to, correspondence, parent, params));
+  }
+  private *preservationWork<S, R>(
+    definition: AnalysisDefinition<S, R>,
+    from: Artifact<S>,
+    to: Artifact<S>,
+    correspondence: Correspondence,
+    parent?: Frame,
+    params: unknown = null,
+    sync = false,
+  ): Generator<Effect, AnalysisRecord<R>, unknown> {
+    if (sync && definition.effects.length)
+      throw new Error(`Synchronous preservation of ${definition.id} requires a pure definition`);
     if (parent) this.checkActive(parent);
     this.registry.register(definition);
     from = this.snapshotArtifact(from, definition.input);
@@ -977,14 +1021,16 @@ export class AnalysisManager {
     const frame = this.freshFrame(definition.effects, store, parent);
     try {
       const justification = checkResult(
-        await definition.transfer.verify(this.context(frame), {
-          from: immutable(from),
-          to: immutable(to),
-          record: source as AnalysisRecord<R>,
-          correspondence: immutable(correspondence),
-        }),
+        yield* perform(() =>
+          definition.transfer!.verify(this.context(frame, { open: !sync }), {
+            from: immutable(from),
+            to: immutable(to),
+            record: source as AnalysisRecord<R>,
+            correspondence: immutable(correspondence),
+          }),
+        ),
       );
-      await this.drain(frame);
+      if (!sync) yield* perform(() => this.drain(frame));
       this.checkActive(frame);
       if (this.epoch(definition, to) !== epoch || !this.epochValid(source))
         throw new ContractError(
@@ -1049,7 +1095,7 @@ export class AnalysisManager {
       );
       return record;
     } finally {
-      await Promise.allSettled([...frame.pending]);
+      if (!sync) yield* perform(() => Promise.allSettled([...frame.pending]));
       frame.active = false;
     }
   }

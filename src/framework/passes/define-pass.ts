@@ -44,6 +44,7 @@ import type {
   PreparedTransformation,
   TransformationDefinition,
 } from '../contracts/types.js';
+import { driveAsync, driveSync, perform, type Effect } from '../contracts/effect-driver.js';
 import type { AnalysisManager } from '../contracts/analysis-manager.js';
 
 export class PassError extends Error {
@@ -227,7 +228,7 @@ export function semanticCorrespondence(
 }
 
 function prepareNative<S, N extends Needs, P>(
-  pass: Pass<S, N, P>,
+  pass: Pick<Pass<S, N, P>, 'adapter'>,
   view: IRView<S>,
   produced: NativeResult<S>,
   id: string,
@@ -493,5 +494,151 @@ export async function applyPass<S, N extends Needs, P>(
     preserved,
     contract,
     report,
+  };
+}
+
+export type TransformationRelation = 'exact' | 'tolerance';
+
+/** Same-IR transformation with native preparation and an executable meaning obligation. */
+export interface PassTransformation<S, N extends Needs, P> {
+  readonly id: string;
+  readonly version: string;
+  readonly ir: IRType<S>;
+  readonly adapter: IRAdapter<S>;
+  readonly writes: PassSpec<S, N, P>['writes'];
+  readonly relation: TransformationRelation;
+  readonly eligible?: PassSpec<S, N, P>['legal'];
+  prepare(ctx: Omit<PassRunContext<S, N, P>, 'edit'>): NativeResult<S> | void;
+  readonly obligations: {
+    readonly requires: N;
+    ensures(
+      origin: Artifact<S>,
+      relation: TransformationRelation,
+      before: Artifact<S>,
+      candidate: Artifact<S>,
+    ): CheckResult | Promise<CheckResult>;
+    readonly preserves: readonly AnalysisDefinition<S, any>[];
+  };
+}
+
+export interface TransformationOptions<S, P> {
+  readonly manager: AnalysisManager;
+  readonly origin: Artifact<S>;
+  readonly params?: P;
+  readonly store?: IRStore;
+  readonly auditPreservation?: boolean;
+}
+
+type ManagerQueries =
+  | Pick<AnalysisManager, 'analyse' | 'preserve'>
+  | {
+      analyse: AnalysisManager['analyseSync'];
+      preserve: AnalysisManager['preserveSync'];
+    };
+
+export function applyTransformationSync<S, N extends Needs, P>(
+  tx: PassTransformation<S, N, P>,
+  before: Artifact<S>,
+  options: TransformationOptions<S, P>,
+): PassResult<S> {
+  const { manager } = options;
+  return driveSync(
+    transformationWork(tx, before, options, {
+      analyse: manager.analyseSync.bind(manager),
+      preserve: manager.preserveSync.bind(manager),
+    }),
+  );
+}
+
+export function applyTransformation<S, N extends Needs, P>(
+  tx: PassTransformation<S, N, P>,
+  before: Artifact<S>,
+  options: TransformationOptions<S, P>,
+): Promise<PassResult<S>> {
+  return driveAsync(transformationWork(tx, before, options, options.manager));
+}
+
+function* transformationWork<S, N extends Needs, P>(
+  tx: PassTransformation<S, N, P>,
+  before: Artifact<S>,
+  options: TransformationOptions<S, P>,
+  queries: ManagerQueries,
+): Generator<Effect, PassResult<S>, unknown> {
+  const { manager, store, origin } = options;
+  const view = openIR(before, tx.adapter, store);
+  const generation = store?.generation(before.id);
+  const params = options.params as P;
+  checkLegal({ id: tx.id, legal: tx.eligible }, before, view, params);
+  const records: Record<string, AnalysisRecord<unknown>> = {};
+  const facts: Record<string, unknown> = {};
+  for (const [name, def] of Object.entries(tx.obligations.requires)) {
+    const record = yield* perform(() => queries.analyse(def, before));
+    records[name] = record;
+    facts[name] = record.value;
+  }
+
+  const produced = tx.prepare({
+    before,
+    view,
+    params,
+    facts: facts as FactValues<N>,
+    records: records as PassRunContext<S, N, P>['records'],
+  });
+  const preserved: PreservationOutcome[] = [];
+  const base = { pass: { id: tx.id, version: tx.version }, before, preserved };
+  const unchanged = { ...base, changed: false, artifact: before, edits: 0 };
+  if (!produced) return unchanged;
+  const { after, changes, correspondence, edits } = prepareNative(tx, view, produced, before.id);
+  if (after.revision === before.revision) return unchanged;
+  enforceWrites(tx, changes);
+
+  const verdict = yield* perform(() => tx.obligations.ensures(origin, tx.relation, before, after));
+  if (verdict?.ok !== true)
+    throw new PassError('contractRejected', verdict?.reason ?? 'Candidate rejected', verdict?.evidence);
+
+  try {
+    for (const def of tx.obligations.preserves) {
+      if (!manager.hasAnalysis(def, before)) {
+        if (!options.auditPreservation) continue;
+        yield* perform(() => queries.analyse(def, before));
+      }
+      try {
+        const record = yield* perform(() =>
+          queries.preserve(def, before, after, semanticCorrespondence(correspondence)),
+        );
+        preserved.push({ analysis: def.id, how: 'transferred', evidence: record.transfer?.evidence });
+      } catch {
+        const old = yield* perform(() => queries.analyse(def, before));
+        const fresh = yield* perform(() => queries.analyse(def, after));
+        if (canonical(old.value) !== canonical(fresh.value))
+          throw new PassError(
+            'preserveViolated',
+            `Pass ${tx.id} claims to preserve ${def.id}, but it changed`,
+            {
+              analysis: def.id,
+            },
+          );
+        preserved.push({ analysis: def.id, how: 'confirmed-by-recompute', evidence: { equalValue: true } });
+      }
+    }
+    yield* perform(() => publishAccepted(tx, store, before, after, undefined, generation));
+  } catch (error) {
+    for (const def of tx.obligations.preserves)
+      try {
+        manager.invalidate(def, after, `Pass ${tx.id} was not accepted`);
+      } catch {
+        // Cleanup must not mask the rejection.
+      }
+    throw error;
+  }
+  return {
+    ...base,
+    changed: true,
+    artifact: after,
+    edits,
+    changes,
+    correspondence,
+    contract: verdict,
+    report: produced.report,
   };
 }
