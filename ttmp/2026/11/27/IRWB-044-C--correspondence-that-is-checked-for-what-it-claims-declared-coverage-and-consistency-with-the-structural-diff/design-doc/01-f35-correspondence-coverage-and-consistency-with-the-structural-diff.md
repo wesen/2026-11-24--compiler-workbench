@@ -67,15 +67,18 @@ are listless permutations by design.
 
 "Name" means appear in some entry's `from` (source side) respectively `to` (target side), whatever the
 entry's relation. The manager rejects a mapping whose named entities do not cover the declared side with
-`ContractError('correspondence', 'Correspondence does not cover ...: <ids>')`. When a side must be total
-but no universe is known for it, the check cannot be performed and the record is rejected
-(`... coverage cannot be checked: no entity list`) rather than trusted.
+`ContractError('correspondence', 'Correspondence does not cover ...: <ids>')`. A side whose universe is
+unknown — an IR type that does not enumerate and a record that declares no list — is not covered by the
+policy, for the same reason the entity-list check is gated on `type.entities`: such a type's correspondence
+is self-declared, as `tests/framework/contracts.test.mjs` and four lab transformations rely on. (I first
+*refused* an unverifiable total claim; that rejected those five and I backed it out — see the diary.)
 
 **The default is `bothTotal`**, for two reasons. It is what the IR layer already demands:
 `validateCorrespondence` in `src/framework/ir/correspondence.ts` rejects an `EntityCorrespondence` that
 does not account for every source and target entity. The contract layer accepted less than the layer
-below it. And it changes nothing that exists today: all five requirement declarations in the repository
-produce a mapping that is total on both sides.
+below it. And it keeps what exists: four requirement declarations in the repository produce a mapping that
+is total on both sides, and the fifth declares `partial` explicitly (see the table below), so no existing
+correspondence changes verdict.
 
 Alternative considered: default `partial`, so that a contract keeps its old meaning. Rejected — it
 rejects nothing of what probe 04 shows (zero groups pass), it makes the new field the only way to get
@@ -140,7 +143,7 @@ in the layer that audits it; the shared function is worth the one import.
   definition time, so a definition states what it declares.
 - `src/framework/contracts/analysis-manager.ts`: coverage and the deletion rule in the requirement path;
   the transfer path is unchanged.
-- `src/tensor/cuda-contract.ts`: the one requirement with a cross-kind mapping declares `bothTotal`.
+- `src/tensor/cuda-contract.ts`: the one requirement with a cross-kind mapping declares `partial`.
 - `tests/framework/r3-defects.test.mjs`: the `todo` on "F35" goes.
 - `tests/framework/correspondence-coverage.test.mjs`: the vocabulary, the default, the audit under
   `partial`, and the cross-kind/same-kind boundary.
