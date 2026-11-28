@@ -30,3 +30,9 @@ The runner yields deferred calls and receives failures at the yield, so both dri
 The first focused test run failed at the Node test file boundary in the sandbox. The escalated run exposed a test assumption about the store's initial generation. The test now checks the actual head revision and retained revisions. The targeted refusal, pure transfer and async-cache-miss tests passed with `--test-isolation=none`.
 
 The coordinator check reported no differences, and the site build succeeded. The first benchmark showed high wall-clock spread. The committed benchmark measures process CPU time as well, with rotated batches to distribute first-position cost.
+
+## 3. Verification
+
+The initial tmux suite launch passed the filenames to Node as one string because zsh does not split an unquoted scalar by default. The Bash array invocation in the report delivered explicit arguments to Node. All five suite processes returned zero. The framework run includes all 60 new parity and manager tests.
+
+The 7-line synchronous analysis entry shares the complete analysis record lifecycle. The benchmark's CPU-time ranges overlap, so the recommendation rests on sharing that lifecycle and the acceptance order.

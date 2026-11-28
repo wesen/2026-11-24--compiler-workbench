@@ -19,12 +19,14 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Phase 3 spike for a shared transformation lifecycle with synchronous and asynchronous drivers. The prototype ports Tix inline and Typed constant propagation alongside the current entry points.
 
-## Key Links
+## Evidence
 
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
+- [Design](design-doc/01-runner-spike-design.md)
+- [Diary](log/01-diary.md)
+- [Report](analysis/01-spike-report.md)
+- [Timing and size probe](scripts/01-measure-drivers.mjs)
 
 ## Status
 
