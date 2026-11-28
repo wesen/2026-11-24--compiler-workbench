@@ -23,8 +23,8 @@ import {
   type TransformationResult,
   type EditOptions,
 } from '../framework/ir/index.js';
-import { describePattern, explainMatch, matchAll, type PatternInput } from '../framework/ir/patterns.js';
-import { saturate, type RewriteResult } from '../framework/ir/rewrites.js';
+import { describePattern, explainMatch, matchAll, type PatternInput } from './patterns.js';
+import { saturate, type RewriteResult } from './rewrites.js';
 import {
   AlgorithmRegistry,
   algorithm,
@@ -102,8 +102,8 @@ const sharedPaths = [
   'src/ir-examples/contracts.ts',
   'src/ir-examples/lab.ts',
   'src/ir/transactions.ts',
-  'src/ir/patterns.ts',
-  'src/ir/rewrites.ts',
+  'src/labs/patterns.ts',
+  'src/labs/rewrites.ts',
   'src/contracts/analysis-manager.ts',
   'src/strategy/interpreter.ts',
   'src/core/runtime.ts',

@@ -17,7 +17,7 @@ const { RULE_EVIDENCE } = await import('../../dist/typed/rules/evidence.js');
 const { verifyRule, ruleFingerprint } = await import('../../dist/typed/rules/verify.js');
 const { binopW, TRAP, boundaryI32 } = await import('../../dist/typed/rules/semantics.js');
 const { tableBody } = await import('../../dist/typed/rules/compile.js');
-const { rule, ruleSet, op, v, c, ruleText, toNodePattern } = await import('../../dist/typed/rules/form.js');
+const { rule, ruleSet, op, v, c, ruleText, patternVars } = await import('../../dist/typed/rules/form.js');
 const { rulesListing, RULE_SETS } = await import('../../dist/typed/rules/listing.js');
 const { binop, F32_EDGES } = await import('../../dist/typed/evaluate.js');
 const { AnalysisManager } = await import('../../dist/framework/contracts/index.js');
@@ -144,7 +144,7 @@ test('B1: the comparison sees a one-rule difference (a rule with another note ch
   assert.ok(i < SIMPLIFY_RULES.rules.findIndex(r => r.name === 'mul-pow2'));
 });
 
-test('B1: the tables are data: names, text, 27 simplify and 40 fold rules, patterns convertible to the framework', () => {
+test('B1: the tables are data: names, text, 27 simplify and 40 fold rules, structural term patterns', () => {
   assert.equal(SIMPLIFY_RULES.rules.length, 27);
   assert.equal(FOLD_RULES.rules.length, 40);
   const byName = Object.fromEntries(SIMPLIFY_RULES.rules.map(r => [r.name, r]));
@@ -152,8 +152,9 @@ test('B1: the tables are data: names, text, 27 simplify and 40 fold rules, patte
   assert.equal(ruleText(byName['not-lt']), 'eqz(lt(a, b)) → ge(a, b)');
   assert.equal(JSON.parse(JSON.stringify(byName['sub-self'])).where[0].pure, 'x');
   assert.ok(Object.isFrozen(byName['sub-self'].lhs.args));
-  assert.deepEqual(toNodePattern(byName['add-zero']).exact, true);
-  assert.deepEqual(toNodePattern(byName['sub-self']).exact, false, 'the framework has no structural repeat');
+  assert.deepEqual(patternVars(byName['add-zero'].lhs).repeats, []);
+  assert.deepEqual(patternVars(byName['sub-self'].lhs).repeats, ['x']);
+  assert.equal(ruleText(byName['sub-self']), 'sub(x, x) → 0 if pure x');
   assert.throws(
     () => rule('bad', { x: 'i32' }, op('add', v('x'), v('y')), v('x')),
     /no declared type|not bound|y/,

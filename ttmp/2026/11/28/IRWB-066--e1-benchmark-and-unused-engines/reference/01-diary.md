@@ -130,3 +130,45 @@ Review the chosen edit sites, and distinguish analysis reuse from differential r
 ### Code review instructions
 
 Run `npm run build` and `node "$ticket/scripts/01-e1.mjs" call-chain bytecode-vm`. Check the executed counters and verdict assertions.
+
+## Step 3 — Extract graph matching and rewriting
+
+The labs now own graph patterns and the rewrite scheduler. Typed's listing renders the term pattern it already verifies and executes. The shared IR still owns its transaction and traversal operations.
+
+### Prompt Context
+
+See Step 1. The graph engine move follows the caller audit independently of the runtime benchmark.
+
+### What I did
+
+I moved `patterns.ts` and `rewrites.ts`, removed the framework re-exports, moved their two tutorials and lab-focused test files, and switched Typed's `patText` to the stdlib `Pattern` type. I replaced the obsolete conversion assertions with tests for term repeats and unchanged rule listing.
+
+### Why
+
+Typed's matcher distinguishes structural repetition from entity identity. Rendering the original term shape avoids converting it to a graph pattern that can lose that distinction. Moving keeps the graph behavior exercised by the labs and conformance examples.
+
+### What worked
+
+After the conformance import fix, `npm run build` passed. The escalated command `node --test --test-concurrency=2 tests/labs/*.test.mjs tests/typed/rules.test.mjs tests/framework/conformance.test.mjs` passed 79 tests with zero failures.
+
+### What didn't work
+
+The first `npm run build` reported `src/conformance/02-ir-manipulation.ts(7,3): error TS2305: Module '"../framework/ir/index.js"' has no exported member 'capture'.` It also reported missing `entity`, `op`, `pattern`, `matchAll`, `explainMatch`, `rewrite` and `innermost`, followed by callback types it could no longer infer. That tutorial used barrel imports missed by the first path-based search. Moving both graph tutorials and importing the labs modules fixed the build.
+
+The sandboxed `git add` and `git commit` at the prior checkpoint both reported `fatal: Unable to create '…/.git/worktrees/v7-engines-sl-irwb-066/index.lock': Read-only file system`. The escalated retry created `b44f442`.
+
+### What I learned
+
+`IRView` declares walk and subgraph in `types.ts`, and `readIR` binds both in `readers.ts`. Even if their direct callers move, the rest of the view traversal API and its shared implementation are still framework dependencies.
+
+### What was tricky
+
+The rewrite scheduler continues to use the framework's read-only view and mutation-only transaction protocols. Its implementation moves to the caller side of that boundary.
+
+### What warrants a second pair of eyes
+
+Check the direction of lab imports and the coverage of the updated Typed listing assertions.
+
+### Code review instructions
+
+Review `src/labs/patterns.ts`, `src/labs/rewrites.ts`, `src/typed/rules/form.ts` and the moved tests. Run the focused commands above.

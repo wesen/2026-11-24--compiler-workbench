@@ -1,26 +1,20 @@
-/** Run after the strict build: node dist/guide/02-ir-manipulation.js */
+/** Run after the strict build: node dist/labs/conformance/02-ir-manipulation.js */
 import assert from 'node:assert/strict';
 import {
   IRStore,
   createIRArtifact,
   openIR,
-  capture,
-  entity,
-  op,
-  pattern,
-  matchAll,
-  explainMatch,
-  rewrite,
-  innermost,
   diff,
   affectedEntities,
   composeCorrespondence,
   invertCorrespondence,
   traceEntity,
-} from '../framework/ir/index.js';
-import type { EditOptions, RevisionRef, TransformationResult } from '../framework/ir/index.js';
-import { expressionAdapter, expressionPolynomial, evaluateExpression } from '../labs/expressions.js';
-import type { ExpressionProgram } from '../labs/expressions.js';
+} from '../../framework/ir/index.js';
+import { capture, entity, op, pattern, matchAll, explainMatch } from '../patterns.js';
+import { rewrite, innermost } from '../rewrites.js';
+import type { EditOptions, RevisionRef, TransformationResult } from '../../framework/ir/index.js';
+import { expressionAdapter, expressionPolynomial, evaluateExpression } from '../expressions.js';
+import type { ExpressionProgram } from '../expressions.js';
 
 // Native storage is a keyed arena. The adapter projects entities and edges.
 const source: ExpressionProgram = {

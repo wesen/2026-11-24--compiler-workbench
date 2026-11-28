@@ -1,12 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createIRArtifact, defineAdapter, openIR, IRStore } from '../../dist/framework/ir/index.js';
 import {
-  createIRArtifact, defineAdapter, openIR, IRStore,
   entity, op, capture, sameAs, pattern, relation, distinct, equalContent, where,
   describePattern, match, matchAll, explainMatch, searchPattern, PatternBudgetError, PatternPredicateRegistry,
+} from '../../dist/labs/patterns.js';
+import {
   rewrite, applyOnce, applyAll, topDown, bottomUp, innermost, outermost, saturate,
   RewriteRegistry, RewriteRejected, RewriteExecutionError
-} from '../../dist/framework/ir/index.js';
+} from '../../dist/labs/rewrites.js';
 import { expressionAdapter } from '../../dist/labs/expressions.js';
 import { expressionDouble } from '../../dist/labs/rules.js';
 

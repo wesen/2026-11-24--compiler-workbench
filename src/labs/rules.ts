@@ -9,8 +9,8 @@ import {
   sameAs,
   where,
   PatternPredicateRegistry,
-} from '../framework/ir/patterns.js';
-import { rewrite } from '../framework/ir/rewrites.js';
+} from './patterns.js';
+import { rewrite } from './rewrites.js';
 import type { IREdit, IRView } from '../framework/ir/types.js';
 import { entity, relationId } from './common.js';
 import { EXPRESSION_ROOT, type ExpressionProgram } from './expressions.js';

@@ -1,6 +1,6 @@
-/** Run: npm run build && node dist/guide/03-strategy-contracts.js */
+/** Run: npm run build && node dist/labs/conformance/03-strategy-contracts.js */
 import assert from 'node:assert/strict';
-import type { Artifact } from '../framework/core/types.js';
+import type { Artifact } from '../../framework/core/types.js';
 import {
   AnalysisManager,
   FiniteNumber,
@@ -13,7 +13,7 @@ import {
   defineTransformation,
   validateArtifact,
   type Correspondence,
-} from '../framework/contracts/index.js';
+} from '../../framework/contracts/index.js';
 import {
   AlgorithmRegistry,
   algorithm,
@@ -32,18 +32,18 @@ import {
   serialize,
   verify,
   walk,
-} from '../framework/strategy/index.js';
-import { openIR } from '../framework/ir/index.js';
-import { saturate } from '../framework/ir/rewrites.js';
-import type { EditAcceptance, TransformationResult } from '../framework/ir/types.js';
+} from '../../framework/strategy/index.js';
+import { openIR } from '../../framework/ir/index.js';
+import { saturate } from '../rewrites.js';
+import type { EditAcceptance, TransformationResult } from '../../framework/ir/types.js';
 import {
   ExpressionIR,
   expressionAdapter,
   exampleExpression,
   type ExpressionProgram,
-} from '../labs/expressions.js';
-import { expressionContract, expressionEquivalent, expressionValid } from '../labs/contracts.js';
-import { expressionCSE, expressionDouble } from '../labs/rules.js';
+} from '../expressions.js';
+import { expressionContract, expressionEquivalent, expressionValid } from '../contracts.js';
+import { expressionCSE, expressionDouble } from '../rules.js';
 
 // This guide composes the reusable layers without a compiler runtime host.
 // src/ir-examples/lab.ts adds real compiler invocations and cache policies.
