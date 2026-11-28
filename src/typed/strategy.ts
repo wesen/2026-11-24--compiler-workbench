@@ -9,9 +9,9 @@ import type { AnalysisManager } from '../framework/contracts/analysis-manager.js
 import type { Artifact } from '../framework/core/types.js';
 import { passAlgorithm } from '../framework/passes/bridge.js';
 import type { PassResult } from '../framework/passes/define-pass.js';
-import { apply, algorithm, attempt, plan, sequence } from '../framework/strategy/builders.js';
+import { algorithm, identityAlgorithm, passSequence, plan } from '../framework/strategy/builders.js';
 import { AlgorithmRegistry } from '../framework/strategy/registry.js';
-import type { StrategyNode, StrategyPlan } from '../framework/strategy/ir.js';
+import type { StrategyPlan } from '../framework/strategy/ir.js';
 import type { ProgramInputs } from './evaluate.js';
 import type { TypedBlocks } from './model.js';
 import { optimizationContract, PASSES, PIPELINES } from './passes.js';
@@ -22,17 +22,15 @@ export function pipelinePlan(
   options: { tolerate?: readonly string[] } = {},
 ): StrategyPlan {
   if (!passes) throw new Error(`unknownPipeline: no pipeline "${name}"`);
-  const steps: StrategyNode[] = passes.map((p, i) => {
+  const steps = passes.map((p, i) => {
     if (!PASSES[p]) throw new Error(`unknownPass: no pass named "${p}"`);
-    const node = apply(`${name}/${i}:${p}`, algorithm(`typed.${p}`, '1'));
-    // a pass whose rejection the plan tolerates: the program stays as it was and the plan goes on
-    return options.tolerate?.includes(p)
-      ? attempt(`${name}/${i}:${p}?`, node, apply(`${name}/${i}:${p}/keep`, algorithm('typed.keep', '1')), {
-          codes: ['contract-rejected'],
-        })
-      : node;
+    return {
+      id: `${name}/${i}:${p}`,
+      algorithm: algorithm(`typed.${p}`, '1'),
+      tolerate: !!options.tolerate?.includes(p),
+    };
   });
-  return plan(`typed.pipeline.${name}`, sequence(`${name}/steps`, ...steps));
+  return plan(`typed.pipeline.${name}`, passSequence(`${name}/steps`, steps));
 }
 
 export function pipelineRegistry(options: {
@@ -44,13 +42,7 @@ export function pipelineRegistry(options: {
   onResult?: (r: PassResult<TypedBlocks>) => void;
 }): AlgorithmRegistry {
   const registry = new AlgorithmRegistry();
-  registry.register({
-    id: 'typed.keep',
-    version: '1',
-    kind: 'transform',
-    description: 'the program as it is (the fallback when a tolerated pass is rejected)',
-    run: (_ctx, input) => input,
-  });
+  registry.register(identityAlgorithm);
   const contract = optimizationContract({
     inputs: options.inputs ?? {},
     count: options.count ?? 40,

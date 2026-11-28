@@ -12,7 +12,7 @@
  */
 import type { Artifact } from '../core/types.js';
 import type { AnalysisManager } from '../contracts/analysis-manager.js';
-import { driveAsync, type Steps } from '../contracts/steps.js';
+import { driveAsync, type Steps } from '../core/steps.js';
 import type { AnalysisDefinition, TransformationDefinition } from '../contracts/types.js';
 import type { IRStore } from '../ir/index.js';
 import type { AlgorithmContext, StrategyAlgorithm } from '../strategy/ir.js';

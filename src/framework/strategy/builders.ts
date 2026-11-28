@@ -11,12 +11,20 @@ import type {
   ReferenceSource,
   StrategyNode,
   StrategyPlan,
+  StrategyAlgorithm,
   Template,
 } from './ir.js';
 import { assertValid } from './validation.js';
 
 type Common = Pick<NodeBase, 'bind' | 'label'>;
 export const algorithm = (id: string, version = '1'): AlgorithmRef => immutable({ id, version });
+export const identityAlgorithm: StrategyAlgorithm = {
+  id: 'strategy.identity',
+  version: '1',
+  kind: 'transform',
+  description: 'the input unchanged',
+  run: (_ctx, input) => input,
+};
 export const ref = (
   source: ReferenceSource,
   path: readonly (string | number)[] = [],
@@ -102,3 +110,21 @@ export const attempt = (
 ) => immutable({ id, kind: 'attempt' as const, body, fallback, ...options });
 export const scope = (id: string, name: string, body: StrategyNode, options: Common = {}) =>
   immutable({ id, kind: 'scope' as const, name, body, ...options });
+
+/** Build a sequence of passes, optionally tolerating contract rejection for each one. */
+export function passSequence(
+  id: string,
+  passes: readonly { id: string; algorithm: AlgorithmRef; tolerate: boolean }[],
+): StrategyNode {
+  return sequence(
+    id,
+    ...passes.map(p => {
+      const node = apply(p.id, p.algorithm);
+      return p.tolerate
+        ? attempt(`${p.id}?`, node, apply(`${p.id}/keep`, algorithm(identityAlgorithm.id)), {
+            codes: ['contract-rejected'],
+          })
+        : node;
+    }),
+  );
+}
