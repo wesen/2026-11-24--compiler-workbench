@@ -13,6 +13,8 @@
  *   graph/    orders, dominators, natural loops — over one digraph: nodes, an entry, successors
  *   lattice/  lattices — join, order and widening: the set, flat, interval and map lattices
  *             (dataflow's ranges analysis, and SCCP's flat lattice of SSA names)
+ *   affine/   forms — linear expressions over index variables, computed exactly; distances — dependence
+ *             distance vectors over them (a read's index per position against the consumer's axis)
  *
  * Later modules, one line each (each enters under the admission rule, with its two clients):
  *   graph/    dominance frontiers
@@ -20,7 +22,6 @@
  *   flow/     the fixpoint solver over a lattice (liveness hardcodes its own; this generalises it)
  *   ssa/      SSA construction — from a graph and dominators to phi placement
  *   term/     terms over a signature, matching and substitution
- *   affine/   affine forms — linear expressions over index variables
  *   pe/       partial evaluation — specialization over a term and an affine form
  *   check/    executable laws over library results (a checker per admitted algorithm)
  *   measure/  cost measures over library results (sizes, depths)
@@ -49,3 +50,7 @@ export {
   setLattice,
 } from './lattice/lattices.js';
 export type { Flat, Interval, Json, Lattice } from './lattice/lattices.js';
+
+export { add, constant, plain, substitute, value, variable } from './affine/forms.js';
+export type { Affine } from './affine/forms.js';
+export { distanceVector, isZero } from './affine/distances.js';

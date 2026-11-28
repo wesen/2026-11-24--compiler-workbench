@@ -9,6 +9,7 @@
 //   - block mode (some member has trailing axes): one block per point; a member's row lives in a row buffer, a
 //     member with no trailing axes is computed by thread 0, and `__syncthreads()` separates the members.
 // Every element is still computed by one thread with stage 2's scalar code, so its evaluation order is unchanged.
+import { distanceVector, isZero } from '../stdlib/affine/distances.js';
 import { plain, visit, type Affine, type Expr, type Fn, type Statement } from './model.js';
 
 export interface FusionGroup {
@@ -94,13 +95,20 @@ function joinDepth(s: Statement, members: Statement[], depth: number): { depth: 
       ];
       break;
     }
-  for (const r of reads)
+  // IRWB-049-A: the library's dependence distances decide the join — every read of a group member
+  // must have distance zero (aligned: the read is at the reader's own axis) in each leading position.
+  for (const r of reads) {
+    const distances = distanceVector(
+      s.axes.slice(0, k).map(a => a.id),
+      r.indices.slice(0, k),
+    );
     for (let p = 0; p < k; p++)
-      if (plain(r.indices[p]) !== s.axes[p].id) {
+      if (!isZero(distances[p])) {
         const at = text(r.indices[p]);
         [k, reason] = [p, `reads ${r.name} at index ${at} in position ${p}, not its own axis there`];
         break;
       }
+  }
   return { depth: k, reason };
 }
 
