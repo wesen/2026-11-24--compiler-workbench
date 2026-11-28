@@ -206,3 +206,27 @@ The three cells' scopes are disjoint:
 | F39 | `tensor/{schedule,cuda-*}.ts`, `tools/cuda-remote.mjs` |
 
 Briefs are written by `scripts/08-write-briefs-p3.py` (`91249ef`); the launcher is `scripts/09-launch-p3-lanes.sh` (base `v7-p2`).
+
+## Step 6: the phase 3 migration merged
+
+Fable (IRWB-052) finished in 28 minutes. Its branch scored clean on its commit `151894b` (`lanes-scores.jsonl`): build, tsc and Prettier clean; baselines `no differences`; suites typed 186, framework 259, workbench 24, stdlib 48, tensor CPU 45; no oracle files touched.
+
+What the migration did:
+- Every Typed and Tix pass is a `Transformation` on `runTransformation`, under a synchronous or an asynchronous driver.
+- The contract path is steps (15 `await`s), as is the differential run, and the strategy interpreter has `executeSync`. `optimizeTix` is now a plan of `attempt`s under it.
+- `define-pass.ts` went from 497 to 240 lines, and the synchronous runner's restriction is gone.
+- `applyPass` and `applyNativePassSync` are 1–2 statement wrappers, kept for 39 and 13 call sites in tests and tools and for `schedule.ts`.
+- There is one Tix gate, `tixMeaning`.
+- Timing: the before and after ranges overlap in every row.
+
+Merged by cherry-pick (the three spike commits, then the three migration commits) with no conflicts. On main: tsc clean, Prettier 8 pre-existing files (one fewer), suites as above, baselines `no differences`, site builds. GPU suite not run: F39's cell holds the GPU.
+
+Decisions it left to me, and follow-ups:
+- **`steps.ts` lives in `contracts/`,** and the strategy interpreter now imports it. That is strategy's first import outside `core`. It belongs in `core`; I'll move it and update the layering allow-list as a small follow-up.
+- **Domain duplication for phase 4:** `tix.keep` and `typed.keep` are the same identity algorithm, and `optimizeTix` and `pipelinePlan` build the same plan shape.
+- **Behaviour changes it reported:**
+  - `eligible` now runs after `needs`.
+  - `applyNativePassSync` now runs edit-style passes.
+  - A non-rejection failure in `optimizeTix` is wrapped in `StrategyExecutionError`.
+  - With Typed's worker pool installed, the synchronous driver is refused.
+- **Still asynchronous:** the manager's `execute`, which no pass uses. An abandoned plan leaves its records `running`.
