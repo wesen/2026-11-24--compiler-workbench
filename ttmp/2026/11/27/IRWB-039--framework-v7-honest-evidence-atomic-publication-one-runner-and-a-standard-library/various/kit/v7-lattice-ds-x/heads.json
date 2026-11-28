@@ -1,0 +1,9 @@
+{
+ "IRWB-048-B": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-lattice-ds-x-irwb-048-b",
+  "branch": "v7-lattice-ds-x/irwb-048-b",
+  "base": "3ba86fc",
+  "harness": "pi",
+  "rev": "ad84bc4"
+ }
+}

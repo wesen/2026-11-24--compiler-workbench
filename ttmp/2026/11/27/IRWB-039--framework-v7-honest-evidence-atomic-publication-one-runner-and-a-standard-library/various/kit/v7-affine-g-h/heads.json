@@ -1,0 +1,9 @@
+{
+ "IRWB-049-A": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-affine-g-h-irwb-049-a",
+  "branch": "v7-affine-g-h/irwb-049-a",
+  "base": "3ba86fc",
+  "harness": "pi",
+  "rev": "89abc85"
+ }
+}
