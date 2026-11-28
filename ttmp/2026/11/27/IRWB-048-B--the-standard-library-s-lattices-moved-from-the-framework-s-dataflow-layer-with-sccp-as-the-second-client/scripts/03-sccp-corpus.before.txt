@@ -1,0 +1,18 @@
+50 projects: every sccp application accepted and every program verifies
+constants sccp wrote: 155; projects it changed: 15
+corpus fingerprint: 983e05e560c9edb4
+  blend: 1 revision(s), 1 constants, 2373a189579806ac
+  chess-search: 1 revision(s), 42 constants, 09dd4481dbaa6a07
+  constants: 1 revision(s), 6 constants, d5f565b0975c564e
+  dead-code: 1 revision(s), 1 constants, 45ee191c8959f669
+  div-checks: 1 revision(s), 4 constants, 71fca7949eb05d95
+  first-steps: 1 revision(s), 1 constants, ccc8d6023cbb4b3e
+  fixed-point: 1 revision(s), 4 constants, b1b3794434085e82
+  fragments: 1 revision(s), 1 constants, 2373a189579806ac
+  orders: 1 revision(s), 5 constants, 13662b8e5eaaa681
+  params-demo: 1 revision(s), 1 constants, 2373a189579806ac
+  ramp: 1 revision(s), 2 constants, 16471a8d376404b7
+  regex-nfa: 1 revision(s), 5 constants, 13478abdfbc34e90
+  sha-chacha: 1 revision(s), 78 constants, 3015386a105ffe7c
+  strength: 1 revision(s), 2 constants, 67f7a6673814b5f4
+  ui-gallery: 1 revision(s), 2 constants, 99b8216324469ef9
