@@ -264,3 +264,31 @@ Decisions it left to me, and follow-ups:
 
 - **Held back:** term rules (4.6) and lowering on the runner. Both collide with the derivations lane, the first on `typed/rules`, the second on the runner.
 - **The PR:** the user asked to open a PR into `main` when v7 is done. `main` stays at `c07a1e4` until then.
+
+## Step 8: fusion and scheduling as decide, eligible, prepare (K6) merged
+
+Fable (IRWB-057) finished in 25 minutes. Its branch scored clean on `06ebb78`: tensor CPU 51, stdlib 51, baselines `no differences`, oracle untouched.
+
+**Decision point: K6's unification holds for this pair.** Fusion and loop scheduling share one `eligible` signature, `(schedule, plan) => CheckResult`, on `Transformation<Schedule, {}, P>` with the plan as the parameter: `fusePass` takes a `FusionChoice`, `loopsPass` a `LoopPlan`. This works because fusion became a transformation of the schedule IR: a schedule starts as one pointwise kernel per statement, and `fusePass` regroups it.
+
+**The extent-17 counterexample is rejected.** `accumulationViolation` strip-mines the reduction's direction vectors along with the loops (`stdlib/affine/directions.ts`) and checks the loop order by the textbook legality rule (no lexicographically negative direction, no carried dependence on a parallel loop). Over all 1,560 loop orders of three small nests it agrees with enumeration: 540 accepted, 1,020 rejected. The simulating output validator, the eight per-step passes and the gate regex are deleted.
+
+**Other effects:**
+- The hand-written schedule rule is a four-node strategy plan under `executeSync`.
+- A manifest from the emitter drives the CUDA runtime's gate names.
+- Scheduling attention went from 384 ms and 107 pass applications to 7.1 ms and 2.
+
+**Merged** by cherry-pick, no conflicts. Checks:
+- tsc clean; Prettier still flags 8 pre-existing files;
+- suites: typed 186, framework 259, workbench 24, stdlib 59, tensor CPU 51;
+- **GPU 23/23**: the first GPU run on the branch since the migration, and the first with F39's retry;
+- baselines `no differences`; site builds.
+
+**Follow-ups it named:**
+- `runTixCuda` should pass the manifest; the source-hash side table can then go.
+- `planPass` is domain-local; it belongs in the framework as `decision({ eligible, prepare, conforms })`.
+- A no-op `prepare` returns `unchanged` before `conforms` runs.
+- The fusion layout derived in `prepare` is checked only by the GPU differential.
+- `directions.ts` has one client so far; the admission rule wants two.
+- Correspondence is coarser: loops and variants are recorded as inserted.
+- After this change, neither the `definePass` wrapper nor `applyNativePassSync` has a caller in `src/` outside the framework.
