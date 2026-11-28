@@ -153,14 +153,21 @@ export function validateDerivation(
 function stepEntries(derivation: Derivation, source: Set<string>, target: Set<string>) {
   const groups = new Map<
     string,
-    { from: readonly string[]; to: Set<string>; because: Set<string>; notes: string[] }
+    { from: readonly string[]; to: Set<string>; because: Set<string>; notes: Map<string, string> }
   >();
   const group = (from: readonly string[]) => {
     const key = canonical(from);
     let g = groups.get(key);
-    if (!g) groups.set(key, (g = { from, to: new Set(), because: new Set(), notes: [] }));
+    if (!g) groups.set(key, (g = { from, to: new Set(), because: new Set(), notes: new Map() }));
     return g;
   };
+  // a group's notes are in the order of the entities they are about, and each note is said once
+  const noteOf = (g: { notes: Map<string, string> }) =>
+    [...g.notes]
+      .sort(([a], [b]) => compareText(a, b))
+      .map(([, note]) => note)
+      .filter((note, i, all) => all.indexOf(note) === i)
+      .join(' > ');
   for (const step of derivation.steps) {
     const antecedent = step.consumes[0];
     if (antecedent === undefined || !source.has(antecedent)) continue; // nothing of the input to relate: the correspondence's own fill says 'inserted'
@@ -172,7 +179,7 @@ function stepEntries(derivation: Derivation, source: Set<string>, target: Set<st
       const g = group(from);
       for (const id of [...produced, ...survived]) g.to.add(id);
       for (const p of step.premises) if (!p.startsWith(GUARD)) g.because.add(p);
-      if (step.note) g.notes.push(step.note);
+      for (const id of produced) if (step.note && !g.notes.has(id)) g.notes.set(id, step.note);
       continue;
     }
     if (step.relation !== 'removed') continue; // a step that carries its entities changes no identity
@@ -180,7 +187,7 @@ function stepEntries(derivation: Derivation, source: Set<string>, target: Set<st
     if (!gone.length || produced.length) continue;
     const g = group(gone);
     for (const p of step.premises) if (!p.startsWith(GUARD)) g.because.add(p);
-    if (step.note) g.notes.push(step.note);
+    for (const id of gone) if (step.note && !g.notes.has(id)) g.notes.set(id, step.note);
   }
   return [...groups.values()]
     .filter(g => g.to.size || g.from.some(id => !target.has(id)))
@@ -189,7 +196,7 @@ function stepEntries(derivation: Derivation, source: Set<string>, target: Set<st
       to: [...g.to].sort(compareText),
       relation: g.to.size ? derivation.label : 'removed',
       ...(g.because.size ? { because: [...g.because].sort(compareText) } : {}),
-      ...(g.notes.length ? { note: [...new Set(g.notes)].join(' > ') } : {}),
+      ...(g.notes.size ? { note: noteOf(g) } : {}),
     }));
 }
 

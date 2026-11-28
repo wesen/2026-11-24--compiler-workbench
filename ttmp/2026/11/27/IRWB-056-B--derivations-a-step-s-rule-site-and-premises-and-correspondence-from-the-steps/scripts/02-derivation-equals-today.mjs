@@ -21,7 +21,8 @@ const { makeCorrespondence } = await import(root + 'dist/framework/ir/correspond
 
 const pipelines = (process.argv[2] ?? 'O2,speed').split(',');
 const diffs = [],
-  rejections = [];
+  rejections = [],
+  withoutDerivation = [];
 const tally = {};
 let applications = 0,
   records = 0,
@@ -36,6 +37,10 @@ for (const id of projectIds())
     const run = await p.pipeline(pipeline);
     for (const step of run.steps) if (step.rejected) rejections.push(`${id} ${pipeline} ${step.pass}: ${step.rejected}`);
     for (const r of p.revisions.slice(1)) {
+      if (!r.derivation) {
+        withoutDerivation.push(`${id} ${pipeline} ${r.pass}`);
+        continue;
+      }
       applications++;
       const c = r.correspondence,
         source = new Set(c.sourceEntities);
@@ -101,3 +106,8 @@ console.log(
     : 'no differences: the derivation computes the same correspondence as revisionCorrespondence on every revision',
 );
 if (rejections.length) console.log(`REJECTED APPLICATIONS (${rejections.length}):\n${rejections.slice(0, 10).join('\n')}`);
+console.log(
+  withoutDerivation.length
+    ? `revisions with no derivation (a pass that is not rule-driven, e.g. ${[...new Set(withoutDerivation.map(x => x.split(' ')[2]))].join(', ')}): ${withoutDerivation.length}`
+    : 'every revision has a derivation',
+);

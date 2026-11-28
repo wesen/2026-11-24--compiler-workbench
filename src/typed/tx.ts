@@ -178,6 +178,10 @@ export interface ActiveRule {
 export class Tx {
   readonly edits: Edit[] = [];
   readonly writes: ReadonlySet<WriteKind>;
+  /** The pass's derivation steps, shared by the functions a pass walks in one application. */
+  readonly steps: DerivationStep[];
+  /** Whether this transaction records a derivation: false for a pass that builds its own correspondence. */
+  readonly derived: boolean;
   private cur: string | null = null;
   private sid: string | null = null;
   private rule: ActiveRule | null = null;
@@ -188,10 +192,11 @@ export class Tx {
     readonly fn: WorkFn,
     readonly pass: PassInfo,
     readonly rev: number,
-    /** The pass's derivation steps, shared by the functions a pass walks in one application. */
-    readonly steps: DerivationStep[] = [],
+    steps?: DerivationStep[],
   ) {
     this.writes = new Set(pass.writes);
+    this.steps = steps ?? [];
+    this.derived = steps !== undefined;
   }
 
   /** Run `f` with `rule` as the rule licensing every entity it makes and every edit it records. */
@@ -209,6 +214,7 @@ export class Tx {
    * decision that made them (`make`, `rebuild`, `set`, `local`, `block`…).
    */
   private made(produced: string, from: string | undefined | null, opts: MakeOptions, decision: string): void {
+    if (!this.derived) return;
     const premises = [...(this.rule?.premises ?? []), ...(opts.because ?? []).map(b => id(b as Ref)!)].filter(
       (p, i, all) => all.indexOf(p) === i,
     );
@@ -231,6 +237,7 @@ export class Tx {
    * though the correspondence, which is about survival, needs no entry for it.
    */
   inPlace(rule: ActiveRule, consumed: readonly string[], produced: string): void {
+    if (!this.derived) return;
     this.steps.push({
       by: rule.by,
       consumes: [...new Set(consumed)],
@@ -246,7 +253,8 @@ export class Tx {
    * what it became. A removal's site is the source entity alone (and its block), so it is `removed`
    * (`edit-classes`'s "dead statement", the correspondence's `removed` entry with its reason).
    */
-  private editStep(kind: string, detail: Record<string, unknown>): void {
+  private editStep(kind: string, detail: Record<string, unknown>): number | undefined {
+    if (!this.derived) return undefined;
     const one = (x: unknown): string[] => (typeof x === 'string' && x.length > 0 ? [x] : []);
     const side: Record<string, { consumes: string[]; produces: string[] }> = {
       remove: { consumes: [...one(detail.stmt), ...one(detail.block)], produces: [] },
@@ -261,9 +269,12 @@ export class Tx {
       insert: { consumes: [], produces: one(detail.stmt) },
     };
     const { consumes, produces } = side[kind] ?? {
-      consumes: one(detail.local ?? detail.block ?? detail.stmt),
-      produces: one(detail.local ?? detail.block ?? detail.stmt),
+      consumes: one(detail.local ?? detail.block ?? detail.stmt ?? detail.call),
+      produces: one(detail.local ?? detail.block ?? detail.stmt ?? detail.call),
     };
+    // an edit that names no entity at all (a `note`, `pe`'s or `promote`'s log record) is no site: it gets no step,
+    // and the record cites none
+    if (!consumes.length && !produces.length) return undefined;
     // a dropped block's reason is its unreachability, not an entity or a fact: the correspondence of a block that
     // is gone carries no reason, and an entry is the same whether the fill or a step gave it
     const premises =
@@ -286,6 +297,7 @@ export class Tx {
       ...(typeof detail.note === 'string' ? { note: detail.note } : {}),
     });
     this.pending.push(this.steps.length - 1);
+    return this.steps.length - 1;
   }
 
   private may(kind: WriteKind, what: string): void {
@@ -327,7 +339,9 @@ export class Tx {
     // `local`/`block` edit cites the step that made the entity. A structural edit is its own step.
     const own = Tx.OWN.has(kind);
     const cited = !own && this.pending.length ? [...this.pending] : null;
-    if (!cited) this.editStep(kind, detail);
+    // an edit that names no entity (a `note`, `pe`'s or `promote`'s log record) cites no step
+    const fresh = cited ? undefined : this.editStep(kind, detail);
+    const made = cited ?? (fresh === undefined ? undefined : [fresh]);
     const e: Edit = {
       id: `edit:r${this.rev}.${this.edits.length}`,
       rev: this.rev,
@@ -335,7 +349,7 @@ export class Tx {
       fn: this.fn.name,
       kind,
       ...detail,
-      ...(cited ? { steps: [...this.pending] } : { steps: [this.steps.length - 1] }),
+      ...(made && made.length ? { steps: made } : {}),
     };
     this.pending = [];
     this.edits.push(e);
