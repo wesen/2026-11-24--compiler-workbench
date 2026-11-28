@@ -37,11 +37,15 @@ disagree, and an explanation built from a second account is not evidence.
 
 1. **One query module**, `src/framework/ir/attribution.ts`, next to `derivation.ts`: reads a chain of
    correspondences (and their derivations) and a weight per entity, and answers
-   - `creditChain(links, weightsAt)`: per link, the groups of entities the link relates, each group's
-     weight before and after the link, the derivation steps that name the group, and the entities of the
-     chain's first revision its weight came from;
-   - `changedBy(entities, links)`: per entity, the links at which it did not keep its identity, in chain
-     order — provenance as a query.
+   - `recordChain(links).credit(weightsAt, { entities })`: per link, the groups of entities the link
+     relates, each group's weight before and after the link, the derivation steps that name the group, and
+     the entities of the chain's first revision its weight came from;
+   - `recordChain(links).changedBy(entities)`: per entity of the last revision, the label of the link that
+     made it — provenance as a query.
+
+   The chain is prepared once rather than passed to two free functions: D2 asks one question per statement,
+   and indexing the chain inside each call made that quadratic (diary step 7: the probe went from 40 s to a
+   timeout).
 2. **Three Typed adapters rewritten on it.** `src/typed/attribute.ts` keeps its signature (an input, a call,
    the emulator) and its format, and reads the join from each link's correspondence and the group's why from
    the derivation steps its edits cite. `src/typed/missed.ts` takes a site's provenance from `changedBy`

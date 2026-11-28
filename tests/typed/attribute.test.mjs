@@ -153,3 +153,19 @@ function twice(n: i32, k: i32): i32 {
   assert.equal(await locals({}), 1);
   assert.equal(await locals({ share: false }), 2);
 });
+
+test('D1 reads the records: a rule-licensed row names its rule, and no row is credited from an IR tree walk', async () => {
+  // first-steps under O1 rewrites `x * 8` into `x << 3` with simplify/mul-pow2 (the guide's example)
+  const p = Program.fromProject(projectSource('first-steps', projectAllFiles('first-steps')));
+  await p.pipeline('O1');
+  const call = benchCase(storeOf(p.origin.value), 'scale', { x: 3 } );
+  const a = attributeSteps(p.revisions, call);
+  const simplify = a.rows.filter(r => r.pass === 'simplify');
+  assert.ok(simplify.length > 0);
+  const mul = simplify.find(r => r.by.some(b => b.rule === 'mul-pow2'));
+  assert.ok(mul, JSON.stringify(simplify.map(r => r.by)));
+  assert.deepEqual(mul.by.filter(b => 'rule' in b)[0], { rule: 'mul-pow2', table: 'simplify' });
+  // every row of a derivation-recording pass names a rule or a decision: the record, not a second account
+  for (const r of a.rows.filter(r => r.pass !== 'ingest'))
+    assert.ok(r.by.length > 0 || r.decision.endsWith('indirect') || r.decision.includes('indirect'), r.decision);
+});

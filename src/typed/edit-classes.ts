@@ -1,41 +1,53 @@
 /**
- * IRWB-035-G: a classifier for the edits of one pass application.
+ * IRWB-035-G: a classifier for the edits of one pass application — as a query over the application's records
+ * (IRWB-065-B, phase 4 item 4.3).
  *
- * Input: the revision before, the revision after and the application's edit records (a `Revision` of a `Program`
- * holds all three). Output: one class per edit record, decided from the records and the two revisions alone, never
- * from the pass's name, so a user pass or a new pass is classified by the same rules.
+ * Input: the revision before, the revision after, the application's edit records, and the records the producer wrote
+ * for it — its derivation (each edit cites the steps that licensed it in `Edit.steps`) and its correspondence (a
+ * `Revision` of a `Program` holds all of them). Output: one class per edit record, decided from those records and the
+ * two revisions, never from the pass's name, so a user pass or a new pass is classified by the same rules.
  *
- *   local        a `replace` edit (a statement keeps its place and one of its value trees A becomes B) where B
- *                reads only locals the input revision already defines: B reads no local this application created
- *                and no local this application inserted a `set` for. The claim "A = B at this statement" is then
- *                a statement about the input revision alone.
- *                  local/rule      B is A normalized by one verified rule table (re-derived here from the rule
- *                                  data, bottom-up, first matching rule, as `Tx.rewrite` applies a table)
- *                  local/fact      not re-derived; the made value's origin names what it holds by (`because`)
- *                  local/uncited   not re-derived and no `because`
+ *   local        a `replace` edit (a statement keeps its place and one of its value trees A becomes B) whose cited
+ *                steps are all local under the **in-place** policy (`framework/ir/derivation.ts`'s `locality`, over
+ *                `localityGround`): the claim "A = B at this statement" rests on the input revision and on the values
+ *                this same application computed, and on nothing the application put into the program — no local it
+ *                created and no `set` it inserted for one. It is then a statement about the input revision alone.
+ *                  local/rule      a cited step names a verified rule: its table, its rules and the weakest evidence
+ *                                  among them are read from the steps (`RuleMatch`)
+ *                  local/fact      no cited step names a rule, and a cited step names a premise that is not a guard
+ *                  local/uncited   neither: the steps say nothing about why
  *   structural   an edit of the control-flow graph or of where a computation is placed: `block`, `retarget`,
  *                `replaceStmt`, `merge`, `move`, `unreachable`, `insert`, `local`, `inline`, the removal of a
- *                terminator or of an inlined call's statement, and a `replace` whose B reads a local this
- *                application created or inserted a `set` for (the value now comes from a statement placed elsewhere).
- *                Every such edit in a function that has an `inline` edit has the reason `inline`.
- *   other        the removal of a statement that is not a terminator (dead code), `note`, kinds not listed here,
- *                and a `replace` whose trees are in neither revision.
+ *                terminator or of an inlined call's statement, and a `replace` with a cited step that is not local
+ *                (its premise is a statement this application placed: `licm` and `lvn` hoist a definition into a
+ *                preheader). Every such edit in a function that has an `inline` edit has the reason `inline`.
+ *   other        the removal of a statement that is not a terminator (dead code), `note`, kinds not listed here, a
+ *                `replace` whose trees are in neither revision (`unresolved`), and a `replace` of an application
+ *                that recorded no derivation (`unrecorded`: no records, no claim — Typed's `inline` is the one such
+ *                pass, and its edits are `structural/inline` before this test is reached).
  *
  * Several `replace` edits of one statement field in one application form a chain (the intermediate trees are in
- * neither revision); every member gets the class of the chain's net change, first `from` to last `to`.
+ * neither revision); the chain's first edit owns the entities an edit affects and the chain's net change is what its
+ * instructions weigh, while each member is classified by the steps it cites.
  *
  * `instructionWeights` gives each edit the RV32 instructions it affects: the instructions of the image lowered from
  * the revision before that implement entities the edit removed, plus those of the image after that implement
  * entities it added (a moved or retargeted statement: its own instructions in the image after). For a `replace`
  * the entities are those of the subtrees where A and B part; the operators above them, which `Tx.rewrite` makes
  * again around a changed operand, are listed apart as `rebuilt` and counted only on request.
+ *
+ * `rederive` is **not** what classifies: it is the audit of `local/rule`, a second reader that normalizes A with the
+ * verified tables and compares the result with B, used by `tests/typed/rules.test.mjs` to check that the rule names
+ * the derivations record are rules the tables would fire. It is built on `src/stdlib/term` (`normalize` instantiates
+ * a template through the library's `instantiate`, and `sameTree` is the library's `structuralEqual`), so the audit
+ * is not a second copy of a rule's semantics.
  */
 import { IMPURE } from './analyses.js';
 import type { Rv32Image } from './backend/image.js';
 import { F32_RESULT } from './f32.js';
 import { COMPARE } from './listing.js';
 import type { StmtRec, TypedBlocks, ValueOp, ValueRec } from './model.js';
-import { firstMatch, indexRules, numOf, type Bindings } from './rules/compile.js';
+import { firstMatch, indexRules, numOf } from './rules/compile.js';
 import { IDENTITY_RULES } from './rules/identities.js';
 import { ALL_EVIDENCE } from './rules/listing.js';
 import { FOLD_RULES } from './rules/fold.js';
@@ -142,8 +154,6 @@ const handle = (t: Tree): TreeHandle => ({
   isBoolean: COMPARE.has(t.op),
   same: other => sameTree(t, other.tree),
 });
-const treeBound = (b: Bindings, x: string): Tree => (b.get(x) as unknown as TreeHandle).tree;
-
 /**
  * A rule's right-hand side as a tree, with the types `Tx.const` and `Tx.make` give. The instantiation is the standard
  * library's (IRWB-060-B): this file's copy of a rule's template semantics is gone, and `handle` is only the adapter
@@ -246,11 +256,6 @@ const stmtNodes = (v: TypedBlocks, sid: string): string[] => {
   const s = v.stmts[sid];
   if (!s) return [];
   return [sid, ...nodes(v.values, s.value), ...nodes(v.values, s.cond), ...nodes(v.values, s.addr)];
-};
-const reads = (t: Tree, out = new Set<number>()): Set<number> => {
-  if (t.op === 'get') out.add(t.imm as number);
-  t.args.forEach(a => reads(a, out));
-  return out;
 };
 /**
  * Where the trees rooted at `a` (before) and `b` (after) part: the roots of the differing subtrees on each side,

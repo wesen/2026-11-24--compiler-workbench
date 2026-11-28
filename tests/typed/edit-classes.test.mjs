@@ -128,3 +128,40 @@ test('a pass with no table and no because: div-to-shift is local/uncited, with i
   const t = EC.tallyInto(EC.emptyTally(), edits);
   assert.deepEqual([t.edits, t.byClass.local.edits, t.byClass.structural.edits], [edits.length, edits.length, 0]);
 });
+
+test('the O2 corpus, classified from the records: 395 local edits, all 43 folds among them', async () => {
+  // The settled count of IRWB-065-B (R3: A0's 203 scoped against G's 395 in-place). `classifyApplication` and the
+  // step-level query in tests/typed/derivations.test.mjs read one ground (`localityGround`), so the two agree.
+  const { projectIds } = await import('../../tools/corpus.mjs');
+  const localByPass = {};
+  let records = 0, local = 0, projects = 0;
+  for (const id of projectIds()) {
+    const p = open(id);
+    if (p.status !== 'ok') continue;
+    projects++;
+    await p.pipeline('O2');
+    for (let i = 1; i < p.revisions.length; i++) {
+      const r = p.revisions[i];
+      for (const e of EC.classifyApplication({
+        pass: r.pass,
+        before: p.revisions[i - 1].artifact.value,
+        after: r.artifact.value,
+        edits: r.edits,
+        derivation: r.derivation,
+        correspondence: r.correspondence,
+      })) {
+        records++;
+        if (e.class !== 'local') continue;
+        local++;
+        localByPass[e.pass] = (localByPass[e.pass] ?? 0) + 1;
+        // a local edit names what it is: a rule from the steps, or the facts it rests on
+        assert.ok(['rule', 'fact', 'uncited'].includes(e.sub), `${e.id} ${e.sub}`);
+        if (e.sub === 'rule') assert.equal(e.rule.table, e.pass);
+      }
+    }
+  }
+  assert.ok(projects > 40, `${projects} projects`);
+  assert.equal(records, 1774, 'the census the baselines record');
+  assert.equal(local, 395);
+  assert.deepEqual(localByPass, { simplify: 140, fold: 43, strength: 20, constprop: 141, subst: 51 });
+});

@@ -21,12 +21,17 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Lane 4.3 of v7 phase 4: D1's instruction attribution, D2's provenance and A0's edit classification, as queries over
+the records the passes write (the derivation, the correspondence chain). One framework query module
+(`src/framework/ir/attribution.ts`), three adapters, A0's matcher on `src/stdlib/term`, the re-derivation code
+deleted, and the 203/395 count settled at 395. Read `reference/02-report-attribution-provenance-and-classification-as-queries.md`.
 
 ## Key Links
 
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
+- Design note: [design-doc/01-design-note-attribution-provenance-and-classification-as-queries.md](./design-doc/01-design-note-attribution-provenance-and-classification-as-queries.md)
+- Report: [reference/02-report-attribution-provenance-and-classification-as-queries.md](./reference/02-report-attribution-provenance-and-classification-as-queries.md)
+- Diary: [reference/01-diary.md](./reference/01-diary.md)
+- Acceptance transcript: [various/acceptance.txt](./various/acceptance.txt)
 
 ## Status
 

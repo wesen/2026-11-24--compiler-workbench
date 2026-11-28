@@ -7,13 +7,16 @@
  * the RV32 instructions a statement executes, the bytes a kernel touches, the time its code takes. This module
  * answers two questions over those records alone, with no IR trees and no re-derivation:
  *
- *   - `creditChain(links, weightsAt)`: for each link, the **groups** of entities it relates, each group's weight
- *     before and after the link, the records that name it (the derivation steps, the entries' reasons), and the
- *     entities of the chain's first revision its weight came from. Every unit of a change is credited to exactly one
- *     group, so a caller can name every unit of a difference and none is estimated.
- *   - `changedBy(entities, links)`: for each entity of the last revision, the labels of the links at which its
- *     lineage did not keep its identity, oldest first. That is provenance — "which passes made this code" — as a
- *     query over the same records.
+ *   - `recordChain(links).credit(weightsAt, { entities })`: for each link, the **groups** of entities it relates,
+ *     each group's weight before and after the link, the records that name it (the derivation steps, the entries'
+ *     reasons and notes), and the entities of the chain's first revision its weight came from. Every unit of a
+ *     change is credited to exactly one group, so a caller can name every unit of a difference and none is
+ *     estimated.
+ *   - `recordChain(links).changedBy(entities)`: for each entity of the last revision, the label of the link that
+ *     made it as it is there. That is provenance — "which passes made this code" — over the same records.
+ *
+ * The chain is indexed once (`recordChain`) because both questions are asked many times — D2 asks one per statement
+ * — and re-indexing a chain per question is quadratic in the program.
  *
  * Two rules about identity make both queries read the correspondence the way its producer wrote it:
  *
@@ -52,9 +55,13 @@ export type WeightMap = ReadonlyMap<string, number>;
 export interface Credit {
   /** Index of the link in the chain; the group lies between revision `link` and revision `link + 1`. */
   readonly link: number;
-  /** The group's entities in the revision before the link, sorted; empty for an insertion. */
+  /**
+   * The group's entities in the revision before the link that carry weight or that the caller names, sorted; empty
+   * for an insertion or when nothing on that side is weighed. (A group whose entities are neither is not reported;
+   * `sources` still traces the whole component.)
+   */
   readonly before: readonly string[];
-  /** The group's entities in the revision after it, sorted; empty for a removal. */
+  /** The same for the revision after the link; empty for a removal. */
   readonly after: readonly string[];
   /** The relations of the entries that formed the group, each once, sorted. */
   readonly relations: readonly string[];
@@ -90,6 +97,11 @@ interface LinkIndex {
   readonly notes: ReadonlyMap<string, readonly string[]>;
   /** entity -> the `from` sets of the entries that produce it. */
   readonly into: ReadonlyMap<string, readonly (readonly string[])[]>;
+  /** group key -> every entity of the component, on each side (not only the ones that carry weight). */
+  readonly members: ReadonlyMap<
+    string,
+    { readonly before: readonly string[]; readonly after: readonly string[] }
+  >;
 }
 
 function indexLink(c: EntityCorrespondence): LinkIndex {
@@ -135,6 +147,14 @@ function indexLink(c: EntityCorrespondence): LinkIndex {
   }
   const sorted = (m: Map<string, Set<string>>) =>
     new Map([...m].map(([id, s]) => [id, [...s].sort(compareText)] as const));
+  const members = new Map<string, { before: string[]; after: string[] }>();
+  const member = (key: string) => {
+    let m = members.get(key);
+    if (!m) members.set(key, (m = { before: [], after: [] }));
+    return m;
+  };
+  for (const id of c.sourceEntities) if (group.has(id)) member(group.get(id)!).before.push(id);
+  for (const id of c.targetEntities) if (group.has(id)) member(group.get(id)!).after.push(id);
   return {
     group,
     carried,
@@ -142,6 +162,7 @@ function indexLink(c: EntityCorrespondence): LinkIndex {
     because: sorted(because),
     notes: sorted(notes),
     into,
+    members,
   };
 }
 
@@ -169,6 +190,8 @@ const byOf = (steps: readonly DerivationStep[]): readonly DerivationBy[] => {
 };
 
 interface Slot {
+  /** The group's key: a component of the correspondence, or `#<id>` for an id no entry mentions. */
+  readonly key: string;
   readonly before: string[];
   readonly after: string[];
   readonly relations: Set<string>;
@@ -245,6 +268,7 @@ export function recordChain(links: readonly ChainLink[]): RecordChain {
           slots.set(
             key,
             (s = {
+              key,
               before: [],
               after: [],
               relations: new Set(),
@@ -308,18 +332,26 @@ export function recordChain(links: readonly ChainLink[]): RecordChain {
           beforeWeight,
           afterWeight,
           delta: afterWeight - beforeWeight,
-          sources: s.weight ? trace(s.before, i) : [],
+          // the weight of an inserted entity traces through the antecedent it was made from, which is not one of
+          // the group's *reported* entities when it carries no weight: trace the whole component
+          sources: s.weight ? trace(ix.members.get(s.key)?.before ?? s.before, i) : [],
         });
       }
     });
     return rows;
   };
 
+  const existsAt = links.map(l => new Set(l.correspondence.targetEntities));
   const changedBy = (entities: readonly string[]): ReadonlyMap<string, readonly string[]> => {
     const labelsOf = (entity: string, revision: number): readonly string[] => {
       const key = `${revision}:${entity}`;
       const hit = memo.get(key);
       if (hit) return hit;
+      // an entity a revision does not have is outside the query: `entities` are the last revision's
+      if (revision > 0 && !existsAt[revision - 1].has(entity)) {
+        memo.set(key, []);
+        return [];
+      }
       const made =
         revision > 0 && !index[revision - 1].carried.has(entity) ? [links[revision - 1].label] : [];
       const out = made.length ? made : revision > 0 ? labelsOf(entity, revision - 1) : [];

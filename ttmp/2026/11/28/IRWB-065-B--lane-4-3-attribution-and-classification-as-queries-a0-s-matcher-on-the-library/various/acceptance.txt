@@ -1,0 +1,34 @@
+IRWB-065-B acceptance, on the last commit (all runs in this worktree, Node 24.18.0)
+==========================================================================
+
+1. D1's tables reproduce exactly
+   sh ttmp/2026/11/28/IRWB-065-B--*/scripts/01-d1-tables.sh before   (before any change: commit da32a78)
+   sh ttmp/2026/11/28/IRWB-065-B--*/scripts/01-d1-tables.sh after    (after)
+   various/d1-before-fib.txt      == various/d1-after-fib.txt         (151 lines)
+   various/d1-before-checksum.txt == various/d1-after-checksum.txt    (173 lines)
+   `cmp` on each pair: identical.
+
+2. D2's hot-shape tables unchanged on the programs it was run on
+   sh ttmp/2026/11/28/IRWB-065-B--*/scripts/03-d2-tables.sh before / after
+   various/d2-before-{regex,lz,chess}.txt == various/d2-after-{regex,lz,chess}.txt
+
+3. Both A0 policies as queries
+   node ttmp/2026/11/28/IRWB-065-B--*/scripts/09-o2-classify.mjs
+     50 projects, 1774 edit records, 395 local
+     local by pass: constprop 141, simplify 140, subst 51, fold 43, strength 20
+   tests/typed/derivations.test.mjs: scoped 203, in-place 395
+   tests/typed/edit-classes.test.mjs: 395 local, all 43 folds among them
+
+4. The baselines
+   node ttmp/2026/11/27/IRWB-039--*/scripts/02-baselines.mjs check
+     no differences from .../various/baselines/main.json
+
+5. The suites (files, not directories; the *-gpu files are not run)
+   tests/typed    pass 201  fail 0
+   tests/framework pass 279 fail 0
+   tests/workbench pass 24  fail 0
+   tests/stdlib    pass 67  fail 0
+   tests/tensor (without *-gpu) pass 63 fail 0
+
+6. npm run check (tsc --noEmit): clean
+   node tools/build-site.mjs: dist/site built in 229 ms: app.js 3239 KiB, 50 projects

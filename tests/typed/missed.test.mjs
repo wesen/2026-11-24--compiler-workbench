@@ -15,6 +15,9 @@ const { hotShapes, formatHotShapes, stmtShape } = await import('../../dist/typed
 const { SIMPLIFY_RULES } = await import('../../dist/typed/rules/simplify.js');
 
 const open = () => Program.fromProject(projectSource('regex-nfa', projectAllFiles('regex-nfa')));
+/** The record chain from r0 to the head: what `hotShapes` reads a site's provenance from (IRWB-065-B). */
+const chainOf = p =>
+  p.revisions.slice(1).map(r => ({ label: r.pass, correspondence: r.correspondence, derivation: r.derivation }));
 const input = { pattern: { string: '[a-c]*[b-d]*a*d' }, text: { string: 'abccabbd' } };
 const sum = (rows, k) => rows.reduce((n, r) => n + r[k], 0);
 
@@ -42,7 +45,7 @@ test('after speed the constant bounds checks that remain are the hottest untouch
   const run = await p.pipeline('speed', { count: 10 });
   assert.deepEqual(run.steps.filter(s => s.rejected), []);
   const call = benchCase(storeOf(p.origin.value), 'regexMatch', input);
-  const h = hotShapes(p.head, [call], { rules: SIMPLIFY_RULES.rules });
+  const h = hotShapes(p.head, [call], { chain: chainOf(p), rules: SIMPLIFY_RULES.rules });
   assert.equal(h.total, runImage(lowerToImage(p.head).image, call.fn, call.args, call.memory).steps);
   assert.equal(sum(h.statements, 'instructions') + h.frame, h.total);
   assert.equal(sum(h.nodes, 'instructions') + h.frame, h.total);
@@ -67,7 +70,7 @@ test('guards removes the checks the table showed: fewer instructions in the shap
   const measure = async list => {
     const p = open();
     for (const pass of list) await p.apply(pass, { count: 10 });
-    const h = hotShapes(p.head, [call]);
+    const h = hotShapes(p.head, [call], { chain: chainOf(p) });
     return { total: h.total, checks: h.statements.find(r => r.shape === 'if geu(x, #)').instructions };
   };
   const now = await measure(PIPELINES.speed);
@@ -75,4 +78,14 @@ test('guards removes the checks the table showed: fewer instructions in the shap
   assert.ok(now.checks < without.checks, `${now.checks} < ${without.checks}`);
   assert.ok(now.total < without.total);
   assert.ok(now.total < 6628, `below the reference compiler's 6,628: ${now.total}`);
+});
+
+test('provenance is a query over the records: a head above r0 without its chain is refused', async () => {
+  const p = open();
+  await p.pipeline('speed', { count: 10 });
+  const call = benchCase(storeOf(p.origin.value), 'regexMatch', input);
+  assert.throws(() => hotShapes(p.head, [call]), /pass the correspondence chain from r0/);
+  // with the chain, a site licm rewrote says licm; the same program without the chain cannot be asked
+  const withChain = hotShapes(p.head, [call], { chain: chainOf(p) });
+  assert.ok(withChain.statements.some(r => r.provenance.licm > 0));
 });

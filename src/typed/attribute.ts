@@ -24,7 +24,7 @@
 import type { Artifact } from '../framework/core/types.js';
 import type { ChainLink, WeightMap } from '../framework/ir/attribution.js';
 import { recordChain } from '../framework/ir/attribution.js';
-import type { DerivationBy } from '../framework/ir/derivation.js';
+import type { DerivationBy, DerivationStep } from '../framework/ir/derivation.js';
 import { lowerToImage, runImage, type BackendOptionsInput } from './backend/index.js';
 import { storeOf } from './ir.js';
 import { showStmt } from './listing.js';
@@ -87,6 +87,19 @@ export interface Attribution {
 
 const FRAME = 'frame',
   BACKEND = 'backend';
+
+/** Rules and decisions, in order, each once: what the query found and what the edits cite. */
+const byOf = (a: readonly DerivationBy[], b: readonly DerivationStep[]): DerivationBy[] => {
+  const seen = new Set<string>();
+  const out: DerivationBy[] = [];
+  for (const by of [...a, ...b.map(s => s.by)]) {
+    const key = 'rule' in by ? `rule:${by.table ?? ''}/${by.rule}` : `decision:${by.decision}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(by);
+  }
+  return out;
+};
 
 const isStmt = (st: Store, id: unknown): id is string =>
   typeof id === 'string' && st.has(id) && (st.get(id) as { kind?: string }).kind === 'stmt';
@@ -176,11 +189,15 @@ export function attributeSteps(
     const kinds = new Set<string>(),
       notes = new Set<string>(c.notes),
       because = new Set<string>();
+    // the steps the edits that name the group cite: a step that made a value inside the statement the weight is
+    // attached to names a value, not the statement, so the edit record is what ties the two together
+    const cited: DerivationStep[] = [];
     for (const e of r.edits) {
       if (!namedBy(e).some(id => sites.includes(id))) continue;
       kinds.add(e.kind);
       if (typeof e.note === 'string') notes.add(e.note);
       for (const b of (e.because as string[] | undefined) ?? []) because.add(b);
+      for (const k of e.steps ?? []) if (r.derivation?.steps[k]) cited.push(r.derivation.steps[k]);
     }
     // a statement the pass made says why it exists in the steps that made it (IRWB-034-G's `because` column: the
     // facts of that statement, not those of every value under it, which its entry also aggregates)
@@ -204,7 +221,7 @@ export function attributeSteps(
       before: c.beforeWeight,
       after: c.afterWeight,
       sites: sites.sort().map(id => ({ id, text: text(c.link, id) })),
-      by: c.by,
+      by: byOf(c.by, cited),
     });
   });
   rows.sort((a, b) => a.rev - b.rev || b.delta - a.delta || (a.sites[0].id < b.sites[0].id ? -1 : 1));
