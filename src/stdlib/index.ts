@@ -10,6 +10,7 @@
  *
  * What exists now:
  *   flow/     liveness — backward gen/kill liveness over blocks, with an explicit scope
+ *   num/      binary32 arithmetic on bit patterns, and min/max under a named IEEE 754-2019 profile
  *
  * Later modules, one line each (each enters under the admission rule, with its two clients):
  *   graph/    dominators and loops — the dominator tree, dominance frontiers, natural loops
@@ -24,4 +25,8 @@
  *   measure/  cost measures over library results (sizes, depths)
  */
 export { liveness, reachableBlocks } from './flow/liveness.js';
+export { minmax, NUMBERS } from './num/minmax.js';
+export type { FloatOrder, MinMax, MinMaxProfile } from './num/minmax.js';
+export { binary32, BITS, CANONICAL_NAN, fromBits, isNaNBits, toBits } from './num/binary32.js';
+export type { Binary32Ops } from './num/binary32.js';
 export type { LiveBlock, LiveGraph, Liveness, LivenessScope } from './flow/liveness.js';
