@@ -1,16 +1,24 @@
 Tix inline on attention, trivial gate (the runner alone)
-  applyNativePassSync (today)                    3.127 ms  (1.956..4.483)
-  sync driver                                    2.516 ms  (2.255..3.623)
-  async driver                                   2.805 ms  (1.893..6.195)
+  applyNativePassSync (today)                    cpu 1.865 ms (1.468..2.554)   wall min 1.953 ms
+  sync driver                                    cpu 1.775 ms (1.291..2.280)   wall min 2.220 ms
+  async driver                                   cpu 1.784 ms (1.334..3.236)   wall min 1.983 ms
 Tix inline on attention, with the meaning gate
-  applyNativePassSync (today)                    38.597 ms  (24.705..48.158)
-  sync driver                                    28.184 ms  (24.105..43.887)
-  async driver                                   29.538 ms  (23.079..44.907)
+  applyNativePassSync (today)                    cpu 21.141 ms (20.041..32.634)   wall min 25.256 ms
+  sync driver                                    cpu 20.919 ms (20.133..24.158)   wall min 24.888 ms
+  async driver                                   cpu 21.625 ms (18.946..24.003)   wall min 22.728 ms
 Typed strength on strength r0, new manager each time, meaning check, preservation audited
-  applyPass (today)                              64.259 ms  (49.888..74.358)
-  async driver (contract)                        64.161 ms  (47.794..84.308)
-  sync driver (meaning check as a function)      56.793 ms  (43.531..69.291)
+  applyPass (today)                              cpu 44.772 ms (40.755..46.264)   wall min 47.388 ms
+  async driver (contract)                        cpu 42.424 ms (38.943..47.817)   wall min 44.204 ms
+  sync driver (meaning check as a function)      cpu 42.492 ms (39.618..50.721)   wall min 50.249 ms
 Typed strength on strength r0, facts cached, no gate (the runner, cache hits, three transfers)
-  applyPass (today)                              24.037 ms  (15.764..25.978)
-  async driver                                   18.723 ms  (14.991..29.975)
-  sync driver                                    16.326 ms  (14.364..19.836)
+  applyPass (today)                              cpu 15.736 ms (13.832..17.671)   wall min 16.267 ms
+  async driver                                   cpu 17.375 ms (13.122..26.463)   wall min 12.814 ms
+  sync driver                                    cpu 18.374 ms (13.375..18.882)   wall min 15.994 ms
+Typed strength on sha-chacha r0, new manager each time, meaning check, preservation audited
+  applyPass (today)                              cpu 508.270 ms (465.021..580.559)   wall min 544.027 ms
+  async driver (contract)                        cpu 462.913 ms (439.005..537.395)   wall min 514.520 ms
+  sync driver (meaning check as a function)      cpu 437.779 ms (432.944..606.409)   wall min 504.330 ms
+Typed strength on sha-chacha r0, facts cached, no gate (the runner, cache hits, three transfers)
+  applyPass (today)                              cpu 260.199 ms (254.825..288.115)   wall min 298.306 ms
+  async driver                                   cpu 260.394 ms (251.804..348.732)   wall min 254.746 ms
+  sync driver                                    cpu 321.192 ms (256.211..427.926)   wall min 272.251 ms
