@@ -172,3 +172,163 @@ Check the direction of lab imports and the coverage of the updated Typed listing
 ### Code review instructions
 
 Review `src/labs/patterns.ts`, `src/labs/rewrites.ts`, `src/typed/rules/form.ts` and the moved tests. Run the focused commands above.
+
+## Step 4 — Hold the edited work fixed across chess sizes
+
+The intact-corpus runs change different functions. Chess edits invalidate five roots, and Candela edits invalidate one. I added a controlled chess comparison to isolate the incremental cost of extra unaffected IR.
+
+### Prompt Context
+
+See Step 1. Measure growth across sizes before deciding where the runtime belongs.
+
+### What I did
+
+I added `chess-controlled` to the same script. It selects an eligible function with no callers, builds nested call-closed subsets, and checks that exactly one meaning task and three analysis tasks execute per edit. It retains frame-array mode so the evaluator's memory layout and the closure-key inputs stay comparable.
+
+### Why
+
+The intact-corpus cost includes genuine variation in the edited program, but it cannot identify the effect of adding unaffected functions. Closed subsets reuse real chess functions without synthetic duplication.
+
+### What worked
+
+The focused graph extraction tests passed before commit `b09c44d`. A private tmux socket via escalation ran the controlled comparison and captured its exit status. The intact comparison loaded Candela in 4,987.91 ms and reached measured edits.
+
+### What didn't work
+
+`node "$ticket/scripts/01-e1.mjs" chess-controlled` initially stopped with `AssertionError [ERR_ASSERTION]: expected three distinct chess sizes`. Extending the subset in source order could pull in a large transitive closure before reaching the midpoint. I ordered the extension candidates by closure size and selected the smallest possible frame-array carrier when needed.
+
+### What I learned
+
+The ordinary origin has program-wide evaluator state as well as function parts. A valid controlled slice must preserve both call resolution and the frame-array flag.
+
+### What was tricky
+
+Subset construction changes the set of roots checked. The selected edited function has no callers anywhere in full chess, so adding functions cannot enlarge the set of invalidated meaning roots.
+
+### What warrants a second pair of eyes
+
+Check the closed subset construction, and interpret this control alongside the original whole-program runs.
+
+### Code review instructions
+
+Run `node "$ticket/scripts/01-e1.mjs" chess-controlled` after building and inspect the assertion on executed meaning tasks.
+
+## Step 5 — Decide from the matched and intact measurements
+
+The controlled run confirmed that the runtime reused unaffected work and still grew with size. The intact Candela run completed, and its much lower runtime/current ratio showed a genuine benefit under that workload. The gate asks for the runtime's own per-edit cost to stay flat or fall as size rises, so I chose to move it to labs.
+
+### Prompt Context
+
+See Step 1. Apply R3's adoption gate after measuring both paths.
+
+### What I did
+
+I retained the per-edit JSONL from both campaigns and added `scripts/02-summarize.mjs` to compute medians and min/max ranges. The intact campaign finished with six timed pairs per program, and the controlled campaign with six per chess size.
+
+### Why
+
+The median and the paired log expose variability without hiding outliers. The controlled comparison holds the affected roots constant while the intact run reports actual programs and workloads.
+
+### What worked
+
+The controlled runtime medians were 138.27, 200.96 and 222.67 ms/edit, with current medians 389.81, 492.85 and 817.26 ms/edit. Every controlled edit executed three analysis tasks and one meaning task. Candela completed at 683.90 ms/edit runtime and 18,454.00 ms/edit today by the median. All checked facts and case totals matched. The controlled process exited 0 in tmux.
+
+### What didn't work
+
+The runtime showed a speedup, but its absolute controlled cost increased with size. The ranges overlap and the controlled run overlapped the tail of the Candela run, so the data supports the direction of the decision more strongly than a precise growth coefficient.
+
+### What I learned
+
+The intact chess and Candela latencies partly reflect different counts of invalidated roots. The same edited function and root count are needed to distinguish that effect from size scaling.
+
+### What was tricky
+
+Both the fixture size and accepted meaning are faithful to the corpus. Set formation, closure-key derivation, runtime cache checking, and whole-artifact invariant overhead still count.
+
+### What warrants a second pair of eyes
+
+Review the R3 gate interpretation against the drop in the relative ratio and the rise in absolute latency.
+
+### Code review instructions
+
+Compare the two raw JSONL files with the output of `node "$ticket/scripts/02-summarize.mjs"`.
+
+## Step 6 — Move the query runtime after the decision
+
+The lab compiler kept its existing engine and tutorial with updated imports. The generic framework core now exports the data and type primitives.
+
+### Prompt Context
+
+See Step 1. Apply the move supported by the measured result.
+
+### What I did
+
+I moved runtime, query and record modules into labs. I moved the runtime and policy tests and split out two tests that exercise portable core data only. I transferred the runtime tutorial into the labs conformance test. The benchmark now loads the runtime from its final path.
+
+### Why
+
+Keeping the lab engine preserves the conformance examples. Splitting the data tests preserves the core's coverage boundary. The framework barrel has no reference back to labs.
+
+### What worked
+
+`npm run build` succeeded. `find src/framework -name '*.ts' -exec wc -l {} + | tail -1` printed `9714 total`, down 3,018 lines from the pre-change count. The call-chain smoke run checked all facts and totals through the relocated engine.
+
+### What didn't work
+
+The pilot's snapshot failure in Step 2 came from omitted benchmark registration descriptions, which the runtime database expects as data. I supplied those descriptions. The benchmark still counts executed task bodies so snapshot serialization stays outside the measured cost.
+
+### What I learned
+
+The production compiler path and the framework's standalone transaction protocol can remain independent of the lab engine.
+
+### What was tricky
+
+Tests named for the core mixed runtime behavior with two portable canonical-data checks. I preserved those checks in the framework and kept the runtime cases together in labs.
+
+### What warrants a second pair of eyes
+
+Look for any import of a moved module through the older framework barrels, and compare the moved tests with their original assertions.
+
+### Code review instructions
+
+Review `src/framework/core/index.ts`, `src/labs/{runtime,query,records}.ts`, and `tests/framework/core-data.test.mjs`. Run the lab suite and the call-chain smoke probe.
+
+## Step 7 — Run the acceptance commands
+
+I built the site and ran the frozen baseline oracle and each requested suite. The moved lab tests were an additional suite.
+
+### Prompt Context
+
+See Step 1 and the acceptance list in the request. Preserve the baseline and exercise each migrated import.
+
+### What I did
+
+I ran `npm run build`, `npm run check`, `node tools/build-site.mjs`, and the coordinator's read-only `node ttmp/2026/11/27/IRWB-039--framework-v7-honest-evidence-atomic-publication-one-runner-and-a-standard-library/scripts/02-baselines.mjs check`. I used `node --test --test-concurrency=2` on each requested file list and the labs suite, explicitly dropping files ending in `-gpu.test.mjs`.
+
+### Why
+
+The site uses the framework source catalog. The baseline checks outputs outside the changed engine path. Separate suite runs keep pass and skip totals auditable.
+
+### What worked
+
+TypeScript and the site build passed. The baseline printed `no differences`. Framework, labs, workbench, stdlib, and non-GPU tensor completed without a failure. The relocated benchmark smoke run exited 0.
+
+### What didn't work
+
+The first zsh wrapper passed `"${files:#*-gpu.test.mjs}"` as one argument. Node printed `Could not find 'tests/framework/conformance.test.mjs tests/framework/contracts.test.mjs …'` and ran no files in that attempt. I built the list with an explicit suffix comparison and passed `"${files[@]}"`, which supplied each file separately.
+
+### What I learned
+
+The default workbench suite marks one Candela test opt-in. The Typed suite also contains opt-in Candela tests. Default skipped tests are reported as skips, not as passes.
+
+### What was tricky
+
+The GPU file exclusion applies only to test file selection. CPU-side CUDA lowering and source tests are part of the requested tensor suite and ran.
+
+### What warrants a second pair of eyes
+
+Review the raw baseline output and per-suite counts in the report.
+
+### Code review instructions
+
+Build once, then run the explicit file lists in the report. Do not invoke the repository-wide `npm test` command or any GPU test.

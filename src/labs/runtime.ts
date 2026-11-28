@@ -14,8 +14,8 @@ import {
   type PassInvocationIdentity,
   type Registry,
   type Task,
-} from './types.js';
-import { canonical, fingerprint, immutable } from './data.js';
+} from '../framework/core/types.js';
+import { canonical, fingerprint, immutable } from '../framework/core/data.js';
 import type {
   CacheChange,
   CacheExplanation,

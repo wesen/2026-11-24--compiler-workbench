@@ -1,6 +1,6 @@
-/** Run after building: node dist/guide/01-runtime.js */
-import { Compiler } from '../framework/core/runtime.js';
-import { assert, task, type Task } from '../framework/core/types.js';
+/** Run after building: node dist/labs/conformance/01-runtime.js */
+import { Compiler } from '../runtime.js';
+import { assert, task, type Task } from '../../framework/core/types.js';
 
 interface Scalar {
   value: number;

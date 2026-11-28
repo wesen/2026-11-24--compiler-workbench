@@ -1,6 +1,6 @@
-import type { Artifact, EntityRef } from './types.js';
+import type { Artifact, EntityRef } from '../framework/core/types.js';
 import type { DatabaseSnapshot, InvocationRecord } from './records.js';
-import { canonical } from './data.js';
+import { canonical } from '../framework/core/data.js';
 
 type Target = Artifact | EntityRef | string;
 function idOf(target: Target): string {

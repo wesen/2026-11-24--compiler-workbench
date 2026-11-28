@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Compiler} from '../../dist/framework/core/runtime.js';
+import {Compiler} from '../../dist/labs/runtime.js';
 
 test('execution-layer evidence is a captured immutable snapshot with a single-assignment namespace', async () => {
   const compiler = new Compiler();

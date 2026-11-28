@@ -1,5 +1,5 @@
 import type { Artifact } from '../framework/core/types.js';
-import type { DatabaseSnapshot } from '../framework/core/records.js';
+import type { DatabaseSnapshot } from './records.js';
 import type { ContractSnapshot } from '../framework/contracts/index.js';
 import type {
   AdapterDescriptor,

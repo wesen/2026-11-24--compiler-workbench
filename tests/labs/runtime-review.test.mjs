@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Compiler, canonical, task } from '../../dist/framework/core/index.js';
+import { Compiler } from '../../dist/labs/runtime.js';
+import { task } from '../../dist/framework/core/types.js';
 
 function compiler() {
   const c = new Compiler();
@@ -132,18 +133,6 @@ test('query differences distinguish absent fields and inputs from explicit null'
   const diff = c.query.diff(a.value, b.value);
   assert.equal(diff.length, 1); assert.equal(diff[0].path, '/field');
   assert.ok(b.run.compare(a.run).inputs.some(i => i.key === 'new-null-input'));
-});
-
-test('canonical arrays reject accessors, symbol keys, and sparse arrays with spoofed key counts', () => {
-  let reads = 0;
-  const accessor = [];
-  Object.defineProperty(accessor, '0', { enumerable: true, configurable: true, get() { reads++; return 1; } });
-  assert.throws(() => canonical(accessor), /accessor|plain|data/i);
-  assert.equal(reads, 0);
-  const sparse = new Array(1); sparse.extra = 'not an element';
-  assert.throws(() => canonical(sparse), /sparse|properties|array/i);
-  const symbol = [1]; symbol[Symbol('extra')] = 2;
-  assert.throws(() => canonical(symbol), /symbol|properties|array/i);
 });
 
 test('an exposed run record cannot replace the immutable input snapshot', async () => {
