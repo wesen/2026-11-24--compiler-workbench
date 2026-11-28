@@ -52,3 +52,5 @@ Existing corpus assertions remain unchanged. A new test covers reuse and distinc
 - `node --test tests/tensor/lowering.test.mjs`: passed, including 24 corpus cases for byte identity and correspondence.
 - Baseline check: `no differences`.
 - Non-GPU suite: 85 files passed and 4 failed in the sandbox (89 total). Rerunning the four files with elevated permissions passed 15 tests, with 1 pre-existing conditional skip. The initial file-level reporter did not expose the failure diagnostics, so the cause is not established.
+
+Final implementation commit validation was repeated after the report commit: build and check passed, and the oracle again printed `no differences`. The elevated full run reported 622 passed, one failed file (`chess-search`), and three skipped. The isolated elevated rerun of that file passed all four tests. The initial file-level failure had no underlying diagnostic, so its cause is unknown. These checks preceded only this documentation update.
