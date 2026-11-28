@@ -8,4 +8,4 @@
 - [x] Lane 4.8: staged choice (launch-time select, derived arms) <!-- t:tds2 -->
 - [x] Lane F41: one coverage check <!-- t:bv3j -->
 - [x] Score, review and merge each lane; GPU suite at merge <!-- t:pgk6 -->
-- [ ] Update handoff, BACKLOG, design doc; push <!-- t:rkop -->
+- [x] Update handoff, BACKLOG, design doc; push <!-- t:rkop -->
