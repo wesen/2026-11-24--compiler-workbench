@@ -10,9 +10,10 @@
  *
  * What exists now:
  *   flow/     liveness — backward gen/kill liveness over blocks, with an explicit scope
+ *   graph/    orders, dominators, natural loops — over one digraph: nodes, an entry, successors
  *
  * Later modules, one line each (each enters under the admission rule, with its two clients):
- *   graph/    dominators and loops — the dominator tree, dominance frontiers, natural loops
+ *   graph/    dominance frontiers
  *   lattice/  lattices — joins, order, widening for dataflow and constant propagation
  *   num/      exact small-number helpers (saturating and wrapping arithmetic)
  *   flow/     the fixpoint solver over a lattice (liveness hardcodes its own; this generalises it)
@@ -25,3 +26,12 @@
  */
 export { liveness, reachableBlocks } from './flow/liveness.js';
 export type { LiveBlock, LiveGraph, Liveness, LivenessScope } from './flow/liveness.js';
+
+export { predecessors } from './graph/digraph.js';
+export type { Digraph, Edge } from './graph/digraph.js';
+export { depthFirst } from './graph/orders.js';
+export type { DfsOrder } from './graph/orders.js';
+export { dominates, dominators, dominatorTree } from './graph/dominators.js';
+export type { Dominators } from './graph/dominators.js';
+export { naturalLoops } from './graph/loops.js';
+export type { NaturalLoop } from './graph/loops.js';

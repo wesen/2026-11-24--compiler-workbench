@@ -21,6 +21,14 @@ import { canonical } from '../framework/core/data.js';
 import { dataflow, type DataflowResult, type FlowRegion } from '../framework/dataflow/analysis.js';
 import { intervalLattice, mapLattice, setLattice, type Interval } from '../framework/dataflow/lattices.js';
 import type { FlowGraph } from '../framework/dataflow/solver.js';
+import {
+  depthFirst,
+  dominates,
+  dominators,
+  dominatorTree,
+  naturalLoops,
+  type Digraph,
+} from '../stdlib/index.js';
 import { BlocksIR, blocksAdapter, storeOf } from './ir.js';
 import type { BlockRec, StmtRec, Store, TypedBlocks, ValueRec, WorkFn } from './model.js';
 
@@ -74,7 +82,13 @@ export interface Cfg {
   readonly rpo: readonly string[];
   readonly edges: number;
 }
-export function cfgOf(f: WorkFn): Cfg {
+/**
+ * A function as the standard library's digraph (IRWB-047-B), with the successor and predecessor records the cfg
+ * facts carry: block ids, the first block as the entry, and successors restricted to blocks — the old DFS
+ * ignored a jump target that names no block, so the digraph does too. One pass builds both, and `cfgOf`,
+ * `dominatorsOf` and `loopsOf` read the graph from here rather than each walking `f.blocks` themselves.
+ */
+const digraphOf = (f: WorkFn) => {
   const succ: Record<string, string[]> = {},
     preds: Record<string, string[]> = {};
   for (const b of f.blocks) {
@@ -82,20 +96,18 @@ export function cfgOf(f: WorkFn): Cfg {
     preds[b.id] = [];
   }
   for (const b of f.blocks) for (const s of b.succ) if (preds[s]) preds[s].push(b.id);
-  const order: string[] = [],
-    seen = new Set<string>();
-  const dfs = (id: string) => {
-    if (seen.has(id) || !succ[id]) return;
-    seen.add(id);
-    for (const s of succ[id]) dfs(s);
-    order.push(id);
-  };
-  dfs(f.blocks[0].id);
+  const nodes = f.blocks.map(b => b.id),
+    live = new Map(nodes.map(id => [id, succ[id].filter(s => preds[s])]));
+  const graph: Digraph<string> = { nodes, entry: f.blocks[0].id, succ: id => live.get(id) ?? [] };
+  return { graph, succ, preds };
+};
+export function cfgOf(f: WorkFn): Cfg {
+  const { graph, succ, preds } = digraphOf(f);
   return {
-    entry: f.blocks[0].id,
+    entry: graph.entry,
     succ,
     preds,
-    rpo: order.reverse(),
+    rpo: depthFirst(graph).rpo,
     edges: f.blocks.reduce((n, b) => n + b.succ.length, 0),
   };
 }
@@ -139,34 +151,13 @@ export interface Dominators {
   readonly rpo: readonly string[];
   readonly rounds: number;
 }
+/**
+ * Immediate dominators (Cooper, Harvey and Kennedy) as finite JSON: the library's `idom` flattened to a record, with
+ * the reverse postorder and the round count the iteration needed (IRWB-047-B).
+ */
 export function dominatorsOf(f: WorkFn): Dominators {
-  const cfg = cfgOf(f),
-    rpo = cfg.rpo,
-    idx = new Map(rpo.map((id, i) => [id, i]));
-  const idom = new Map<string, string | null>([[rpo[0], rpo[0]]]);
-  const inter = (a: string, b: string) => {
-    while (a !== b) {
-      while (idx.get(a)! > idx.get(b)!) a = idom.get(a)!;
-      while (idx.get(b)! > idx.get(a)!) b = idom.get(b)!;
-    }
-    return a;
-  };
-  let changed = true,
-    rounds = 0;
-  while (changed) {
-    changed = false;
-    rounds++;
-    for (const id of rpo.slice(1)) {
-      let n: string | null = null;
-      for (const q of cfg.preds[id])
-        if (idom.has(q) && idom.get(q) !== undefined && idx.has(q)) n = n === null ? q : inter(q, n);
-      if (idom.get(id) !== n) {
-        idom.set(id, n);
-        changed = true;
-      }
-    }
-  }
-  return { idom: Object.fromEntries(idom), rpo, rounds };
+  const d = dominators(digraphOf(f).graph);
+  return { idom: Object.fromEntries(d.idom), rpo: d.rpo, rounds: d.rounds };
 }
 export interface DomView {
   readonly idom: ReadonlyMap<string, string | null>;
@@ -175,17 +166,7 @@ export interface DomView {
 }
 export function domView(d: Dominators): DomView {
   const idom = new Map(Object.entries(d.idom));
-  const dominates = (a: string, b: string) => {
-    for (;;) {
-      if (a === b) return true;
-      const x = idom.get(b);
-      if (!x || x === b) return false;
-      b = x;
-    }
-  };
-  const children = new Map(d.rpo.map(id => [id, [] as string[]]));
-  for (const [b, x] of idom) if (x && b !== x) children.get(x)?.push(b);
-  return { idom, dominates, children };
+  return { idom, dominates: (a, b) => dominates(idom, a, b), children: dominatorTree(idom) };
 }
 export const dominatorsAnalysis = defineAnalysis({
   id: 'typed.dominators',
@@ -212,50 +193,28 @@ export interface Loop {
  * One natural loop per header: the union of the bodies of the header's back edges (IRWB-034-G). A loop with a
  * `continue`, or a dispatch loop whose every arm jumps back, has several back edges to one header; one loop per
  * back edge gave them one id and bodies that exclude each other's latches, so a preheader made for one of them
- * sat on the others' back edges and ran every iteration.
+ * sat on the others' back edges and ran every iteration. The loops are the standard library's `naturalLoops`
+ * (IRWB-047-B); this adds Typed's naming, `head` for `header`, and the assigned locals of each body.
  */
 export function loopsOf(st: Store, f: WorkFn): Loop[] {
-  const dom = domView(dominatorsOf(f)),
-    cfg = cfgOf(f),
-    latchesOf = new Map<string, string[]>();
-  for (const b of f.blocks)
-    for (const s of b.succ)
-      if (dom.dominates(s, b.id)) {
-        const latches = latchesOf.get(s) ?? [];
-        if (!latches.length) latchesOf.set(s, latches);
-        if (!latches.includes(b.id)) latches.push(b.id);
-      }
-  const out: Loop[] = [];
-  for (const [s, latches] of latchesOf) {
-    const body = new Set([s]),
-      work = [...latches];
-    while (work.length) {
-      const x = work.pop()!;
-      if (body.has(x)) continue;
-      body.add(x);
-      work.push(...cfg.preds[x]);
-    }
-    const outside = cfg.preds[s].filter(q => !body.has(q));
-    const pre = outside.length === 1 && cfg.succ[outside[0]].length === 1 ? outside[0] : null;
-    const exits = [...body].flatMap(x => cfg.succ[x].filter(y => !body.has(y)));
+  return naturalLoops(digraphOf(f).graph).map(L => {
     const assigned = new Set<number>();
-    for (const x of body)
+    for (const x of L.body)
       for (const sid of (st.get(x) as BlockRec).stmts) {
         const t = st.get(sid) as StmtRec;
         if (t.op === 'set') assigned.add(t.local!);
       }
-    out.push({
-      id: `loop:${f.name}@${s}`,
-      head: s,
-      latch: latches[0],
-      latches,
-      body: [...body],
-      preheader: pre,
-      exits: [...new Set(exits)],
+    return {
+      id: `loop:${f.name}@${L.header}`,
+      head: L.header,
+      latch: L.latches[0],
+      latches: L.latches,
+      body: L.body,
+      preheader: L.preheader,
+      exits: L.exits,
       assigned: [...assigned],
-    });
-  }
-  return out;
+    };
+  });
 }
 export const loopsAnalysis = defineAnalysis({
   id: 'typed.loops',
