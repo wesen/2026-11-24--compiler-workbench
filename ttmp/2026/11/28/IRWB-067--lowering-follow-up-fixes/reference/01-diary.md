@@ -81,3 +81,47 @@ The scheduler now collects pass results at execution and CUDA lowering composes 
 **What warrants a second pair of eyes:** Memo key semantics and preservation of pass result ordering.
 
 **Code review instructions:** Review `strategy.ts`, `cuda-contract.ts`, and the new test in `lowering.test.mjs`.
+
+## Step 3: Commit and validate
+
+Committed the implementation and launched the acceptance checks.
+
+**Prompt Context:** See step 1.
+
+**What I did:** Built and checked TypeScript, ran the focused lowering test, started the oracle and non-GPU suites, and committed as `2688261`.
+
+**Why:** The corpus tests exercise both source identity and composed correspondence; the oracle covers the broader compiler outputs.
+
+**What worked:** `npm run build`, `npm run check`, and `node --test tests/tensor/lowering.test.mjs` passed.
+
+**What didn't work:** `git add ...` and `git commit ...` initially failed with `fatal: Unable to create '.../index.lock': Read-only file system`; the elevated Git operation succeeded.
+
+**What I learned:** The sandbox protects the linked worktree index despite the configured writable Git root.
+
+**What was tricky:** Full suites and baseline checks are expensive on the shared machine.
+
+**What warrants a second pair of eyes:** The report's content-key rationale and performance comparison.
+
+**Code review instructions:** Review commit `2688261`, then the acceptance results below.
+
+## Step 4: Acceptance results
+
+The oracle matched and the four sandbox failures passed when rerun outside the sandbox.
+
+**Prompt Context:** See step 1.
+
+**What I did:** Ran the baseline check and all requested non-GPU test files, then reran four failed files with elevated permissions.
+
+**Why:** The user explicitly warned that tests spawning Node can fail in the sandbox.
+
+**What worked:** The oracle printed `no differences`. Of 89 test files, 85 passed initially; the four rerun files passed 15 tests with one conditional skip.
+
+**What didn't work:** The initial `node --test --test-reporter=spec ...` run reported failures in `tests/typed/format.test.mjs`, `tests/typed/reference-check.test.mjs`, `tests/workbench/candela.test.mjs`, and `tests/workbench/site.test.mjs`, each with only `test failed`; the reporter did not reveal a cause.
+
+**What I learned:** Elevated reruns resolve these four failures, but the captured diagnostics do not prove EPERM was the cause.
+
+**What was tricky:** File-level isolation suppressed individual test diagnostics in the first run.
+
+**What warrants a second pair of eyes:** The one conditional Candela skip and the initial unexplained failures.
+
+**Code review instructions:** Read the report and rerun the four files if investigating sandbox behavior.
