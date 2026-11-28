@@ -1,0 +1,10 @@
+{
+ "IRWB-066": {
+  "task": "engines",
+  "config": "sl",
+  "model": "gpt-6.2-sol",
+  "effort": "low",
+  "round": "v7-engines-sl",
+  "harness": "codex"
+ }
+}
