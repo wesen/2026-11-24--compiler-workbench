@@ -1,0 +1,11 @@
+{
+ "IRWB-054": {
+  "task": "f39",
+  "config": "ds-x",
+  "model": "lunaroute/deepseek-4.1-flash",
+  "effort": "xhigh",
+  "round": "v7-f39-ds-x",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ }
+}

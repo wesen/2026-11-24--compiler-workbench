@@ -1,0 +1,10 @@
+{
+ "IRWB-052": {
+  "task": "migration",
+  "config": "fa",
+  "model": "fable",
+  "effort": "default",
+  "round": "v7-migration-fa",
+  "harness": "claude-code-subagent"
+ }
+}

@@ -1,0 +1,20 @@
+{
+ "IRWB-053-A": {
+  "task": "solver",
+  "config": "g-h",
+  "model": "lunaroute/glm-5.3",
+  "effort": "high",
+  "round": "v7-solver-g-h",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ },
+ "IRWB-053-B": {
+  "task": "solver",
+  "config": "ds-x",
+  "model": "lunaroute/deepseek-4.1-flash",
+  "effort": "xhigh",
+  "round": "v7-solver-ds-x",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ }
+}
