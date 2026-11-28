@@ -29,7 +29,7 @@
 import { immutable, canonical } from '../core/data.js';
 import type { EntityCorrespondence, RevisionRef } from './types.js';
 import { compareText, IRError, requireText } from './common.js';
-import { checkCoverage, makeCorrespondence } from './correspondence.js';
+import { checkCoverage, makeCorrespondence, type Coverage } from './correspondence.js';
 
 /** How a step relates its site in the input revision to its site in the output revision. */
 export type DerivationRelation = 'modified' | 'merged' | 'split' | 'inserted' | 'removed' | 'retained';
@@ -58,8 +58,8 @@ export interface Derivation {
   readonly steps: readonly DerivationStep[];
 }
 
-/** Coverage policy accepted by derivation producers. */
-export type DerivationCoverage = 'partial' | 'nonempty' | 'source' | 'target' | 'both';
+/** Coverage policy accepted by derivation producers: the one vocabulary of `correspondence.ts` (F41). */
+export type DerivationCoverage = Coverage;
 
 const RELATIONS = new Set<string>(['modified', 'merged', 'split', 'inserted', 'removed', 'retained']);
 const GUARD = 'guard:';
@@ -155,7 +155,13 @@ export function validateDerivation(
 function stepEntries(derivation: Derivation, source: Set<string>, target: Set<string>) {
   const groups = new Map<
     string,
-    { from: readonly string[]; to: Set<string>; because: Set<string>; notes: Map<string, string>; relation: string }
+    {
+      from: readonly string[];
+      to: Set<string>;
+      because: Set<string>;
+      notes: Map<string, string>;
+      relation: string;
+    }
   >();
   const group = (from: readonly string[]) => {
     const key = canonical(from);
