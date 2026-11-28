@@ -9,7 +9,7 @@
  * above; `check` and `measure` on top. Nothing under src/stdlib imports outside src/stdlib.
  *
  * What exists now:
- *   flow/     liveness — backward gen/kill liveness over blocks, with an explicit scope
+ *   flow/     backward gen/kill liveness and demand-driven equation solving with widening
  *   graph/    orders, dominators, natural loops — over one digraph: nodes, an entry, successors
  *   lattice/  lattices — join, order and widening: the set, flat, interval and map lattices
  *             (dataflow's ranges analysis, and SCCP's flat lattice of SSA names)
@@ -59,3 +59,6 @@ export type { Flat, Interval, Json, Lattice } from './lattice/lattices.js';
 export { add, constant, plain, substitute, value, variable } from './affine/forms.js';
 export type { Affine } from './affine/forms.js';
 export { distanceVector, isZero } from './affine/distances.js';
+
+export { solveFor } from './flow/solve-for.js';
+export type { Budget, Equations, Solution } from './flow/solve-for.js';
