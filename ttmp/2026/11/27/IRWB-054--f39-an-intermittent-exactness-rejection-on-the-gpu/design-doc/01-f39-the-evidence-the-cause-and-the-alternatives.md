@@ -128,7 +128,7 @@ Done in this session; see the report for the measurements.
 1. Probes in `scripts/`: the loop (03), the repeat test (02), the sanitizer run (04, 05), the old runner kept aside
    (06), the A/B (07, 08), the case-generation hash (09).
 2. The retry, transport classification and cleanup retry in `tools/cuda-remote.mjs`.
-3. Acceptance: the loop at 1 600+ checks with no failure, the A/B, the GPU suite, the baselines, the other suites.
+3. Acceptance: the loop at 2 952 checks with no failure, the A/B, the GPU suite, the baselines, the other suites.
 
 ## Open Questions
 

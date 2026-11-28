@@ -70,7 +70,7 @@ or the program's own exit; retry cleanup up to three times. Kept `git show 26bea
 `scripts/06-runner-before-fix.mjs` so both runners can be measured against each other later.
 
 **22:48 Probe 03 again, same command: 0 of 72 failed** (and 11.4 s instead of 28 s, because a failed job is slower
-than a retried one). Then 6×40 → 0/240; 8×100 → 0/800, twice; 6×40 → 0/240. 2 152 checks, no failure. The retry
+than a retried one). Then 6×40 → 0/240; 8×100 → 0/800, twice; 6×40 → 0/240, and 8×100 again on the final commit → 0/800. 2 952 checks, no failure. The retry
 counter stayed at 0 in these runs because `src/tensor/cuda-runtime.ts` drops a *successful* job's stderr (only a
 failing `execFile` keeps it) — the runner's retry note never reaches the probe. Recorded, and the A/B below counts
 retries by spawning the runner itself.
@@ -89,6 +89,9 @@ come from the generator.
 fix changes no emitted CUDA, no RV32 image and no edit record. Suites `tests/typed`, `tests/framework`,
 `tests/workbench`, `tests/stdlib`, `tests/tensor/*.test.mjs` without the GPU files: 549 tests, 546 pass, 3 skipped
 (pre-existing), 0 fail. `npm run check` clean.
+
+**23:14 Final commit verified.** After tidying the transport classifier and the cleanup retry: 800 more checks
+(8×100, 0 failures) and the GPU suite again (23 tests, 0 failures, 94 s). 2 952 checks after the fix in total.
 
 **23:06 Report and design doc written**; one line left open on purpose (`checkCudaLowering` conflating "could not
 check" with "rejected") and listed under Later, because `src/tensor/cuda-contract.ts` belongs to steps in flight.

@@ -21,7 +21,7 @@ RelatedFiles:
     - Path: repo://src/tensor/cuda-runtime.ts
       Note: one job per forced mode, three ssh steps each
 ExternalSources: []
-Summary: 'F39 was not a race: sshd on the GPU machine drops connections past MaxStartups and the runner turned the dropped job into accepted:false. 35 of 72 checks failed under suite concurrency before, 0 of 2 152 after; 288 of 288 jobs failed before, 0 of 288 after with 339 drops absorbed.'
+Summary: 'F39 was not a race: sshd on the GPU machine drops connections past MaxStartups and the runner turned the dropped job into accepted:false. 35 of 72 checks failed under suite concurrency before, 0 of 2 952 after; 288 of 288 jobs failed before, 0 of 288 after with 339 drops absorbed.'
 LastUpdated: 2026-11-27T23:06:00.000000000-05:00
 WhatFor: ""
 WhenToUse: ""
@@ -52,8 +52,9 @@ command failed is not. Under the concurrency that made every job fail before, no
 | after | `node 03-concurrent-loop.mjs 6 40` | 240 | 0 | 0 | 15 s |
 | after | `node 03-concurrent-loop.mjs 8 100` (twice) | 1 600 | 0 | 0 | 59 s |
 | after | `node 03-concurrent-loop.mjs 6 40` (leak check) | 240 | 0 | 0 | 15 s |
+| after | `node 03-concurrent-loop.mjs 8 100` (final commit) | 800 | 0 | 0 | 26 s |
 
-2 152 checks after the fix, no failure — thirty times the 72 checks it took to see 35 failures. Every one of the 35
+2 952 checks after the fix, no failure — forty-one times the 72 checks it took to see 35 failures. Every one of the 35
 failures was a transport failure, classified by the probe as `transport` and not one as a value disagreement
 (`byClass: { transport: { count: 35, … } }`); the reasons, deduplicated, were
 
@@ -158,11 +159,11 @@ nothing and `cuda-gpu.test.mjs`'s "shares a compile across isolated jobs" still 
 
 ## Acceptance
 
-- **My tests** — `scripts/03-concurrent-loop.mjs` (2 152 checks after: 0 failures), `scripts/07-runner-ab.mjs`
+- **My tests** — `scripts/03-concurrent-loop.mjs` (2 952 checks after: 0 failures), `scripts/07-runner-ab.mjs`
   (before 288/288, after 0/288 with 339 drops absorbed), `scripts/05-sanitize.sh` (16 clean runs), probes 01, 02, 09.
   No disagreement with the interpreter was ever produced, before or after.
-- **The GPU suite** — `node --test tests/tensor/*-gpu.test.mjs` twice after the fix: **23 tests, 23 pass, 0 fail**
-  (116 s). Before the fix, the same command failed once per run, on a different test each time, both times with an ssh
+- **The GPU suite** — `node --test tests/tensor/*-gpu.test.mjs` three times after the fix, the last on the final
+  commit: **23 tests, 23 pass, 0 fail** (120 s, 116 s, 94 s). Before the fix, the same command failed once per run, on a different test each time, both times with an ssh
   drop.
 - **The baselines** — `node ttmp/2026/11/27/IRWB-039--.../scripts/02-baselines.mjs check` after `npm run build`:
   `no differences from …/various/baselines/main.json` (only the informational timing line moves, `0.562 -> 1.109 ms`

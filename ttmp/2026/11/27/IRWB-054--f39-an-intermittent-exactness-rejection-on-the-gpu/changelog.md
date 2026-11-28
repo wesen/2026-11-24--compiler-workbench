@@ -15,9 +15,10 @@
   11 s. Cause identified as the transport, not the kernel
 - 22:47 Fixed `tools/cuda-remote.mjs`: dropped connection vs failed command, whole-job retry in a fresh directory, six
   attempts with jittered backoff; cleanup retried
-- 22:48 Probe 03 after the fix: 0 of 72, then 0 of 2 152 checks
+- 22:48 Probe 03 after the fix: 0 of 72, then 0 of 2 952 checks
 - 22:52 Probe 07 A/B: 288 of 288 jobs failed before, 0 of 288 after, 339 drops absorbed
 - 23:00 Probe 09: the case generator is deterministic
 - 23:02 Acceptance: GPU suite 23/23 twice, baselines `no differences`, 549 other tests 0 failures, `npm run check`
   clean
 - 23:06 Design doc, diary and report written
+- 23:14 Final commit verified: 800 more checks (0 failures), GPU suite 23/23 again, 2 952 checks after the fix

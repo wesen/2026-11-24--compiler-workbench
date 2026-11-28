@@ -11,7 +11,7 @@
 - [x] Probe 09: the check's case generation is deterministic
 - [x] Fix `tools/cuda-remote.mjs`: classify dropped connections, retry the whole job, retry cleanup
 - [x] Probe 06/07/08: A/B the two runners under forced concurrency (288/288 failed before, 0/288 after, 339 drops absorbed)
-- [x] Probe 03 after the fix: 2 152 checks, no failure
+- [x] Probe 03 after the fix: 2 952 checks, no failure
 - [x] Design doc, diary, report
 - [ ] Later: `checkCudaLowering` should distinguish "evidence unavailable" from "rejected"
 - [ ] Later: if drops exceed the retry budget, multiplex the three ssh steps over one connection (`MaxSessions 10` caps channels)
