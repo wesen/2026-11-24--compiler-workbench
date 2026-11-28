@@ -171,7 +171,7 @@ export function asTransformation<S, N extends Needs, P>(pass: PassLike<S, N, P>)
 
 /**
  * The constructor for the earlier spelling. Kept because the schedule passes (src/tensor/schedule.ts) and about
- * sixty test sites are written in it; what it returns is a transformation like any other.
+ * 13 test sites are written in it; what it returns is a transformation like any other.
  */
 export function definePass<S, N extends Needs = {}, P = unknown>(
   spec: PassSpec<S, N, P>,
@@ -459,7 +459,7 @@ export interface ApplyOptions<P> extends Omit<TransformationOptions<any, P>, 'in
 }
 /**
  * `applyTransformation` under its earlier name and options, for a pass in either spelling. Kept as a wrapper
- * because the tools and about forty test sites call it; the framework's and the domains' own code calls
+ * because tests and tools call it at 39 sites; the framework's and the domains' own code calls
  * `applyTransformation`.
  */
 export function applyPass<S, N extends Needs, P>(
