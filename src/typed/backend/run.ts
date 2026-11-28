@@ -7,7 +7,9 @@
  * The emulator checks at every call and return that sp is 16-byte aligned, that ra matches the call, and that
  * s0-s11 hold what they held at the call. A violation is a fault, reported apart from a trap, and never agrees.
  */
+import { defineTransformation } from '../../framework/contracts/definitions.js';
 import { differential, type DifferentialInvariant } from '../../framework/contracts/differential.js';
+import type { TransformationDefinition } from '../../framework/contracts/types.js';
 import { canonical } from '../../framework/core/data.js';
 import type { Artifact } from '../../framework/core/types.js';
 import { BlocksIR, storeOf } from '../ir.js';
@@ -411,4 +413,38 @@ export function imageAgrees(params: ImageCheckParams = {}): DifferentialInvarian
     imageChecks.set(key, check);
   }
   return check;
+}
+
+const loweringContracts = new Map<string, TransformationDefinition<any, any>>();
+/**
+ * IRWB-061: the contract of the lowering `typed.lower-rv32` (compile.ts). Its ports are `program` (typed.blocks)
+ * and `image`; its one condition is `rv32.image-agrees` with these parameters, and it requires the `covers`
+ * correspondence from the program to the image. One definition per parameter set, as `imageAgrees`.
+ */
+export function loweringContract(params: ImageCheckParams = {}): TransformationDefinition<any, any> {
+  const check = imageAgrees(params);
+  let c = loweringContracts.get(check.version);
+  if (!c) {
+    c = defineTransformation({
+      id: 'typed.lower-rv32',
+      version: check.version,
+      description: 'the image computes what the typed.blocks revision it was lowered from computes',
+      inputs: { program: BlocksIR },
+      outputs: { image: ImageIR },
+      correspondence: [
+        { id: 'covers', from: 'program', to: 'image', relation: 'covered-by', coverage: 'nonempty' },
+      ],
+      ensures: [
+        {
+          invariant: check,
+          bindings: {
+            program: { from: 'inputs', port: 'program' },
+            image: { from: 'outputs', port: 'image' },
+          },
+        },
+      ],
+    });
+    loweringContracts.set(check.version, c);
+  }
+  return c;
 }

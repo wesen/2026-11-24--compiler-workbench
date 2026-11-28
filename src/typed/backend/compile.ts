@@ -4,12 +4,19 @@
  * order, labels resolved, and every instruction encoded with every entry known. A port of Compiler Workbench's
  * backend.js `finish` and `compileAt`, producing the native value of `rv32.image` instead of store entities.
  */
+import type { AnalysisManager } from '../../framework/contracts/analysis-manager.js';
 import type { Artifact } from '../../framework/core/types.js';
 import type { DataflowResult } from '../../framework/dataflow/analysis.js';
-import { createIRArtifact } from '../../framework/ir/adapters.js';
-import type { EntityCorrespondence } from '../../framework/ir/types.js';
+import type { EntityCorrespondence, IRStore } from '../../framework/ir/index.js';
+import {
+  applyTransformation,
+  applyTransformationSync,
+  transformation,
+  type CrossTransformation,
+  type TransformationResult,
+} from '../../framework/passes/transformation.js';
 import { livenessAnalysis, liveView, rangesAnalysis, rangeView } from '../analyses.js';
-import { storeOf } from '../ir.js';
+import { BlocksIR, blocksAdapter, storeOf } from '../ir.js';
 import { typeClass, type Store, type TypedBlocks, type WorkFn } from '../model.js';
 import { fail } from './errors.js';
 import {
@@ -33,8 +40,9 @@ import {
 } from './encode.js';
 import { needsConvention } from '../ilp32f.js';
 import {
+  ImageIR,
+  coverEntries,
   imageAdapter,
-  imageCorrespondence,
   insnId,
   toBase64,
   type ImageFn,
@@ -47,6 +55,7 @@ import { allocate, type Allocation } from './regalloc.js';
 import { select, type Selection } from './select.js';
 import { coalesceCopies } from './coalesce.js';
 import { chooseVariant, type VariantChoice, type VariantHooks } from './variants.js';
+import { loweringContract, type ImageCheckParams } from './run.js';
 
 export interface Finished {
   /** Physical code with labels, frame, spill code and the exit sequence. */
@@ -435,21 +444,105 @@ export interface Lowered {
   readonly correspondence: EntityCorrespondence;
 }
 
+/** The parameters of one lowering: the backend options, and facts the caller already holds. */
+export interface LoweringParams {
+  readonly options?: BackendOptionsInput;
+  readonly facts?: BackendFacts;
+}
+const FACTS = { liveness: livenessAnalysis, ranges: rangesAnalysis };
+type Lowering<N extends {} | typeof FACTS> = CrossTransformation<TypedBlocks, Rv32Image, N, LoweringParams>;
+const lowerings = new Map<string, Lowering<{}> | Lowering<typeof FACTS>>();
+/**
+ * IRWB-061: the lowering as a transformation, `typed.lower-rv32`, from `typed.blocks` to `rv32.image`. Its relation
+ * is exact; its `ensures` is `loweringContract(check)`, whose condition is `rv32.image-agrees`; its correspondence
+ * is the image's `covers` (`coverEntries`), completed by the runner. With `facts: 'needs'` liveness and ranges are
+ * declared analyses, computed and cached by the application's analysis manager; with `'own'` (an application
+ * without a manager) `compileImage` solves them itself, or takes them from the parameters.
+ */
+export function imageLowering(check?: ImageCheckParams, facts?: 'own'): Lowering<{}>;
+export function imageLowering(check: ImageCheckParams | undefined, facts: 'needs'): Lowering<typeof FACTS>;
+export function imageLowering(
+  check: ImageCheckParams = {},
+  facts: 'own' | 'needs' = 'own',
+): Lowering<{}> | Lowering<typeof FACTS> {
+  const contract = loweringContract(check),
+    key = `${facts} ${contract.version}`;
+  let t = lowerings.get(key);
+  if (!t) {
+    t = transformation<TypedBlocks, Rv32Image, {} | typeof FACTS, LoweringParams>({
+      id: 'typed.lower-rv32',
+      version: '1',
+      description:
+        'Compile a typed.blocks revision to an RV32 image whose instructions record what they cover',
+      from: { ir: BlocksIR, adapter: blocksAdapter },
+      to: { ir: ImageIR, adapter: imageAdapter },
+      needs: facts === 'needs' ? FACTS : {},
+      relation: 'exact',
+      prepare({ before, params, facts: solved }) {
+        const output = compileImage(before, params?.options, { ...params?.facts, ...solved });
+        return {
+          output,
+          outputId: `img:${before.value.program}`,
+          correspondence: coverEntries(before, output),
+          edits: output.insns.length,
+        };
+      },
+      bind: ({ before, candidate }) => ({ inputs: { program: before }, outputs: { image: candidate } }),
+      obligations: { ensures: [contract] },
+    });
+    lowerings.set(key, t);
+  }
+  return t;
+}
+
+const lowered = (r: TransformationResult<TypedBlocks, Rv32Image>): Lowered => ({
+  image: r.artifact,
+  correspondence: r.correspondence!,
+});
 /**
  * Lower a typed.blocks artifact to an `rv32.image` artifact (id `img:PROGRAM` unless given), with the
  * correspondence from the program's entities to the image's instructions.
+ *
+ * IRWB-061: a pending application of `typed.lower-rv32`. The image is the transformation's output and its
+ * `rv32.image-agrees` obligation is recorded as owed, not run; `lowerImageChecked` is the application that runs it.
  */
 export function lowerToImage(
   blocks: Artifact<TypedBlocks>,
   options: BackendOptionsInput = {},
   opts: BackendFacts & { readonly id?: string } = {},
 ): Lowered {
-  const image = createIRArtifact(
-    imageAdapter,
-    opts.id ?? `img:${blocks.value.program}`,
-    compileImage(blocks, options, opts),
+  const { id, ...facts } = opts;
+  return lowered(
+    applyTransformationSync(imageLowering(), blocks, {
+      params: { options, facts },
+      outputId: id,
+      pending: { reason: 'lowerToImage: the image only; rv32.image-agrees is run by lowerImageChecked' },
+    }),
   );
-  return { image, correspondence: imageCorrespondence(blocks, image) };
+}
+
+/**
+ * The checked lowering: `typed.lower-rv32` with its `ensures` run on `check`'s generated cases. A disagreeing image
+ * is rejected (`PassError('contractRejected')`, with the differential's counterexamples in the manager's record)
+ * and nothing is published; an accepted one becomes the head of its lineage in `store`, with its evidence.
+ */
+export async function lowerImageChecked(
+  blocks: Artifact<TypedBlocks>,
+  options: BackendOptionsInput = {},
+  opts: {
+    readonly manager: AnalysisManager;
+    readonly check?: ImageCheckParams;
+    readonly store?: IRStore;
+    readonly id?: string;
+  },
+): Promise<Lowered & { readonly result: TransformationResult<TypedBlocks, Rv32Image> }> {
+  const result = await applyTransformation(imageLowering(opts.check, 'needs'), blocks, {
+    manager: opts.manager,
+    store: opts.store,
+    params: { options },
+    outputId: opts.id,
+  });
+  return { ...lowered(result), result };
 }
 
 /** IRWB-003: per function, which variant the estimate chose under these options (none for the defaults). */
