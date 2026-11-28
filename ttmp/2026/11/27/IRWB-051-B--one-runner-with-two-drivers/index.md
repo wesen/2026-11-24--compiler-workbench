@@ -1,13 +1,19 @@
 ---
 Title: One runner with two drivers
 Ticket: IRWB-051-B
-Status: active
+Status: review
 Topics:
     - framework
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/framework/contracts/analysis-manager.ts
+      Note: Shared lookup and record construction
+    - Path: repo://src/framework/passes/define-pass.ts
+      Note: Transformation lifecycle and drivers
+    - Path: repo://tests/framework/transformation-drivers.test.mjs
+      Note: Corpus and rejection evidence
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T20:20:02.292924323-05:00
@@ -19,7 +25,7 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Judge whether synchronous native transformations can use ordinary manager records. See the [decision and measurements](various/01-report.md), [committed design](design/01-runner.md) and [short diary](reference/01-diary.md).
 
 ## Key Links
 
@@ -28,7 +34,7 @@ WhenToUse: ""
 
 ## Status
 
-Current status: **active**
+Current status: **review**
 
 ## Topics
 

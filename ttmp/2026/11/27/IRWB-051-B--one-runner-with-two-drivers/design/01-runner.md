@@ -1,3 +1,11 @@
+---
+Title: One checked application, two ways to obtain a fact
+Ticket: IRWB-051-B
+Status: review
+Topics: [framework]
+DocType: design-doc
+---
+
 # One checked application, two ways to obtain a fact
 
 For same-IR native kernels, including Typed Tx kernels that return void on identity, a generator owns eligibility, input checks, fact requests, private preparation, declared writes, output checks, preservation and publication. Each suspension supplies a synchronous and asynchronous way to obtain the same analysis record. Both drivers resume at the same instruction and deliver errors into the generator. Straight-line checks and publication need no suspension. Two thin runners would be simpler individually but would have to agree on every exit from this sequence.
