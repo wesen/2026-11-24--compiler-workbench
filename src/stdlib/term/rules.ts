@@ -62,8 +62,12 @@ export function firstMatch<T, G = unknown>(
     const b = new Map<string, T>();
     if (!match(sig, rule.lhs, t, b, options.equal)) continue;
     const bindings: Bindings<T> = b;
-    if (rule.where && options.guard && !rule.where.every(g => options.guard!(g, bindings, t))) continue;
-    if (rule.where && !options.guard && rule.where.length) continue; // a guard nobody can check never holds
+    if (rule.where?.length) {
+      // a guarded rule needs the domain's predicate: answering "it holds" without it would rewrite on a guess
+      if (!options.guard)
+        throw new Error(`firstMatch: rule ${rule.name} has guards and no guard function was given`);
+      if (!rule.where.every(g => options.guard!(g, bindings, t))) continue;
+    }
     return { rule, bindings, node: t };
   }
   return undefined;
