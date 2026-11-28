@@ -15,7 +15,14 @@ const open = id => Program.fromProject(projectSource(id, projectFiles(id)));
 const classified = p => {
   const images = p.revisions.map(r => lowerToImage(r.artifact).image.value);
   return p.revisions.slice(1).map((r, i) => {
-    const app = { pass: r.pass, before: p.revisions[i].artifact.value, after: r.artifact.value, edits: r.edits };
+    const app = {
+      pass: r.pass,
+      before: p.revisions[i].artifact.value,
+      after: r.artifact.value,
+      edits: r.edits,
+      derivation: r.derivation,
+      correspondence: r.correspondence,
+    };
     const edits = EC.classifyApplication(app);
     const weights = EC.instructionWeights(edits, images[i], images[i + 1]);
     const upper = EC.instructionWeights(edits, images[i], images[i + 1], { rebuilt: true });
@@ -108,7 +115,14 @@ test('a pass with no table and no because: div-to-shift is local/uncited, with i
   const p = open('wrong-shift');
   await p.apply('div-to-shift', { check: false });
   const r = p.revisions.at(-1);
-  const edits = EC.classifyApplication({ pass: r.pass, before: p.revisions.at(-2).artifact.value, after: r.artifact.value, edits: r.edits });
+  const edits = EC.classifyApplication({
+    pass: r.pass,
+    before: p.revisions.at(-2).artifact.value,
+    after: r.artifact.value,
+    edits: r.edits,
+    derivation: r.derivation,
+    correspondence: r.correspondence,
+  });
   assert.ok(edits.length > 0);
   for (const e of edits) assert.deepEqual([e.class, e.sub, e.shape], ['local', 'uncited', 'div(get,#) -> shr(get,#)']);
   const t = EC.tallyInto(EC.emptyTally(), edits);

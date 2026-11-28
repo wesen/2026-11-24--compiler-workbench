@@ -1,5 +1,6 @@
 // IRWB-056-B: Typed writes rule ids, the correspondence computed from the steps equals the one computed today, and
-// the two locality policies (R3's A0 and G) are queries over the same records: 203 and 395 local edits of O2's 1,774.
+// the two locality policies (R3's A0 and G) are queries over the same records: 203 and 395 local edits of O2's 1,774
+// (IRWB-065-B settled the in-place count: 393 read a computed value as something the application introduced).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { installVendor } from '../../tools/node-vendor.mjs';
@@ -13,6 +14,7 @@ const { correspondenceFromDerivation, locality, validateDerivation } = await imp
   '../../dist/framework/ir/derivation.js'
 );
 const { makeCorrespondence } = await import('../../dist/framework/ir/correspondence.js');
+const { localityGround } = await import('../../dist/typed/edit-classes.js');
 const { canonical } = await import('../../dist/framework/core/data.js');
 const T = await import('../../dist/tensor/index.js');
 const { applyNativePassSync } = await import('../../dist/framework/passes/index.js');
@@ -39,15 +41,17 @@ const corpus = () =>
 const cited = (r, edit) => (edit.steps ?? []).map(i => r.derivation.steps[i]);
 
 /**
- * The entities a local claim may rest on under the in-place policy: the input revision's, and what the producer only
- * remade from them (a tree rebuilt around a changed operand is the input's tree, not something new).
+ * The entities a local claim may rest on under the in-place policy: the input revision's, and the values this
+ * application computed. `localityGround` is the classifier's own answer (`src/typed/edit-classes.ts`), so the two
+ * readers of the policy — this test's step-level query and `classifyApplication`'s edit-level one — cannot drift.
  */
-const inputOf = r => {
-  const input = new Set(r.correspondence.sourceEntities);
-  for (const s of r.derivation.steps)
-    if ('decision' in s.by && s.by.decision === 'rebuild') for (const p of s.produces) input.add(p);
-  return input;
-};
+const groundOf = ({ r, before }) =>
+  localityGround(
+    before,
+    r.artifact.value,
+    r.correspondence.sourceEntities,
+    r.derivation.steps.flatMap(s => s.produces),
+  );
 
 test(
   'the derivation computes the correspondence revisionCorrespondence computes, on every O2 revision',
@@ -144,11 +148,12 @@ test('every rule-citing record names the rules the trees were rewritten by, and 
     for (const p of premises) assert.ok(typeof p === 'string' && p.length, `${name}: ${p}`);
 });
 
-test("both policies as queries over the same records: 203 (scoped) and 393 (in-place, G's 395 minus two)", async () => {
+test('both policies as queries over the same records: 203 (scoped) and 395 (in-place)', async () => {
   const revisions = await corpus();
   const tally = { scoped: {}, 'in-place': {} };
-  for (const { r } of revisions) {
-    const input = inputOf(r);
+  for (const revision of revisions) {
+    const { r } = revision;
+    const input = groundOf(revision);
     for (const edit of r.edits) {
       const steps = cited(r, edit);
       if (edit.kind !== 'replace' || !steps.length) continue;
@@ -164,13 +169,16 @@ test("both policies as queries over the same records: 203 (scoped) and 393 (in-p
     Object.values(tally.scoped).reduce((a, b) => a + b, 0),
     203,
   );
-  // G's reading: nothing this application introduced. It adds constprop 141 and subst's 51 replacements (395 in
-  // IRWB-035-G's count); two of those 51 are fold edits that fold a constant tree the same application computed
-  // (`fold-add` on the product of `fold-shl`), which this policy reads as depending on something the application made.
-  assert.deepEqual(tally['in-place'], { simplify: 140, fold: 41, strength: 20, constprop: 141, subst: 51 });
+  // G's reading: nothing this application put into the program. It adds constprop 141 and subst's 51 replacements
+  // to the rule-licensed edits, and all 43 fold edits. IRWB-056-B read two of those fold records as structural: on
+  // `constants` and `orders` a `fold-add` folds a constant tree the same application's `fold-shl` computed, so the
+  // premise names a value the application made (393). The policy's ground is the input revision *and the values the
+  // application computed*, because A0's definition of `local` is about locals — a variable and the statement that
+  // sets it — and an intermediate value node is not one (IRWB-065-B, `localityGround`). Both folds are local: 395.
+  assert.deepEqual(tally['in-place'], { simplify: 140, fold: 43, strength: 20, constprop: 141, subst: 51 });
   assert.equal(
     Object.values(tally['in-place']).reduce((a, b) => a + b, 0),
-    393,
+    395,
   );
   // the classes are answers, not fields: no step and no edit record carries one
   for (const { r } of revisions) {

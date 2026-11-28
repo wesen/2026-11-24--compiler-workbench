@@ -45,6 +45,11 @@ const backend = {
   ...JSON.parse(option('--backend') ?? '{}'),
 };
 const h = hotShapes(p.head, calls, {
+  chain: p.revisions.slice(1).map(r => ({
+    label: r.pass,
+    correspondence: r.correspondence,
+    derivation: r.derivation,
+  })),
   backend,
   rules: [...SIMPLIFY_RULES.rules, ...FOLD_RULES.rules],
   ...(option('--limit') ? { limit: +option('--limit') } : {}),

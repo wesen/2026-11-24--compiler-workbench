@@ -5,18 +5,22 @@
  * `attributeSteps` (attribute.ts) credits the *difference* between two revisions to pass decisions. This asks the
  * opposite question of one revision: of the instructions that still run, which implement code no pass has touched,
  * and what does that code look like? For a set of calls the head image is run with per-instruction counts; every
- * executed instruction is credited, through the backend's `covers`, to
+ * executed instruction is credited, through the lowering's correspondence, to
  *   - its statement, abstracted to a shape: locals are `x`, constants `#` (0, 1 and -1 stay), block names go;
  *   - its value node, as the pattern a rewrite rule would have to match: the operator over its operands' operators
  *     (`eq(load, #)`); an instruction that only builds a leaf (a constant, a read) is credited to the leaf's user.
- * Each site carries its provenance: the passes named by the origins of the statement and of every value under it
- * (`ingest` alone: the front end's code, as it was at r0). A shape's `untouched` count is the instructions at sites
- * whose provenance is `ingest` alone. Node patterns also say how many rules of the given tables have that root
- * operator, so "hot, untouched, and no rule looks at this operator" can be read off one row.
+ * Each site carries its provenance, and since IRWB-065-B that is a query over the passes' records: the labels of the
+ * correspondence links at which the statement or a value under it did not keep its identity (`changedBy`,
+ * `src/framework/ir/attribution.ts`), in chain order. A site no link touches is the front end's code, as it was at
+ * r0 (`ingest`). A shape's `untouched` count is the instructions at sites whose provenance is `ingest` alone. Node
+ * patterns also say how many rules of the given tables have that root operator, so "hot, untouched, and no rule
+ * looks at this operator" can be read off one row.
  *
  * The counts are the emulator's: the rows of each table sum to the executed instructions of the calls.
  */
 import type { Artifact } from '../framework/core/types.js';
+import type { ChainLink } from '../framework/ir/attribution.js';
+import { recordChain } from '../framework/ir/attribution.js';
 import type { AttributedCall } from './attribute.js';
 import { lowerToImage, runImage, type BackendOptionsInput } from './backend/index.js';
 import { storeOf } from './ir.js';
@@ -111,10 +115,25 @@ export function hotShapes(
     readonly backend?: BackendOptionsInput;
     readonly rules?: readonly Rule[];
     readonly limit?: number;
+    /**
+     * The record chain from the program's first revision to `head`: one link per pass application that changed it,
+     * oldest first (a `Program`'s revisions give them). Provenance is a query over it; there is no other source.
+     */
+    readonly chain?: readonly ChainLink[];
   } = {},
 ): HotShapes {
   const st = storeOf(head.value);
-  const { image } = lowerToImage(head, options.backend ?? {});
+  const chain = options.chain ?? [];
+  if (!chain.length && head.value.rev > 0)
+    throw new Error(
+      `hotShapes: the head is r${head.value.rev}; pass the correspondence chain from r0 (options.chain) instead of reading origins`,
+    );
+  const records = recordChain(chain);
+  const { image, correspondence } = lowerToImage(head, options.backend ?? {});
+  // image entity -> the typed.blocks entities it was lowered from, in the correspondence's order
+  const from = new Map<string, string[]>();
+  for (const e of correspondence.entries)
+    for (const to of e.to) from.set(to, [...(from.get(to) ?? []), ...e.from]);
   const counts = new Map<number, number>();
   for (const c of calls) {
     const run = runImage(image, c.fn, c.args, c.memory, { limit: options.limit ?? 2e5 });
@@ -129,21 +148,21 @@ export function hotShapes(
   const provenanceOf = (sid: string): string => {
     let l = label.get(sid);
     if (l !== undefined) return l;
-    const s = st.get(sid) as StmtRec,
-      vias = new Set<string>();
-    for (const o of s.origin) vias.add(o.via);
+    const under: string[] = [sid];
     const walk = (id: string | undefined, up: string) => {
       if (!id) return;
       const v = st.get(id) as ValueRec;
       parent.set(id, up);
-      for (const o of v.origin) vias.add(o.via);
+      under.push(id);
       for (const a of v.args) walk(a, id);
     };
-    walk(s.value, sid);
-    walk(s.cond, sid);
-    walk(s.addr, sid);
-    if (vias.size > 1) vias.delete('ingest');
-    label.set(sid, (l = [...vias].sort().join('+')));
+    walk((st.get(sid) as StmtRec).value, sid);
+    walk((st.get(sid) as StmtRec).cond, sid);
+    walk((st.get(sid) as StmtRec).addr, sid);
+    const labels = records.changedBy(under);
+    const vias = new Set<string>();
+    for (const ls of labels.values()) for (const x of ls) vias.add(x);
+    label.set(sid, (l = [...vias].sort().join('+') || 'ingest'));
     return l;
   };
 
@@ -170,14 +189,15 @@ export function hotShapes(
     const n = counts.get(m.offset >>> 2);
     if (!n) continue;
     total += n;
-    const sid = m.covers.find(c => kindOf(c) === 'stmt');
+    const sources = from.get(m.id) ?? [];
+    const sid = sources.find(c => kindOf(c) === 'stmt');
     if (!sid) {
       frame += n;
       continue;
     }
     credit(statements, stmtShape(st, sid), sid, sid, n);
     provenanceOf(sid);
-    let vid = m.covers.find(c => kindOf(c) === 'value');
+    let vid = sources.find(c => kindOf(c) === 'value');
     // an instruction for a leaf belongs to the node that uses the leaf
     while (vid && leaf(st.get(vid) as ValueRec) && kindOf(parent.get(vid) ?? '') === 'value')
       vid = parent.get(vid);

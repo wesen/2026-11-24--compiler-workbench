@@ -39,9 +39,17 @@ import { firstMatch, indexRules, numOf, type Bindings } from './rules/compile.js
 import { IDENTITY_RULES } from './rules/identities.js';
 import { ALL_EVIDENCE } from './rules/listing.js';
 import { FOLD_RULES } from './rules/fold.js';
-import type { Rule, RuleSet, Tpl } from './rules/form.js';
+import type { Num, Rule, RuleSet } from './rules/form.js';
 import { SIMPLIFY_RULES } from './rules/simplify.js';
 import type { Edit, ValueHandle } from './tx.js';
+import type { Derivation, DerivationStep } from '../framework/ir/derivation.js';
+import { locality } from '../framework/ir/derivation.js';
+import {
+  instantiate as termInstantiate,
+  structuralEqual,
+  type Build,
+  type Signature,
+} from '../stdlib/term/terms.js';
 
 export type EditClass = 'local' | 'structural' | 'other';
 
@@ -50,6 +58,10 @@ export interface Application {
   readonly before: TypedBlocks;
   readonly after: TypedBlocks;
   readonly edits: readonly Edit[];
+  /** The application's steps: what a `replace` is classified by (`a Program`'s `Revision` carries them). */
+  readonly derivation?: Derivation;
+  /** The correspondence into it: the entities the input revision had, and what became what. */
+  readonly correspondence?: { readonly sourceEntities: readonly string[] };
 }
 
 export interface RuleMatch {
@@ -95,13 +107,15 @@ export function treeOf(values: Readonly<Record<string, ValueRec>>, id: string): 
   const v = values[id];
   return { op: v.op, imm: v.imm, type: v.type, args: v.args.map(a => treeOf(values, a)) };
 }
-export const sameTree = (x: Tree, y: Tree): boolean =>
-  x.op === y.op &&
-  x.imm === y.imm &&
-  x.type === y.type &&
-  x.args.length === y.args.length &&
-  x.args.every((a, i) => sameTree(a, y.args[i]));
+export const sameTree = (x: Tree, y: Tree): boolean => structuralEqual(treeSig, x, y);
 const pure = (t: Tree): boolean => !IMPURE.has(t.op) && t.args.every(pure);
+
+/** Trees as the standard library sees them: operator, children, and the immediate and type as own data. */
+const treeSig: Signature<Tree> = {
+  op: t => t.op,
+  args: t => t.args,
+  attr: t => `${String(t.imm)}\u0000${t.type ?? ''}`,
+};
 
 /** The part of a value handle the matcher and the guards of rules/compile.ts read, over a plain tree. */
 interface TreeHandle {
@@ -130,23 +144,27 @@ const handle = (t: Tree): TreeHandle => ({
 });
 const treeBound = (b: Bindings, x: string): Tree => (b.get(x) as unknown as TreeHandle).tree;
 
-/** A rule's right-hand side as a tree, with the types `Tx.const` and `Tx.make` give. */
-function instantiate(t: Tpl, b: Bindings): Tree {
-  if ('var' in t) return treeBound(b, t.var);
-  if ('const' in t)
-    return {
-      op: 'const',
-      imm: numOf(t.const, x => treeBound(b, x).imm as number) | 0,
-      type: t.type,
-      args: [],
-    };
-  return {
-    op: t.op,
+/**
+ * A rule's right-hand side as a tree, with the types `Tx.const` and `Tx.make` give. The instantiation is the standard
+ * library's (IRWB-060-B): this file's copy of a rule's template semantics is gone, and `handle` is only the adapter
+ * that lets the library's matcher read a plain tree.
+ */
+const treeBuilder: Build<ValueHandle, Num, Tree> = {
+  ref: h => (h as unknown as TreeHandle).tree,
+  value: (n, b) => numOf(n, x => (b.get(x) as unknown as TreeHandle).imm as number),
+  constant: (value, _root, type) => ({
+    op: 'const',
+    imm: value | 0,
+    type: type as 'f32' | undefined,
+    args: [],
+  }),
+  make: (op, args) => ({
+    op: op as ValueOp,
     imm: undefined,
-    type: F32_RESULT.has(t.op) ? 'f32' : undefined,
-    args: t.args.map(a => instantiate(a, b)),
-  };
-}
+    type: F32_RESULT.has(op as ValueOp) ? 'f32' : undefined,
+    args,
+  }),
+};
 
 /** `t` rewritten bottom-up by a table: operands first, then the first matching rule at the root, not revisited. */
 export function normalize(t: Tree, index: ReadonlyMap<string, readonly Rule[]>, fired: string[]): Tree {
@@ -155,7 +173,7 @@ export function normalize(t: Tree, index: ReadonlyMap<string, readonly Rule[]>, 
   const m = firstMatch(index, handle(n) as unknown as ValueHandle);
   if (!m) return n;
   fired.push(m.rule.name);
-  return instantiate(m.rule.rhs, m.bindings);
+  return termInstantiate(m.rule.rhs, m.bindings, treeBuilder, true);
 }
 
 /** The verified tables an edit may be an instance of. */
@@ -281,30 +299,63 @@ function branchShape(a: StmtRec | undefined, b: StmtRec | undefined, v: TypedBlo
 }
 
 /** One class per edit record of an application, in the order of `app.edits`. */
+/**
+ * The entities a locality claim may rest on under the in-place policy: the input revision's, and the values this
+ * application computed.
+ *
+ * A0's definition of `local` is about **locals** — a variable and the statement that sets it — so a statement, block
+ * or local the application placed stays out (a rewrite whose premise is one of those reads a definition that now
+ * lives elsewhere: `licm` and `lvn` hoist it into a preheader, and every such premise is an `s:` their `set`/`insert`
+ * made). A value node is not a local: a tree rebuilt or folded inside one statement field is the same claim about the
+ * input. That is why the two `fold-add` records that fold a value the same application's `fold-shl` computed are
+ * local (395 local edit records of the O2 corpus; the narrower reading, which also excluded computed values, gave
+ * 393, and R3's scoped policy gives 203 — see `tests/typed/derivations.test.mjs`).
+ */
+export function localityGround(
+  before: TypedBlocks,
+  after: TypedBlocks,
+  source?: readonly string[],
+  made: readonly string[] = [],
+): ReadonlySet<string> {
+  const ground = new Set<string>(source ?? [...Object.keys(before.stmts), ...Object.keys(before.values)]);
+  // the values this application made, including a tree an earlier step computed and a later step folded away (it is
+  // in neither revision: `made` is the application's own list of what it produced)
+  for (const id of made) if (id.startsWith('v:')) ground.add(id);
+  for (const id of Object.keys(after.values)) if (!(id in before.values)) ground.add(id);
+  return ground;
+}
+
+/** The rules the cited steps name, with the weakest evidence among them (`local/rule`'s answer, from the records). */
+function ruleMatch(steps: readonly DerivationStep[]): RuleMatch {
+  const named = steps.flatMap(s => ('rule' in s.by ? [s.by as { rule: string; table?: string }] : []));
+  const fired = [...new Set(named.map(by => by.rule))];
+  const weakest = fired
+    .map(n => ALL_EVIDENCE[n]?.strength ?? 'none')
+    .reduce((w, s) => (STRENGTHS.indexOf(s) > STRENGTHS.indexOf(w) ? s : w), 'proof');
+  return { table: named[0]?.table ?? '', fired, weakest };
+}
+
 export function classifyApplication(app: Application): ClassifiedEdit[] {
-  const { before, after, edits } = app;
+  const { before, after, edits, derivation } = app;
+  const ground = localityGround(
+    before,
+    after,
+    app.correspondence?.sourceEntities,
+    derivation?.steps.flatMap(s => s.produces) ?? [],
+  );
   const isNew = (id: string) => !(id in before.values) && !(id in before.stmts);
   const isGone = (id: string) => !(id in after.values) && !(id in after.stmts);
   const claimed = new Set<string>();
   const claim = (ids: readonly string[], keep: (id: string) => boolean) =>
     ids.filter(id => keep(id) && !claimed.has(id) && (claimed.add(id), true));
-  // per function: the locals this application created or inserted a `set` for, and the inlined statements
-  const placed = new Map<string, Set<number>>(),
-    inlined = new Set<string>(),
+  // per function: the statements an inlined call's body became
+  const inlined = new Set<string>(),
     inlining = new Set<string>();
-  const placedIn = (fn: string) => placed.get(fn) ?? placed.set(fn, new Set()).get(fn)!;
-  for (const e of edits) {
-    if (e.kind === 'local') {
-      const i = after.fns[e.fn]?.locals.findIndex(l => l.name === e.name) ?? -1;
-      if (i >= 0) placedIn(e.fn).add(i);
-    } else if (e.kind === 'insert') {
-      const s = after.stmts[e.stmt as string];
-      if (s?.op === 'set') placedIn(e.fn).add(s.local!);
-    } else if (e.kind === 'inline') {
+  for (const e of edits)
+    if (e.kind === 'inline') {
       inlined.add(`${e.fn} ${e.stmt}`);
       inlining.add(e.fn);
     }
-  }
   // chains of `replace` edits of one statement field: first `from`, last `to`
   const chains = new Map<string, Edit[]>();
   for (const e of edits)
@@ -339,25 +390,23 @@ export function classifyApplication(app: Application): ClassifiedEdit[] {
           touched: [],
           rebuilt: d.rebuilt.filter(id => (id in before.values ? isGone(id) : isNew(id))),
         };
-        const p = placed.get(e.fn);
-        if (p && [...reads(b)].some(l => p.has(l)))
-          return { ...base(e), class: 'structural', sub: inlining.has(e.fn) ? 'inline' : 'motion', ...io };
-        // the table named after the pass first, so an edit two tables re-derive is counted for its own
-        const rule = rederive(
-          a,
-          b,
-          [...VERIFIED_TABLES].sort((s, t) => +(t.name === e.pass) - +(s.name === e.pass)),
-        );
-        if (rule) return { ...base(e), class: 'local', sub: 'rule', rule, ...io };
-        // what the made values say they hold by: the `because` of the new values of B
-        const because = nodes(after.values, to)
-          .filter(isNew)
-          .flatMap(id => after.values[id].origin[0]?.because ?? []);
+        // a function an `inline` edit rewrote: every edit of it has the reason `inline`
+        if (inlining.has(e.fn)) return { ...base(e), class: 'structural', sub: 'inline', ...io };
+        // Classification is a query over the application's steps, not a second matching of the two trees: the edit
+        // cites the steps that licensed it, and locality reads the premises those steps recorded.
+        const steps = (e.steps ?? []).map(k => derivation?.steps[k]).filter((s): s is DerivationStep => !!s);
+        if (!steps.length) return { ...base(e), class: 'other', sub: 'unrecorded', ...io };
+        if (!steps.every(s => locality(s, ground, 'in-place') === 'local'))
+          return { ...base(e), class: 'structural', sub: 'motion', ...io };
+        // `local`: which rule made it, and what the steps say the claim rests on
+        if (steps.some(s => 'rule' in s.by))
+          return { ...base(e), class: 'local', sub: 'rule', rule: ruleMatch(steps), ...io };
+        const premises = [...new Set(steps.flatMap(s => s.premises))].filter(p => !p.startsWith('guard:'));
         return {
           ...base(e),
           class: 'local',
-          sub: because.length ? 'fact' : 'uncited',
-          shape: `${shapeOf(a, b)}${because.length ? ` by ${becauseKind(because)}` : ''}`,
+          sub: premises.length ? 'fact' : 'uncited',
+          shape: `${shapeOf(a, b)}${premises.length ? ` by ${becauseKind(premises)}` : ''}`,
           ...io,
         };
       }
