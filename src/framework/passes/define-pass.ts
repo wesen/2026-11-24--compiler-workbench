@@ -470,8 +470,16 @@ export async function applyPass<S, N extends Needs, P>(
     }
     publishAccepted(pass, options.store, before, after, contract, generation);
   } catch (e) {
-    // every rejection before, or at, publication leaves the manager holding nothing about the candidate
+    // every rejection before, or at, publication leaves the manager holding nothing about the candidate: the
+    // contract's evidence is rolled back, and the preservation checks' analyses of the candidate are invalidated
+    // (IRWB-039 lane 0, after IRWB-045-B)
     discardEvidence(contract, `Pass ${pass.id} rejected: ${(e as Error).message}`);
+    for (const def of pass.preserves ?? [])
+      try {
+        manager.invalidate(def, after, `Pass ${pass.id} was not accepted`);
+      } catch {
+        // cleanup must not mask the rejection
+      }
     throw e;
   }
   return {
