@@ -17,10 +17,11 @@ RelatedFiles:
     - Path: repo://src/stdlib/flow/liveness.ts
       Note: rewritten on solve over the set lattice; fake entry-edges carry the all-blocks scope
     - Path: repo://tests/stdlib/solve.test.mjs
-      Note: the solver's fixpoints by hand, the widening loop, the unreachable block, and liveness
-      vs the old implementation on 300 generated graphs, both scopes
-    - Path: repo://scripts/03-liveness-ab.mjs
-      Note: the interleaved old-vs-new liveness A/B over corpus machine CFGs (the decisive timing)
+      Note: the solver's fixpoints by hand, the widening loop, the unreachable block, liveness vs old
+    - Path: repo://src/stdlib/flow/liveness.ts
+      Note: rewritten on solve; the fake entry-edges of the all-blocks scope
+    - Path: repo://ttmp/2026/11/27/IRWB-053-A--stdlib-flow-the-fixpoint-solver-moved-from-the-framework-s-dataflow-layer-liveness-rewritten-on-it/scripts/03-liveness-ab.mjs
+      Note: the interleaved old-vs-new liveness A/B (the decisive timing)
 ExternalSources: []
 Summary: "The solver move, the liveness rewrite (the all-blocks scope as fake entry-edges), the timing story and the acceptance runs"
 LastUpdated: 2026-11-27T22:55:00-05:00
