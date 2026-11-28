@@ -121,12 +121,12 @@ test('the correspondence from the steps is the survival relation: identity, inse
   );
 });
 
-test('a merge records the link without changing the correspondence (Tix inline: the producer is gone, its consumer stays)', () => {
+test('a merge records the consumed statement as merged into its consumer (F40: the producer is gone, its consumer stays)', () => {
   const d = makeDerivation('inline', [step({ decision: 'inline.merge' }, ['gone'], ['a'], 'merged')]);
   const c = correspondenceFromDerivation(d, from, to, SOURCE, TARGET);
   assert.deepEqual(
     c.entries.find(e => e.from.includes('gone')),
-    { from: ['gone'], to: [], relation: 'removed' },
+    { from: ['gone'], to: ['a'], relation: 'merged' },
   );
   assert.deepEqual(
     c.entries.find(e => e.from.includes('a')),
@@ -217,8 +217,8 @@ test("the runner computes the correspondence from a pass's derivation, and refus
     merged.correspondence.entries.find(e => e.from.includes('squareCopy')),
     {
       from: ['squareCopy'],
-      to: [],
-      relation: 'removed',
+      to: ['square'],
+      relation: 'merged',
     },
   );
   assert.deepEqual(merged.derivation.steps[0].produces, ['square']);

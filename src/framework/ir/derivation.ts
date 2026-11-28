@@ -15,11 +15,13 @@
  * vocabulary: `partial`, `nonempty`, `source`, `target`, `both`). The rule it applies is the survival relation the
  * correspondence is about: a step contributes an entry only when it makes an entity the output did not have
  * (`relation` is then the derivation's `label`), and a `removed` step contributes one only for a source entity the
- * output no longer has. An entity the step carries — an input entity it produced again, or an output entity that
- * already existed — keeps its own identity in the correspondence; the step records the link, the correspondence
- * records survival. That is why a derivation-computed correspondence equals the one the domains computed before
- * derivations (the check in tests/typed/derivations.test.mjs), including the link a Tix merge records without
- * changing what the correspondence says.
+ * output no longer has, and a `merged` step maps the statement it consumed to the one that absorbed it — the
+ * output already had it, so the entry is named by the step's own relation, `merged` (F40, IRWB-060-A). An entity
+ * the step carries — an input entity it produced again, or an output entity that already existed — keeps its own
+ * identity in the correspondence; the step records the link, the correspondence records survival. That is why a
+ * derivation-computed correspondence equals the one the domains computed before derivations (the check in
+ * tests/typed/derivations.test.mjs), and it is why Tix `inline` records `f/a → f/b` as `merged` — the survival
+ * claim the two projections alone could only state as `removed`.
  *
  * Classification is a query, not a field: `locality` answers two declared policies over the same steps (R3: A0's
  * and G's, 203 and 395 local edits of the O2 corpus) and `stepText`/`byText` name a step for a report.
@@ -153,12 +155,16 @@ export function validateDerivation(
 function stepEntries(derivation: Derivation, source: Set<string>, target: Set<string>) {
   const groups = new Map<
     string,
-    { from: readonly string[]; to: Set<string>; because: Set<string>; notes: Map<string, string> }
+    { from: readonly string[]; to: Set<string>; because: Set<string>; notes: Map<string, string>; relation: string }
   >();
   const group = (from: readonly string[]) => {
     const key = canonical(from);
     let g = groups.get(key);
-    if (!g) groups.set(key, (g = { from, to: new Set(), because: new Set(), notes: new Map() }));
+    if (!g)
+      groups.set(
+        key,
+        (g = { from, to: new Set(), because: new Set(), notes: new Map(), relation: derivation.label }),
+      );
     return g;
   };
   // a group's notes are in the order of the entities they are about, and each note is said once
@@ -182,6 +188,18 @@ function stepEntries(derivation: Derivation, source: Set<string>, target: Set<st
       for (const id of produced) if (step.note && !g.notes.has(id)) g.notes.set(id, step.note);
       continue;
     }
+    // F40 (IRWB-060-A): a merge is survival with a new identity — the consumed entity lives on in the one
+    // that absorbed it, which the output already had. The step maps them, and the entry is named by the
+    // step's own relation (`merged`), because it states what happened to the consumed side, which the
+    // derivation's label (the rewrite the pass performs) does not.
+    if (step.relation === 'merged' && produced.length) {
+      const g = group(from);
+      for (const id of produced) g.to.add(id);
+      for (const p of step.premises) if (!p.startsWith(GUARD)) g.because.add(p);
+      for (const id of produced) if (step.note && !g.notes.has(id)) g.notes.set(id, step.note);
+      g.relation = 'merged';
+      continue;
+    }
     if (step.relation !== 'removed') continue; // a step that carries its entities changes no identity
     const gone = from.filter(id => !target.has(id));
     if (!gone.length || produced.length) continue;
@@ -194,7 +212,7 @@ function stepEntries(derivation: Derivation, source: Set<string>, target: Set<st
     .map(g => ({
       from: [...g.from].sort(compareText),
       to: [...g.to].sort(compareText),
-      relation: g.to.size ? derivation.label : 'removed',
+      relation: g.to.size ? g.relation : 'removed',
       ...(g.because.size ? { because: [...g.because].sort(compareText) } : {}),
       ...(g.notes.size ? { note: noteOf(g) } : {}),
     }));
