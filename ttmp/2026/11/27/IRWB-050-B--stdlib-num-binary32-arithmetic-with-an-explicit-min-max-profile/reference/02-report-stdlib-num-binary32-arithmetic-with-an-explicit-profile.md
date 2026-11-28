@@ -32,6 +32,10 @@ WhenToUse: "Before adding an operation to src/stdlib/num, or when questioning th
 
 # Report: `stdlib/num` — binary32 arithmetic with an explicit profile
 
+Commits on branch `v7-num-ds-x-irwb-050-b` (not pushed): `7f1bf4f` is the move itself (library, both clients, the
+tests), `e3705f0` is this ticket, its documents and the probes. Every acceptance number below was re-measured on the
+tree of the last commit.
+
 ## What changed, file by file
 
 - `src/stdlib/num/minmax.ts` (new) — the rule IEEE 754-2019 leaves open, stated once: `minmax(profile, domain)`
