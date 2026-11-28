@@ -1,5 +1,6 @@
 import type { Artifact } from '../framework/core/types.js';
 import { transformation, type EnsuresCheck, type Transformation } from '../framework/passes/index.js';
+import { makeDerivation, type Derivation, type DerivationStep } from '../framework/ir/derivation.js';
 import { meaningGate, type Relation } from './contract.js';
 import { adapter, TixIR } from './ir.js';
 import {
@@ -20,8 +21,17 @@ function replaceIndices(expr: Expr, bindings: Map<string, Affine>): Expr {
     e.kind === 'load' ? { ...e, indices: e.indices.map(a => substitute(a, bindings)) } : e,
   );
 }
-function inline(fn: Fn): Fn {
+/** One merge `inline` made: the statement `from` was substituted into the statement `into`, which then removed it. */
+export interface Merge {
+  readonly fn: string;
+  readonly from: string;
+  readonly into: string;
+}
+
+/** `inline`'s output and the merges it made, in the order it made them (IRWB-056-B: a derivation step each). */
+function inline(fn: Fn): { fn: Fn; merges: readonly { from: string; into: string }[] } {
   const statements = [...fn.statements];
+  const merges: { from: string; into: string }[] = [];
   for (let i = 0; i < statements.length; i++) {
     const p = statements[i];
     if (p.name === fn.result) continue;
@@ -49,8 +59,9 @@ function inline(fn: Fn): Fn {
       }),
     };
     statements.splice(i--, 1);
+    merges.push({ from: p.name, into: s.name });
   }
-  return { ...fn, statements };
+  return { fn: { ...fn, statements }, merges };
 }
 function split(fn: Fn): Fn {
   return {
@@ -109,5 +120,52 @@ function pass(name: string, relation: Relation, transform: (fn: Fn) => Fn): TixP
     obligations: { ensures: [tixMeaning] },
   });
 }
-export const inlinePass = pass('inline', 'exact', inline);
+/**
+ * `inline`, with the merge it made for every statement it substituted: `f/a` was merged into `f/b`. The step's
+ * relation is `merged`, and the correspondence it implies is the one the two projections give (the merged statement
+ * is gone, its consumer stays and was updated): what the derivation adds is the link the correspondence cannot state,
+ * which `derivationOf`/`mergedInto` answer from the steps.
+ */
+export const inlinePass: TixPass = {
+  ...pass('inline', 'exact', fn => inline(fn).fn),
+  prepare({ before }) {
+    const merges: Merge[] = [];
+    const functions = before.value.functions.map(fn => {
+      const out = inline(fn);
+      for (const m of out.merges) merges.push({ fn: fn.name, ...m });
+      return out.fn;
+    });
+    return {
+      native: { functions },
+      ...(merges.length
+        ? {
+            derivation: makeDerivation(
+              'inline',
+              merges.map(
+                (m): DerivationStep => ({
+                  by: { decision: 'inline.merge' },
+                  consumes: [`${m.fn}/${m.from}`],
+                  produces: [`${m.fn}/${m.into}`],
+                  premises: [],
+                  relation: 'merged',
+                  note: `${m.fn}/${m.from} is substituted into ${m.fn}/${m.into}, which returns its result`,
+                }),
+              ),
+            ),
+          }
+        : {}),
+      edits: merges.length * 2,
+    };
+  },
+};
+
+/** The statement each removed Tix entity was merged into, from a pass application's derivation (empty without one). */
+export function mergedInto(derivation: Derivation | undefined): ReadonlyMap<string, string> {
+  const out = new Map<string, string>();
+  for (const step of derivation?.steps ?? [])
+    if (step.relation === 'merged' && step.consumes.length && step.produces.length)
+      out.set(step.consumes[0], step.produces[0]);
+  return out;
+}
+
 export const splitPass = pass('split-sum', 'tolerance', split);
