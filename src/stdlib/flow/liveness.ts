@@ -77,11 +77,9 @@ export function liveness(graph: LiveGraph, scope: LivenessScope): Liveness {
     for (const s of b.succ) preds[s].push(String(k));
   });
   const reachable = reachableBlocks(graph);
-  const faked =
-    scope === 'all-blocks'
-      ? new Set(blocks.map((_, k) => String(k)).filter(k => !reachable.has(Number(k))))
-      : null;
-  if (faked) for (const u of faked) (succ[entry].push(u), preds[Number(u)].push(String(entry)));
+  const faked = scope === 'all-blocks' ? blocks.map((_, k) => k).filter(k => !reachable.has(k)) : [];
+  for (const u of faked) (succ[entry].push(String(u)), preds[u].push(String(entry)));
+  const fake = new Set(faked.map(String));
   const flow: FlowGraph = {
     entry: String(entry),
     blocks: blocks.map((_, k) => String(k)),
@@ -97,9 +95,10 @@ export function liveness(graph: LiveGraph, scope: LivenessScope): Liveness {
       for (const r of out) if (!def[k].has(r)) inn.add(r);
       return inn;
     },
-    edge: faked
-      ? (from, to, v) => (from === String(entry) && faked.has(to) ? new Set<number>() : v)
-      : undefined,
+    edge:
+      fake.size > 0
+        ? (from, to, v) => (from === String(entry) && fake.has(to) ? new Set<number>() : v)
+        : undefined,
   });
   const empty = new Set<number>();
   return {
