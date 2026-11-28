@@ -1,11 +1,18 @@
-import { canonical, immutable } from '../core/data.js';
-import type { Artifact } from '../core/types.js';
-import type { EditOptions, IREdit, IRView, RevisionRef, TransformationResult, VersionRef } from './types.js';
+import { canonical, immutable } from '../framework/core/data.js';
+import type { Artifact } from '../framework/core/types.js';
+import type {
+  EditOptions,
+  IREdit,
+  IRView,
+  RevisionRef,
+  TransformationResult,
+  VersionRef,
+} from '../framework/ir/types.js';
 import { describePattern, orderedCandidates, PatternBudgetError, searchPattern } from './patterns.js';
 import type { PatternDescriptor, PatternInput, PatternMatch, PatternPredicateRegistry } from './patterns.js';
-import { compareText, syncFunction, synchronous } from './common.js';
-import { readIR } from './readers.js';
-import type { IRReader } from './readers.js';
+import { compareText, syncFunction, synchronous } from '../framework/ir/common.js';
+import { readIR } from '../framework/ir/readers.js';
+import type { IRReader } from '../framework/ir/readers.js';
 export type RewriteGuardResult =
   | boolean
   | {

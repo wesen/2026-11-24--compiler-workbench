@@ -1,8 +1,8 @@
-import { canonical, fingerprint, immutable } from '../core/data.js';
-import type { EntityTarget, IREntity, IRRef, RevisionRef, VersionRef } from './types.js';
-import { compareText, syncFunction, synchronous } from './common.js';
-import { readIR } from './readers.js';
-import type { IRReader } from './readers.js';
+import { canonical, fingerprint, immutable } from '../framework/core/data.js';
+import type { EntityTarget, IREntity, IRRef, RevisionRef, VersionRef } from '../framework/ir/types.js';
+import { compareText, syncFunction, synchronous } from '../framework/ir/common.js';
+import { readIR } from '../framework/ir/readers.js';
+import type { IRReader } from '../framework/ir/readers.js';
 /** Patterns are finite data. Callback code lives in a separately versioned registry. */
 export type NodePattern =
   | {

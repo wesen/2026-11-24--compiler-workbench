@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { canonical } from '../../dist/framework/core/data.js';
 import { createIRArtifact,openIR,traceEntity,composeCorrespondence } from '../../dist/framework/ir/index.js';
 import { AnalysisManager } from '../../dist/framework/contracts/index.js';
-import { matchAll } from '../../dist/framework/ir/patterns.js';
+import { matchAll } from '../../dist/labs/patterns.js';
 import { IR_LAB_DOMAINS,runIRLab,getIRLabAdapter,defaultIRLabSource,exampleExpression,expressionPolynomial,evaluateExpression,validateExpression,exampleScene,scenePlacements,exampleMesh,fanCheck,meshBoundaryError,exampleConstraints,constraintComponents,solveConstraints,rref,normalizedEquation,duplicateConstraintPattern,predicateRegistry,expressionContract,sceneContract,meshContract,constraintContract } from '../../dist/labs/index.js';
 
 const runs=new Map();
