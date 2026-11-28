@@ -409,3 +409,115 @@ inline; the corpus has none, so it is a guard, not a class in the tally.
 
 `node scripts/09-o2-classify.mjs` (expect `395 local`, fold 43). `node --test tests/typed/edit-classes.test.mjs
 tests/typed/derivations.test.mjs tests/typed/rules.test.mjs`.
+
+## Step 9 — The framework test, and a hole it showed in the step matching
+
+### What I did
+
+Wrote `tests/framework/attribution.test.mjs` on a synthetic two-link chain (six tests: components, weight
+distribution and `sources`, `frame`-style ids, caller-named entities without weight, `changedBy` with
+self-mappings, a chain gap refused). Then `tests/typed/attribute.test.mjs`'s new test, asserting that the
+`simplify` row of `first-steps` under O1 names `simplify/mul-pow2`.
+
+### Why
+
+Item 1's "the D1 tables reproduce" is a table check; the tests need to say what the rows now *are*.
+
+### What didn't work
+
+The new D1 test failed: `by` was `[]` for the `simplify` row. `creditChain` attaches a step to the group whose
+entities it names, and the group is the **statement** while `mul-pow2`'s steps name **values** under it. The
+licm rows had worked because licm's steps name statements.
+
+### What worked
+
+The edit record is what ties them: an edit names the statement and cites the steps (`Edit.steps`). The adapter
+now unions the query's `by` with the cited steps of the edits that name the group — the guide's own proposal
+("the decision name from the derivation steps those entries' edits cite").
+
+### What I learned
+
+A step's site is a value tree, a weight's site is a statement; only a record that names both can join them, and
+that record is the edit.
+
+### What warrants a second pair of eyes
+
+Two sources for `AttributionRow.by` (the query's entity match and the edits' citations). They answer the same
+question at different granularity; a reviewer should check the union reads as one answer, not as two.
+
+## Step 10 — The suites, the baselines, the site
+
+### What I did
+
+```sh
+npm run build && npm run check
+node --test tests/typed/*.test.mjs        # 201 pass, 0 fail
+node --test tests/framework/*.test.mjs    # 279 pass, 0 fail
+node --test tests/workbench/*.test.mjs    # 24 pass, 0 fail
+node --test tests/stdlib/*.test.mjs       # 67 pass, 0 fail
+node --test $(ls tests/tensor/*.test.mjs | grep -v gpu)   # 63 pass, 0 fail
+node ttmp/2026/11/27/IRWB-039--*/scripts/02-baselines.mjs check   # no differences
+node tools/build-site.mjs                 # dist/site built, 50 projects
+```
+
+Re-ran both table scripts on the final code: all five files identical to their `before` versions.
+
+### Why
+
+The acceptance list.
+
+### What worked
+
+Everything, first time at this commit. Two existing tests needed the records passed to `classifyApplication`
+(`tests/typed/edit-classes.test.mjs`) and the chain passed to `hotShapes` (`tests/typed/missed.test.mjs`) —
+both are the intended interface change, and both are updated in place.
+
+### What didn't work
+
+`npm run format:check` still lists six files (`framework/core/data.ts`, `framework/ir/store.ts`,
+`typed/{candela-render,evaluate,ir,model}.ts`): they were unformatted before this ticket. The four files this
+ticket changed pass.
+
+### What I learned
+
+The four tests that had to change (`edit-classes`, `missed`, `derivations`, `attribute`) are exactly the ones
+that call the changed interfaces; nothing else in the suites noticed, which is good evidence that the tools
+are leaf tools.
+
+### Code review instructions
+
+`various/acceptance.txt` has the transcript. The two table scripts are the checks to re-run after a rebase.
+
+## Step 11 — Deleting what the queries replace, and the report
+
+### What I did
+
+Deleted the last dead pieces of the old classifier (`reads`, `treeBound`), rewrote the file header to describe
+the query and to say what `rederive` is for now (the audit), updated the design note's API section to the
+prepared query, and wrote `reference/02-report-*.md` with the file-by-file change, the acceptance table, what
+remains and why, and what I left out.
+
+### Why
+
+Item 4, and the brief's "end with a report".
+
+### What worked
+
+`wc -l`: `attribute.ts` 263 (was 236), `missed.ts` 256 (was 236), `edit-classes.ts` 567 (was 518, of which
+`localityGround`, `ruleMatch` and the doc are new; the matcher copy and the `placed`/`reads` test are gone),
+`attribution.ts` 375 new.
+
+### What didn't work
+
+—
+
+### What I learned
+
+The new code is larger than what it replaced, and the report says why: the query is generic (chain validation,
+union-find, backward traces, provenance) and the adapters kept their interfaces. The deleted parts were three
+variant readers of one fact.
+
+### What warrants a second pair of eyes
+
+The scope question in the report: `src/framework/ir/index.ts` (lane 4.7's file) does not export the new module
+yet, and `derivation.ts`'s doc for `locality`'s `input` still describes the narrower ground.
