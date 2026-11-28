@@ -171,3 +171,19 @@ test('the checked lowering runs on the runner: asynchronous driver, published wh
   assert.deepEqual(s2.revisions('tix-cuda/f'), []);
   assert.notEqual(m2.snapshot().executions.at(-1).status, 'accepted');
 });
+
+test('schedule memo retains pass results and separates changed functions and fusion choices', async () => {
+  const { scheduleFunction } = await import('../../dist/tensor/strategy.js');
+  const program = compileTix(readFileSync(new URL('matmul/main.tix', dir), 'utf8'));
+  const fn = program.current.value.functions[0];
+  const fused = scheduleFunction(fn, true);
+  assert.equal(scheduleFunction(structuredClone(fn), true), fused);
+  assert.equal(fused.results.length, 2);
+  for (const result of fused.results.filter(r => r.changed)) assert.ok(result.correspondence);
+  const unfused = scheduleFunction(fn, false);
+  assert.notEqual(unfused, fused);
+  assert.deepEqual(unfused.results, []);
+  const renamed = structuredClone(fn);
+  renamed.name += '_changed';
+  assert.notEqual(scheduleFunction(renamed, true), fused);
+});

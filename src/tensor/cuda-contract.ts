@@ -18,30 +18,22 @@ import {
   makeCorrespondence,
   openIR,
   type CorrespondenceEntry,
-  type EntityCorrespondence,
   type IREntity,
 } from '../framework/ir/index.js';
 import {
   applyTransformation,
-  passAlgorithm,
   PassError,
   transformation,
   type CrossResult,
 } from '../framework/passes/index.js';
-import {
-  AlgorithmRegistry,
-  algorithm,
-  executeSync,
-  StrategyExecutionError,
-} from '../framework/strategy/index.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
 import { emitScheduleProgram, type CudaKernel } from './cuda-source.js';
-import { schedulePlan, scheduleRegistry } from './strategy.js';
+import { scheduleFunction } from './strategy.js';
 import type { BufferValue } from './evaluate.js';
 import { TixIR, adapter } from './ir.js';
 import { selectFunction, type Module } from './model.js';
-import { fusePass, initialSchedule, loopsPass, scheduleAdapter, type Schedule } from './schedule.js';
+import { scheduleAdapter, type Schedule } from './schedule.js';
 
 export interface CudaUnit {
   fn: string;
@@ -124,27 +116,6 @@ export interface CudaLoweringParams {
 const ref = (a: Artifact) => ({ artifact: a.id, revision: a.revision });
 const ids = (entities: readonly IREntity[]) => entities.map(e => e.id);
 const scheduleIds = (s: Artifact<Schedule>) => ids(openIR(s, scheduleAdapter).graph().entities);
-const decisions = ['tensor.schedule.decide-fuse', 'tensor.schedule.decide-loops'].map(id =>
-  scheduleRegistry.get(algorithm(id, '1')),
-);
-/**
- * The scheduled function with the correspondence of every schedule pass that changed it. `schedulePlan`
- * (strategy.ts) runs on a registry whose pass algorithms report their runner results; the decisions are the
- * scheduling registry's own, so the schedule is `lowerSchedule`'s.
- */
-function schedule(initial: Artifact<Schedule>, fuse: boolean) {
-  const steps: EntityCorrespondence[] = [];
-  if (!fuse) return { schedule: initial, steps };
-  const registry = new AlgorithmRegistry();
-  for (const d of decisions) registry.register(d);
-  for (const pass of [fusePass, loopsPass])
-    registry.register(
-      passAlgorithm(pass, { onResult: r => void (r.changed && steps.push(r.correspondence!)) }),
-    );
-  const execution = executeSync(schedulePlan, registry, initial);
-  if (execution.status !== 'succeeded') throw new StrategyExecutionError(execution);
-  return { schedule: execution.value as Artifact<Schedule>, steps };
-}
 /**
  * IRWB-033-D, IRWB-061: Tix -> schedule IR (one pointwise kernel per statement, then the checked fusion and loop
  * passes) -> CUDA source; the schedule's kernels are the CUDA kernels. The correspondence from Tix entities to
@@ -157,8 +128,7 @@ function lowerTix(
   { fn, fuse }: CudaLoweringParams,
 ): CrossResult<CudaUnit> {
   const f = selectFunction(baseline.value, fn);
-  const initial = initialSchedule(f);
-  const { schedule: scheduled, steps } = schedule(initial, fuse);
+  const { initial, schedule: scheduled, results } = scheduleFunction(f, fuse);
   const { source, kernels } = emitScheduleProgram(scheduled.value);
   const output = { fn, source, kernels },
     outputId = 'tix-cuda/' + fn;
@@ -175,7 +145,7 @@ function lowerTix(
         relation: 'scheduled',
       })),
     ),
-    ...steps,
+    ...results.flatMap(r => (r.changed ? [r.correspondence!] : [])),
     makeCorrespondence(
       ref(scheduled),
       ref(unit),

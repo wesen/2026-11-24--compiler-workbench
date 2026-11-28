@@ -5,7 +5,7 @@
 // (K6: decisions as data). The decisions below are policy and are not trusted: `fusePass` and `loopsPass`
 // (schedule.ts) check each plan with `eligible` before applying it, and the execution records hold both plans.
 import type { Artifact } from '../framework/core/types.js';
-import { passAlgorithm } from '../framework/passes/index.js';
+import { passAlgorithm, type PassResult } from '../framework/passes/index.js';
 import {
   AlgorithmRegistry,
   algorithm,
@@ -170,11 +170,13 @@ const fuseDecision = decision('tensor.schedule.decide-fuse', 'Choose the fusion 
     chooseFusion(s.fn),
   ),
   loopsDecision = decision('tensor.schedule.decide-loops', 'Choose the loop nests', chooseLoops);
-export const scheduleRegistry = new AlgorithmRegistry()
-  .register(fuseDecision)
-  .register(passAlgorithm(fusePass))
-  .register(loopsDecision)
-  .register(passAlgorithm(loopsPass));
+const makeScheduleRegistry = (onResult?: (result: PassResult<Schedule>) => void) =>
+  new AlgorithmRegistry()
+    .register(fuseDecision)
+    .register(passAlgorithm(fusePass, { onResult }))
+    .register(loopsDecision)
+    .register(passAlgorithm(loopsPass, { onResult }));
+export const scheduleRegistry = makeScheduleRegistry();
 const ref = (a: { id: string; version: string }) => algorithm(a.id, a.version);
 /** The scheduling rule: each decision is bound, then applied by the transformation that checks it. */
 export const schedulePlan = plan(
@@ -190,7 +192,9 @@ export const schedulePlan = plan(
 );
 
 export interface Scheduled {
+  initial: Artifact<Schedule>;
   schedule: Artifact<Schedule>;
+  results: readonly PassResult<Schedule>[];
   /** The plan's execution, with both decisions in its records; undefined for the unfused schedule. */
   execution?: StrategyExecution;
 }
@@ -204,11 +208,13 @@ export function scheduleFunction(fn: Fn, fuse: boolean): Scheduled {
   let result = memo.get(key);
   if (!result) {
     const initial = initialSchedule(fn);
-    if (!fuse) result = { schedule: initial };
+    if (!fuse) result = { initial, schedule: initial, results: [] };
     else {
-      const execution = executeSync(schedulePlan, scheduleRegistry, initial);
+      const results: PassResult<Schedule>[] = [];
+      const registry = makeScheduleRegistry(r => results.push(r));
+      const execution = executeSync(schedulePlan, registry, initial);
       if (execution.status !== 'succeeded') throw new StrategyExecutionError(execution);
-      result = { schedule: execution.value as Artifact<Schedule>, execution };
+      result = { initial, schedule: execution.value as Artifact<Schedule>, results, execution };
     }
     memo.set(key, result);
   }
