@@ -1,26 +1,12 @@
 import type { Artifact } from '../framework/core/types.js';
+import type { CorrespondenceEntry, EntityCorrespondence } from '../framework/ir/index.js';
+import type { Derivation } from '../framework/ir/derivation.js';
 import { transformation, type EnsuresCheck, type Transformation } from '../framework/passes/index.js';
-import { makeDerivation, type Derivation, type DerivationStep } from '../framework/ir/derivation.js';
 import { meaningGate, type Relation } from './contract.js';
 import { adapter, TixIR } from './ir.js';
-import {
-  add,
-  mapExpr,
-  substitute,
-  variable,
-  visit,
-  width,
-  type Affine,
-  type Expr,
-  type Fn,
-  type Module,
-} from './model.js';
+import { visit, type Fn, type Module } from './model.js';
+import { indexOf, inlineRule, rewriteExpr, rewriteFn, splitSumRule } from './rules.js';
 
-function replaceIndices(expr: Expr, bindings: Map<string, Affine>): Expr {
-  return mapExpr(expr, e =>
-    e.kind === 'load' ? { ...e, indices: e.indices.map(a => substitute(a, bindings)) } : e,
-  );
-}
 /** One merge `inline` made: the statement `from` was substituted into the statement `into`, which then removed it. */
 export interface Merge {
   readonly fn: string;
@@ -28,8 +14,13 @@ export interface Merge {
   readonly into: string;
 }
 
-/** `inline`'s output and the merges it made, in the order it made them (IRWB-056-B: a derivation step each). */
-function inline(fn: Fn): { fn: Fn; merges: readonly { from: string; into: string }[] } {
+/**
+ * `inline`'s output and the merges it made, in the order it made them: a statement that is pointwise and read
+ * exactly once is substituted into its reader. The rewrite itself is the rule `rules.ts` builds for that producer
+ * (`load f/a(i) → body[i]`), applied by the library's matcher; what the pass decides is the rule's side condition,
+ * which is about the statement list and not about any term.
+ */
+export function inline(fn: Fn): { fn: Fn; merges: readonly { from: string; into: string }[] } {
   const statements = [...fn.statements];
   const merges: { from: string; into: string }[] = [];
   for (let i = 0; i < statements.length; i++) {
@@ -51,47 +42,13 @@ function inline(fn: Fn): { fn: Fn; merges: readonly { from: string; into: string
       });
     if (uses !== 1) continue;
     const s = statements[consumer];
-    statements[consumer] = {
-      ...s,
-      expr: mapExpr(s.expr, e => {
-        if (e.kind !== 'load' || e.name !== p.name) return e;
-        return replaceIndices(p.expr, new Map(p.axes.map((a, k) => [a.id, e.indices[k]])));
-      }),
-    };
+    statements[consumer] = { ...s, expr: rewriteExpr(s.expr, indexOf([inlineRule(p)])) };
     statements.splice(i--, 1);
     merges.push({ from: p.name, into: s.name });
   }
   return { fn: { ...fn, statements }, merges };
 }
-function split(fn: Fn): Fn {
-  return {
-    ...fn,
-    statements: fn.statements.map(s => ({
-      ...s,
-      expr: mapExpr(s.expr, e => {
-        if (e.kind !== 'reduce' || e.op !== 'sum' || e.axes.length !== 1) return e;
-        const [{ id, extent }] = e.axes;
-        if (extent.kind !== 'dim') return e;
-        const { dim } = extent,
-          block = id + '/block',
-          lane = id + '/lane';
-        const address = add(variable(lane), variable(block), width);
-        const body = replaceIndices(e.body, new Map([[id, address]]));
-        return {
-          kind: 'reduce',
-          op: 'sum',
-          axes: [{ id: block, extent: { kind: 'blocks', dim, rounding: 'ceil' } }],
-          body: {
-            kind: 'reduce',
-            op: 'sum',
-            axes: [{ id: lane, extent: { kind: 'tail', dim, block } }],
-            body,
-          },
-        };
-      }),
-    })),
-  };
-}
+
 export type TixPass = Transformation<Module>;
 
 /**
@@ -120,11 +77,28 @@ function pass(name: string, relation: Relation, transform: (fn: Fn) => Fn): TixP
     obligations: { ensures: [tixMeaning] },
   });
 }
+
 /**
- * `inline`, with the merge it made for every statement it substituted: `f/a` was merged into `f/b`. The step's
- * relation is `merged`, and the correspondence it implies is the one the two projections give (the merged statement
- * is gone, its consumer stays and was updated): what the derivation adds is the link the correspondence cannot state,
- * which `derivationOf`/`mergedInto` answer from the steps.
+ * The correspondence entries of `inline`'s merges (F40): the merged statement maps to the statement that absorbed it,
+ * with relation `merged`, which is what happened — the reader was rewritten to return the merged result and the
+ * producer is gone. A producer can be absorbed by a consumer that is itself merged later, so each merge is resolved
+ * to its final survivor before it is published: a correspondence entry names an entity the new revision has.
+ */
+export function mergeEntries(merges: readonly Merge[]): CorrespondenceEntry[] {
+  const into = new Map<string, string>();
+  for (const m of merges) into.set(`${m.fn}/${m.from}`, `${m.fn}/${m.into}`);
+  return [...into].map(([id, consumer]) => {
+    let final = consumer;
+    while (into.has(final)) final = into.get(final)!;
+    return { from: [id], to: [final], relation: 'merged' };
+  });
+}
+
+/**
+ * `inline`, with the correspondence its merges imply: every statement it substituted says `merged` into its reader
+ * (F40; before IRWB-060-B the entries came from the two projections' completion, which said `removed` and left the
+ * link only in a derivation). What the pass reports besides the candidate is how many edits it made; the meaning
+ * gate is its check.
  */
 export const inlinePass: TixPass = {
   ...pass('inline', 'exact', fn => inline(fn).fn),
@@ -135,37 +109,35 @@ export const inlinePass: TixPass = {
       for (const m of out.merges) merges.push({ fn: fn.name, ...m });
       return out.fn;
     });
+    const entries = mergeEntries(merges);
     return {
       native: { functions },
-      ...(merges.length
-        ? {
-            derivation: makeDerivation(
-              'inline',
-              merges.map(
-                (m): DerivationStep => ({
-                  by: { decision: 'inline.merge' },
-                  consumes: [`${m.fn}/${m.from}`],
-                  produces: [`${m.fn}/${m.into}`],
-                  premises: [],
-                  relation: 'merged',
-                  note: `${m.fn}/${m.from} is substituted into ${m.fn}/${m.into}, which returns its result`,
-                }),
-              ),
-            ),
-          }
-        : {}),
+      ...(entries.length ? { correspondence: entries } : {}),
       edits: merges.length * 2,
     };
   },
 };
 
-/** The statement each removed Tix entity was merged into, from a pass application's derivation (empty without one). */
-export function mergedInto(derivation: Derivation | undefined): ReadonlyMap<string, string> {
+/**
+ * The statement each merged Tix entity was merged into (F40): the `merged` entries of a correspondence, or the
+ * `merged` steps of a derivation (the shape IRWB-056-B recorded it in). Empty when the source carries neither.
+ */
+export function mergedInto(
+  source: Derivation | EntityCorrespondence | undefined,
+): ReadonlyMap<string, string> {
   const out = new Map<string, string>();
-  for (const step of derivation?.steps ?? [])
-    if (step.relation === 'merged' && step.consumes.length && step.produces.length)
-      out.set(step.consumes[0], step.produces[0]);
+  if (!source) return out;
+  if ('steps' in source) {
+    for (const step of source.steps)
+      if (step.relation === 'merged' && step.consumes.length && step.produces.length)
+        out.set(step.consumes[0], step.produces[0]);
+    return out;
+  }
+  for (const entry of source.entries)
+    if (entry.relation === 'merged' && entry.from.length === 1 && entry.to.length === 1)
+      out.set(entry.from[0], entry.to[0]);
   return out;
 }
 
-export const splitPass = pass('split-sum', 'tolerance', split);
+/** `split-sum`, as the rule `rules.ts` states: a single-dimension sum over blocks of a sum over lanes. */
+export const splitPass = pass('split-sum', 'tolerance', fn => rewriteFn(fn, indexOf([splitSumRule])));

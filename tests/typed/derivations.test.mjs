@@ -179,33 +179,24 @@ test("both policies as queries over the same records: 203 (scoped) and 393 (in-p
   }
 });
 
-test('Tix inline records which statement was merged into which, and its correspondence is unchanged', () => {
+test('Tix inline says `merged` for the statement it substituted, and names the reader it went into (F40)', () => {
   const p = T.compileTix('fn f(x:f32[N]):f32[N]{a[i]=x[i]*2;b[i]=a[i]+1;return b;}');
   const r = applyNativePassSync(inlinePass, p.current, () => ({ ok: true }));
   assert.ok(r.changed);
-  assert.deepEqual(
-    r.derivation.steps.map(s => [s.by, s.consumes, s.produces, s.relation]),
-    [[{ decision: 'inline.merge' }, ['f/a'], ['f/b'], 'merged']],
-  );
-  assert.deepEqual([...mergedInto(r.derivation)], [['f/a', 'f/b']]);
-  // R3's probe: the merged statement is `removed`, its consumer `retained`; the link is in the derivation
+  // F40: the entry says what happened — the statement was merged into its reader, not dropped — so a trace or a
+  // `why` question about `f/a` reaches `f/b` instead of stopping at a removal with no link
   const byFrom = Object.fromEntries(r.correspondence.entries.map(e => [e.from.join(','), e]));
-  assert.deepEqual(byFrom['f/a'], { from: ['f/a'], to: [], relation: 'removed' });
+  assert.deepEqual(byFrom['f/a'], { from: ['f/a'], to: ['f/b'], relation: 'merged' });
   assert.deepEqual(byFrom['f/b'], { from: ['f/b'], to: ['f/b'], relation: 'retained' });
-  assert.equal(mergedInto(r.derivation).get('f/a'), 'f/b');
-  // a derivation with a step that names a statement the module does not have is refused
+  assert.deepEqual([...mergedInto(r.correspondence)], [['f/a', 'f/b']]);
+  // the correspondence is the pass's only record of the merge: entries naming a statement the module does not have
+  // are refused before the candidate is published
   const broken = {
     ...inlinePass,
-    prepare: ctx => {
-      const out = inlinePass.prepare(ctx);
-      return {
-        ...out,
-        derivation: {
-          ...out.derivation,
-          steps: out.derivation.steps.map(s => ({ ...s, consumes: ['f/zz'] })),
-        },
-      };
-    },
+    prepare: ctx => ({
+      ...inlinePass.prepare(ctx),
+      correspondence: [{ from: ['f/zz'], to: ['f/b'], relation: 'merged' }],
+    }),
   };
-  assert.throws(() => applyNativePassSync(broken, p.current, () => ({ ok: true })), /consumes f\/zz/);
+  assert.throws(() => applyNativePassSync(broken, p.current, () => ({ ok: true })), /Unknown source entity f\/zz/);
 });
