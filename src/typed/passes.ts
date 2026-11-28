@@ -12,6 +12,7 @@ import { defineTransformation } from '../framework/contracts/definitions.js';
 import type { TransformationDefinition } from '../framework/contracts/types.js';
 import type { CorrespondenceEntry } from '../framework/ir/types.js';
 import { definePass, type Pass } from '../framework/passes/define-pass.js';
+import { transformation, type Relation } from '../framework/passes/transformation.js';
 import type { DataflowResult } from '../framework/dataflow/analysis.js';
 import {
   ANALYSES,
@@ -84,6 +85,12 @@ export interface TypedPassSpec {
   body(ctx: BodyContext): void;
   /** A pass over the whole program (it removes functions), not per function: never restricted to one function. */
   readonly program?: true;
+  /**
+   * IRWB-051-C: a pass that declares its relation is built as a framework transformation (`prepare` and
+   * `obligations.preserves` instead of `run` and `preserves`), which the new runner and both old ones accept.
+   * Only `strength` does, for the phase 3 spike.
+   */
+  readonly relation?: Relation;
 }
 
 /** Compiler Workbench write kinds -> the entity and relation kinds of the projection they may change. */
@@ -183,7 +190,7 @@ export function typedPass(spec: TypedPassSpec): TypedPass {
     ENTITY_WRITES[k].entities.forEach(e => writes.entities.add(e));
     ENTITY_WRITES[k].relations.forEach(r => writes.relations.add(r));
   }
-  const pass = definePass<TypedBlocks, Record<string, any>, Record<string, unknown>>({
+  const common = {
     id: `typed.${spec.name}`,
     version: '1',
     description: spec.about,
@@ -191,40 +198,48 @@ export function typedPass(spec: TypedPassSpec): TypedPass {
     adapter: blocksAdapter,
     needs,
     writes: { entities: [...writes.entities], relations: [...writes.relations] },
-    preserves: (spec.preserves ?? []).map(n => NEEDS[n]),
-    run({ before, facts, params }) {
-      const st = Store.from(before.value),
-        rev = before.value.rev + 1;
-      const edits: Edit[] = [],
-        touched: string[] = [];
-      for (const f of st.fns.values()) {
-        const views: FactViews = {};
-        for (const [alias, name] of Object.entries(spec.needs ?? {}))
-          views[alias] = view(name, facts[alias], st, f.name);
-        const tx = new Tx(st, f, { name: spec.name, writes: spec.writes }, rev);
-        spec.body({ st, f, tx, facts: views, params: (params ?? {}) as Record<string, unknown> });
-        tx.commit();
-        if (tx.edits.length) {
-          edits.push(...tx.edits);
-          touched.push(f.name);
-        }
+  };
+  const preserves = (spec.preserves ?? []).map(n => NEEDS[n]);
+  type Run = Parameters<
+    typeof definePass<TypedBlocks, Record<string, any>, Record<string, unknown>>
+  >[0]['run'];
+  const run: Run = ({ before, facts, params }) => {
+    const st = Store.from(before.value),
+      rev = before.value.rev + 1;
+    const edits: Edit[] = [],
+      touched: string[] = [];
+    for (const f of st.fns.values()) {
+      const views: FactViews = {};
+      for (const [alias, name] of Object.entries(spec.needs ?? {}))
+        views[alias] = view(name, facts[alias], st, f.name);
+      const tx = new Tx(st, f, { name: spec.name, writes: spec.writes }, rev);
+      spec.body({ st, f, tx, facts: views, params: (params ?? {}) as Record<string, unknown> });
+      tx.commit();
+      if (tx.edits.length) {
+        edits.push(...tx.edits);
+        touched.push(f.name);
       }
-      if (!edits.length) return;
-      st.rev = rev;
-      const native = st.toNative();
-      const kinds = edits.reduce<Record<string, number>>(
-        (m, e) => ((m[e.kind] = (m[e.kind] || 0) + 1), m),
-        {},
-      );
-      const report: RevisionReport = { pass: spec.name, rev, edits, fns: touched, kinds };
-      return {
-        native,
-        correspondence: revisionCorrespondence(before.value, native, edits),
-        edits: edits.length,
-        report,
-      };
-    },
-  });
+    }
+    if (!edits.length) return;
+    st.rev = rev;
+    const native = st.toNative();
+    const kinds = edits.reduce<Record<string, number>>((m, e) => ((m[e.kind] = (m[e.kind] || 0) + 1), m), {});
+    const report: RevisionReport = { pass: spec.name, rev, edits, fns: touched, kinds };
+    return {
+      native,
+      correspondence: revisionCorrespondence(before.value, native, edits),
+      edits: edits.length,
+      report,
+    };
+  };
+  const pass = spec.relation
+    ? transformation<TypedBlocks, Record<string, any>, Record<string, unknown>>({
+        ...common,
+        relation: spec.relation,
+        prepare: run,
+        obligations: { preserves },
+      })
+    : definePass<TypedBlocks, Record<string, any>, Record<string, unknown>>({ ...common, preserves, run });
   return Object.freeze({ ...pass, typed: spec }) as TypedPass;
 }
 
@@ -598,6 +613,7 @@ export const strength = typedPass({
   needs: { ranges: 'ranges' },
   writes: ['values'],
   preserves: ['cfg', 'dominators', 'loops'],
+  relation: 'exact',
   body({ f, tx, facts }) {
     const ranges = facts.ranges!;
     tx.rewrite(v => {
