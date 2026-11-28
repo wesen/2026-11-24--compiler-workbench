@@ -20,7 +20,6 @@ import { defineAnalysis, defineType } from '../framework/contracts/definitions.j
 import { canonical } from '../framework/core/data.js';
 import { dataflow, type DataflowResult, type FlowRegion } from '../framework/dataflow/analysis.js';
 import { intervalLattice, mapLattice, setLattice, type Interval } from '../framework/dataflow/lattices.js';
-import type { FlowGraph } from '../framework/dataflow/solver.js';
 import {
   depthFirst,
   dominates,
@@ -28,6 +27,7 @@ import {
   dominatorTree,
   naturalLoops,
   type Digraph,
+  type FlowGraph,
 } from '../stdlib/index.js';
 import { BlocksIR, blocksAdapter, storeOf } from './ir.js';
 import type { BlockRec, StmtRec, Store, TypedBlocks, ValueRec, WorkFn } from './model.js';

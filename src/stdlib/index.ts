@@ -9,7 +9,9 @@
  * above; `check` and `measure` on top. Nothing under src/stdlib imports outside src/stdlib.
  *
  * What exists now:
- *   flow/     liveness — backward gen/kill liveness over blocks, with an explicit scope
+ *   flow/     solver — one fixpoint over a graph, a lattice and a transfer function, in either direction,
+ *             widening at loop heads; liveness — backward gen/kill liveness over blocks, on that solver,
+ *             with an explicit scope
  *   graph/    orders, dominators, natural loops — over one digraph: nodes, an entry, successors
  *   lattice/  lattices — join, order and widening: the set, flat, interval and map lattices
  *             (dataflow's ranges analysis, and SCCP's flat lattice of SSA names)
@@ -20,7 +22,6 @@
  * Later modules, one line each (each enters under the admission rule, with its two clients):
  *   graph/    dominance frontiers
  *   num/      exact small-number helpers (saturating and wrapping arithmetic)
- *   flow/     the fixpoint solver over a lattice (liveness hardcodes its own; this generalises it)
  *   ssa/      SSA construction — from a graph and dominators to phi placement
  *   term/     terms over a signature, matching and substitution
  *   pe/       partial evaluation — specialization over a term and an affine form
@@ -28,6 +29,8 @@
  *   measure/  cost measures over library results (sizes, depths)
  */
 export { liveness, reachableBlocks } from './flow/liveness.js';
+export { DataflowError, solve } from './flow/solver.js';
+export type { FlowGraph, Solution, SolveOptions } from './flow/solver.js';
 export { minmax, NUMBERS } from './num/minmax.js';
 export type { FloatOrder, MinMax, MinMaxProfile } from './num/minmax.js';
 export { binary32, BITS, CANONICAL_NAN, fromBits, isNaNBits, toBits } from './num/binary32.js';

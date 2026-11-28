@@ -1,17 +1,29 @@
 /**
  * Backward gen/kill liveness over a control-flow graph: the first primitive of the standard library
  * (IRWB-039 phase 2b, IRWB-046-B). A value is live at a point if some path from that point to an exit
- * reads it before redefining it; per block, `in = uses ∪ (out \ defs)` and `out = ∪ in[succ]`, solved
- * from the empty sets by backward sweeps until nothing changes. The least fixpoint of this monotone
- * system is unique, so the sweep order cannot change any block's sets.
+ * reads it before redefining it; per block, `in = uses ∪ (out \ defs)` and `out = ∪ in[succ]`.
+ *
+ * Since IRWB-053-B the fixpoint is the library's own solver (`flow/solver.ts`) with the set lattice
+ * (`lattice/lattices.ts`): the equations above are its backward direction, the transfer is the `in`
+ * formula, and the join is union, so the old hand-written sweep is gone. The solver returns the least
+ * fixpoint of a monotone system, which is unique, so no sweep order can change any block's sets.
  *
  * The scope says which blocks the equations run over, because that is where liveness implementations
  * disagree: a block no path from the entry reaches still has successors, and 'all-blocks' computes
  * its live-out from them (machine liveness: the block is laid out and its registers still need
- * allocating) while 'entry-reachable' leaves it the empty set, as the framework's solver does. The
- * two differ only on such blocks — a reachable block's successors are reachable, so no reachable
- * block ever joins a fact from an unreachable one.
+ * allocating) while 'entry-reachable' leaves it the empty set, as the solver itself does. The two
+ * differ only on such blocks — a reachable block's successors are reachable, so no reachable block
+ * ever joins a fact from an unreachable one.
+ *
+ * 'all-blocks' is the one shape the solver does not state: it walks from an entry and stops at what
+ * that entry reaches. So the graph handed to it under that scope carries one extra, phantom block last,
+ * whose successors are every block and whose own facts are dropped; the walk from it reaches every
+ * block, and the extra block's transfer is the identity (it is not a block of `blocks`). Under
+ * 'entry-reachable' the solver's entry is `graph.entry` and no phantom is needed.
  */
+import { setLattice } from '../lattice/lattices.js';
+import { solve } from './solver.js';
+
 export interface LiveBlock {
   /** Values the block reads before defining them (upward-exposed uses), not every value it reads. */
   readonly uses: ReadonlySet<number>;
@@ -49,33 +61,50 @@ export function reachableBlocks(graph: LiveGraph): ReadonlySet<number> {
   return seen;
 }
 
+/** The phantom block 'all-blocks' adds: 'all' is no block index, so its transfer is the identity. */
+const PHANTOM = 'all';
+
 /**
  * Liveness over `graph` under `scope`. `in` and `out` hold one set per block, in block order; under
  * 'entry-reachable' the sets of a block no path reaches are empty. Values live past the last use
  * (into the entry, backwards) are not reported: liveness stops at the block boundaries of the graph.
  */
 export function liveness(graph: LiveGraph, scope: LivenessScope): Liveness {
-  const blocks = graph.blocks;
-  const solve = scope === 'all-blocks' ? null : reachableBlocks(graph);
-  const use = blocks.map(b => b.uses),
-    def = blocks.map(b => b.defs);
-  const IN = blocks.map(() => new Set<number>()),
-    OUT = blocks.map(() => new Set<number>());
-  for (let changed = true; changed; ) {
-    changed = false;
-    for (let k = blocks.length - 1; k >= 0; k--) {
-      if (solve && !solve.has(k)) continue;
-      const out = new Set<number>();
-      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
-      const inn = new Set(use[k]);
-      for (const r of out) if (!def[k].has(r)) inn.add(r);
-      // Facts only grow (the join is union and the start is empty), so size is an equality test.
-      if (inn.size !== IN[k].size || out.size !== OUT[k].size) {
-        IN[k] = inn;
-        OUT[k] = out;
-        changed = true;
-      }
-    }
-  }
-  return { in: IN, out: OUT };
+  const blocks = graph.blocks,
+    n = blocks.length;
+  if (!n) return { in: [], out: [] };
+  // The solver's nodes are the block indices as strings.
+  const id = blocks.map((_, k) => String(k));
+  const succ = blocks.map(b => b.succ.map(s => id[s])),
+    preds: string[][] = id.map(() => []);
+  blocks.forEach((b, k) => {
+    for (const s of b.succ) preds[s].push(id[k]);
+  });
+  const allBlocks = scope === 'all-blocks';
+  const nodes = allBlocks ? [...id, PHANTOM] : [...id];
+  const flow = {
+    entry: allBlocks ? PHANTOM : id[graph.entry ?? 0],
+    blocks: nodes,
+    succ: (b: string) => (b === PHANTOM ? id : succ[Number(b)]),
+    preds: (b: string) => (b === PHANTOM ? [] : preds[Number(b)]),
+  };
+  const sets = setLattice<number>();
+  const solution = solve(flow, {
+    direction: 'backward',
+    lattice: sets,
+    // in = uses ∪ (out \ defs); the phantom block is not a block.
+    transfer: (b, out) => {
+      const k = Number(b);
+      if (!blocks[k]) return out;
+      const { uses, defs } = blocks[k],
+        live = new Set(uses);
+      for (const r of out) if (!defs.has(r)) live.add(r);
+      return live;
+    },
+  });
+  const bottom = sets.bottom();
+  return {
+    in: id.map(b => solution.in.get(b) ?? bottom),
+    out: id.map(b => solution.out.get(b) ?? bottom),
+  };
 }
