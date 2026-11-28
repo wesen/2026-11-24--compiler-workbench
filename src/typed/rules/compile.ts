@@ -111,14 +111,16 @@ function provenance(r: Rule, v: ValueHandle, b: Bindings): MakeOptions {
 }
 
 // ---------- Typed's rules as library rules (converted once per rule) ----------
-const patternOf = (p: Pat): Pattern<ValueHandle> => {
+/** A Typed pattern as the library's, over Typed's signature. */
+export const libraryPattern = (p: Pat): Pattern<ValueHandle> => {
   if ('var' in p) return { var: p.var };
   if ('constVar' in p) return { bindConst: p.constVar };
   if ('const' in p) return { const: p.const };
   if ('same' in p) return { same: p.same };
-  return { op: p.op, args: p.args.map(patternOf) };
+  return { op: p.op, args: p.args.map(libraryPattern) };
 };
-const templateOf = (t: Tpl): Template<ValueHandle> => {
+/** A Typed template as the library's, over Typed's signature. */
+export const libraryTemplate = (t: Tpl): Template<ValueHandle> => {
   if ('var' in t) return { var: t.var };
   if ('const' in t) {
     const n = t.const,
@@ -128,7 +130,7 @@ const templateOf = (t: Tpl): Template<ValueHandle> => {
           : { compute: (b: Bindings) => numOf(n, x => b.get(x)!.imm as number), reads: numReads(n) };
     return { const: value, ...(t.type ? { attrs: { type: t.type } } : {}) };
   }
-  return { op: t.op, args: t.args.map(templateOf) };
+  return { op: t.op, args: t.args.map(libraryTemplate) };
 };
 const CONVERTED = new WeakMap<Rule, LibraryRule<ValueHandle, Guard>>();
 /** A Typed rule as the library's: its name, pattern, guards and template. */
@@ -139,9 +141,9 @@ export function libraryRule(r: Rule): LibraryRule<ValueHandle, Guard> {
       r,
       (out = {
         name: r.name,
-        lhs: patternOf(r.lhs),
+        lhs: libraryPattern(r.lhs),
         ...(r.where && r.where.length ? { where: r.where } : {}),
-        rhs: templateOf(r.rhs),
+        rhs: libraryTemplate(r.rhs),
       }),
     );
   return out;

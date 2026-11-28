@@ -18,10 +18,11 @@
  * so its strength counts only for rules with a stated argument that the property does not depend on the width
  * (`argumentFor`); otherwise the rule's strength is what its 32-bit methods give.
  */
+import { verifyRule as verifyOnCases } from '../../stdlib/term/verify.js';
 import { fingerprint } from '../../framework/core/data.js';
 import { VALUE_SIGNATURES } from '../ir.js';
 import { patternVars, templateVars, type Guard, type Pat, type Rule, type Tpl } from './form.js';
-import { log2 } from './compile.js';
+import { libraryPattern, libraryTemplate, log2 } from './compile.js';
 import {
   BITWISE,
   boundaryI32,
@@ -152,7 +153,7 @@ function domainAt(x: Var, w: number): number[] | null {
 }
 const sizeAt = (x: Var, w: number) => domainAt(x, w)?.length ?? 2 ** w;
 
-function guardsHold(guards: readonly Guard[], slot: Map<string, number>, env: ArrayLike<number>, w: number) {
+function guardsHold(guards: readonly Guard[], slot: ReadonlyMap<string, number>, env: ArrayLike<number>, w: number) {
   for (const g of guards)
     if ('noTrap' in g) {
       const a = env[slot.get(g.noTrap[0])!],
@@ -368,21 +369,18 @@ export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
     [...ops].every(o => I32_BINARY.has(o) || o === 'eqz');
   const total8 = vars.reduce((n, x) => n * sizeAt(x, 8), 1);
   if (widthGeneric && total8 <= (opts.maxW8 ?? 2 ** 24) && !byConstruction) {
-    const [L, R] = sides(8);
+    const [L, R] = sides(8),
+      doms = vars.map(x => domainAt(x, 8) ?? range(minOf(8), maxOf(8)));
     const ok = timed('exhaustive-w8', () => {
-      let cases = 0;
-      const doms = vars.map(x => domainAt(x, 8) ?? range(minOf(8), maxOf(8)));
-      for (const env of product(doms)) {
-        if (!guardsHold(guards, slot, env, 8)) continue;
-        cases++;
-        const l = L(env),
-          rr = R(env);
-        if (l !== rr) {
-          failWith('exhaustive-w8', env, l, rr, 8);
-          return { verdict: 'fail', cases };
-        }
-      }
-      return { verdict: 'pass', cases };
+      const { result, counterexample } = onCases(
+        r, vars, 'exhaustive-w8', 8,
+        function* () {
+          for (const env of product(doms)) yield env;
+        },
+        L, R, guards, slot, // prettier-ignore
+      );
+      if (counterexample) counter = counterexample;
+      return result;
     });
     if (!ok) return done();
   }
@@ -401,32 +399,24 @@ export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
       return (rng.next() & 3) === 0 ? rng.next() % 17 | 0 : rng.next();
     };
     const method: MethodName = hasF32 ? 'f32-special' : 'random-32';
+    const crossed = vars.reduce((n, x) => n * values(x).length, 1);
     const ok = timed(method, () => {
-      let cases = 0;
-      const test = (env: number[]): boolean => {
-        if (!guardsHold(guards, slot, env, 32)) return true;
-        cases++;
-        const l = L(env),
-          rr = R(env);
-        if (l !== rr) {
-          failWith(method, env, l, rr, 32);
-          return false;
-        }
-        return true;
-      };
-      const crossed = vars.reduce((n, x) => n * values(x).length, 1);
-      if (crossed <= 200000) {
-        for (const env of product(vars.map(values))) if (!test(env)) return { verdict: 'fail', cases };
-      } else
-        for (let i = 0; i < 200000; i++)
-          if (!test(vars.map(x => { const vs = values(x); return vs[(rng.next() >>> 0) % vs.length]; }))) return { verdict: 'fail', cases }; // prettier-ignore
-      for (let i = 0; i < (opts.random ?? 1e5); i++)
-        if (!test(vars.map(draw))) return { verdict: 'fail', cases };
-      return {
-        verdict: 'pass',
-        cases,
-        detail: `boundary values crossed (${Math.min(crossed, 200000)}), then random`,
-      };
+      const { result, counterexample } = onCases(
+        r, vars, method, 32,
+        function* () {
+          if (crossed <= 200000) {
+            for (const env of product(vars.map(values))) yield env;
+          } else
+            for (let i = 0; i < 200000; i++)
+              yield vars.map(x => { const vs = values(x); return vs[(rng.next() >>> 0) % vs.length]; }); // prettier-ignore
+          for (let i = 0; i < (opts.random ?? 1e5); i++) yield vars.map(draw);
+        },
+        L, R, guards, slot, // prettier-ignore
+      );
+      if (counterexample) counter = counterexample;
+      return result.verdict === 'pass'
+        ? { ...result, detail: `boundary values crossed (${Math.min(crossed, 200000)}), then random` }
+        : result;
     });
     if (!ok) return done();
   }
@@ -480,6 +470,49 @@ const premise = (vars: readonly Var[]) =>
   vars.some(x => x.type === 'bool')
     ? 'bool variables range over {0, 1}: every comparison yields 0 or 1'
     : undefined;
+
+/**
+ * One enumeration method through the library (IRWB-060-B): Typed supplies the case generator (its domains and its
+ * seeded draws), the guard predicate and the semantics (both sides compiled at the method's width, traps compared as
+ * `agreeOutcome` does); `stdlib/term/verify.ts` owns the loop, the case count and the first disagreement. The
+ * counterexample comes back in Typed's evidence shape (`method`, `width`, numeric outcomes or 'trap').
+ */
+function onCases(
+  r: Rule,
+  vars: readonly Var[],
+  method: MethodName,
+  width: number,
+  cases: () => Iterable<readonly number[]>,
+  L: (env: ArrayLike<number>) => number,
+  R: (env: ArrayLike<number>) => number,
+  guards: readonly Guard[],
+  slot: ReadonlyMap<string, number>,
+): { result: Omit<MethodResult, 'method' | 'ms'>; counterexample?: Counterexample } {
+  const verdict = verifyOnCases({
+    rule: { name: r.name, lhs: libraryPattern(r.lhs), rhs: libraryTemplate(r.rhs) },
+    cases: {
+      variables: vars.map(x => x.name),
+      cases,
+      holds: env => guardsHold(guards, slot, env, width),
+    },
+    semantics: {
+      evaluate: (side, env) => (side === 'lhs' ? L : R)(env),
+      agrees: (a, b) => a === b,
+    },
+  });
+  if (verdict.verdict === 'sound') return { result: { verdict: 'pass', cases: verdict.cases } };
+  const cx = verdict.counterexample!;
+  return {
+    result: { verdict: 'fail', cases: verdict.cases },
+    counterexample: {
+      bindings: Object.fromEntries(cx.bindings),
+      lhs: cx.lhs === TRAP ? 'trap' : cx.lhs,
+      rhs: cx.rhs === TRAP ? 'trap' : cx.rhs,
+      method,
+      width,
+    },
+  };
+}
 
 // ---------- structural checks ----------
 function structuralProblem(r: Rule, vars: readonly Var[]): string | undefined {
