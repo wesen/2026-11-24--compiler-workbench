@@ -17,6 +17,12 @@ import { canonical } from '../core/data.js';
 import { createIRArtifact, openIR } from '../ir/index.js';
 import { diff } from '../ir/diff.js';
 import { makeCorrespondence } from '../ir/correspondence.js';
+import {
+  correspondenceFromDerivation,
+  validateDerivation,
+  type Derivation,
+  type DerivationCoverage,
+} from '../ir/derivation.js';
 import type {
   ChangeSet,
   CorrespondenceEntry,
@@ -74,6 +80,13 @@ export interface PassRunContext<S, N extends Needs, P> {
 export interface NativeResult<S> {
   readonly native: S;
   readonly correspondence?: readonly CorrespondenceEntry[];
+  /**
+   * IRWB-056-B: the producer's derivation. When present, the correspondence is computed from its steps instead of
+   * from `correspondence`, and `coverage` says what the steps must account for (F35's vocabulary). A result gives
+   * one or the other, never both: the correspondence has exactly one source.
+   */
+  readonly derivation?: Derivation;
+  readonly coverage?: DerivationCoverage;
   /** How many edits the pass made, for reporting (Compiler Workbench shows edits per pass). */
   readonly edits?: number;
   /** Domain report (e.g. the edit records of a Compiler Workbench revision), passed through to the result. */
@@ -117,6 +130,8 @@ export interface PassResult<S> {
   readonly artifact: Artifact<S>;
   readonly changes?: ChangeSet;
   readonly correspondence?: EntityCorrespondence;
+  /** IRWB-056-B: the producer's record of why, next to the edits and the correspondence. */
+  readonly derivation?: Derivation;
   readonly edits: number;
   readonly preserved: readonly PreservationOutcome[];
   readonly contract?: unknown;
@@ -180,16 +195,33 @@ export function prepareNative<S>(
   // the runner publishes it, and the evidence about it, once every check has accepted it.
   const afterView = openIR(after, pass.adapter);
   const changes = diff(view, afterView);
-  const correspondence = makeCorrespondence(
-    { artifact: before.id, revision: before.revision },
-    { artifact: after.id, revision: after.revision },
-    // the projections' entity ids, in order (what `view.entities()` names, without a reference per entity)
-    view.graph().entities.map(e => e.id),
-    afterView.graph().entities.map(e => e.id),
-    produced.correspondence ?? [],
-  );
+  const from = { artifact: before.id, revision: before.revision },
+    to = { artifact: after.id, revision: after.revision };
+  // the projections' entity ids, in order (what `view.entities()` names, without a reference per entity)
+  const source = view.graph().entities.map(e => e.id),
+    target = afterView.graph().entities.map(e => e.id);
+  // IRWB-056-B: one source for the correspondence. A derivation is checked for its sites and mapped under its
+  // declared coverage; without one, the entries the pass supplies are completed as before.
+  if (produced.derivation && produced.correspondence)
+    throw new PassError('badResult', 'A result gives a derivation or correspondence entries, not both');
+  const correspondence = produced.derivation
+    ? correspondenceFromDerivation(
+        validateDerivation(produced.derivation, source, target),
+        from,
+        to,
+        source,
+        target,
+        { coverage: produced.coverage },
+      )
+    : makeCorrespondence(from, to, source, target, produced.correspondence ?? []);
   const edits = produced.edits ?? changes.entities.length;
-  return { after, changes, correspondence, edits };
+  return {
+    after,
+    changes,
+    correspondence,
+    edits,
+    ...(produced.derivation ? { derivation: produced.derivation } : {}),
+  };
 }
 
 export function enforceWrites(pass: Pick<PassSpec<unknown, Needs>, 'writes' | 'id'>, changes: ChangeSet) {

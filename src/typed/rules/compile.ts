@@ -69,6 +69,31 @@ const noteOf = (text: string, b: Bindings): string =>
     return String(l ? log2(n) : n);
   });
 
+/** The facts a rule's guards checked, as premises of the step (compile.ts's `pure`, `pow2`, `boolean`, `noTrap`). */
+export function guardPremises(r: Rule, b: Bindings): string[] {
+  return (r.where ?? []).map(g =>
+    'pure' in g
+      ? `guard:pure(${b[g.pure].id})`
+      : 'pow2' in g
+        ? `guard:pow2(${b[g.pow2].id})`
+        : 'boolean' in g
+          ? `guard:boolean(${b[g.boolean].id})`
+          : `guard:noTrap(${g.noTrap[1]} at ${b[g.noTrap[0]].id})`,
+  );
+}
+
+/** The entities a rule's `because` names: the constant operands (`const-args`) or all operands (`args`). */
+function becauseEntities(r: Rule, v: ValueHandle): string[] {
+  const which =
+    r.because === 'const-args' ? v.args.filter(x => x.isConst) : r.because === 'args' ? v.args : [];
+  return which.map(x => x.id);
+}
+
+/** The site of a rule firing: the matched tree, as entity ids (the node and everything under it). */
+function subtree(v: ValueHandle): string[] {
+  return [v.id, ...v.args.flatMap(subtree)];
+}
+
 function provenance(r: Rule, v: ValueHandle, b: Bindings): MakeOptions {
   const because =
     r.because === 'const-args' ? v.args.filter(x => x.isConst) : r.because === 'args' ? v.args : undefined;
@@ -115,22 +140,49 @@ export function indexRules(rules: readonly Rule[]): Map<string, Rule[]> {
   return index;
 }
 
-/** A table as a function from a transaction to a `Tx.rewrite` visitor. */
+/**
+ * A table as a function from a transaction to a `Tx.rewrite` visitor (IRWB-006, IRWB-056-B).
+ *
+ * The rule is applied under `tx.withRule`, so every entity its right-hand side makes is a derivation step of that
+ * rule's, with the guards it checked and the operands its `because` names as the premises; an edit the `Tx.rewrite`
+ * records cites the steps its field's walk took. A rule that makes nothing (`x + 0` becomes `x`) records an
+ * in-place step whose site is the matched tree and the operand it produced. `table` is the rule set's name, so a
+ * step names `simplify/mul-pow2` and not just a rule two tables could share.
+ */
 export function compileRules(
   rules: readonly Rule[],
   firings?: Firings,
+  table?: string,
 ): (tx: Tx) => (v: ValueHandle) => string | undefined {
   const index = indexRules(rules);
   return tx => v => {
     const m = firstMatch(index, v);
     if (!m) return undefined;
     if (firings) firings.set(m.rule.name, (firings.get(m.rule.name) ?? 0) + 1);
-    return instantiate(m.rule.rhs, m.bindings, tx, provenance(m.rule, v, m.bindings));
+    const by = { rule: m.rule.name, ...(table ? { table } : {}) };
+    const premises = [...guardPremises(m.rule, m.bindings), ...becauseEntities(m.rule, v)];
+    const note = m.rule.note ? noteOf(m.rule.note, m.bindings) : undefined;
+    const site = subtree(v);
+    const active = { by, premises, site, ...(note ? { note } : {}) };
+    return tx.withRule(active, () => {
+      const made = tx.steps.length;
+      const out = instantiate(m.rule.rhs, m.bindings, tx, provenance(m.rule, v, m.bindings));
+      // the rule produced an entity it consumed again: the rewrite is recorded, though no entity was made
+      if (tx.steps.length === made) tx.inPlace(active, site, idOf(out));
+      return out;
+    });
   };
 }
 
+const idOf = (value: string | { readonly id: string }): string =>
+  typeof value === 'string' ? value : value.id;
+
 /** The body of a table-driven pass: one `Tx.rewrite` over every statement of the function. */
-export function tableBody(rules: readonly Rule[], firings?: Firings): (ctx: { tx: Tx }) => void {
-  const visitor = compileRules(rules, firings);
+export function tableBody(
+  rules: readonly Rule[],
+  firings?: Firings,
+  table?: string,
+): (ctx: { tx: Tx }) => void {
+  const visitor = compileRules(rules, firings, table);
   return ({ tx }) => tx.rewrite(visitor(tx));
 }

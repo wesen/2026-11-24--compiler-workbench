@@ -14,7 +14,7 @@ import { SIMPLIFY_RULES } from './simplify.js';
 export function tablePass(name: 'simplify' | 'fold', firings?: Firings): TypedPass {
   const base = name === 'simplify' ? simplify : fold,
     rules = name === 'simplify' ? SIMPLIFY_RULES : FOLD_RULES;
-  return typedPass({ ...base.typed, body: tableBody(rules.rules, firings) });
+  return typedPass({ ...base.typed, body: tableBody(rules.rules, firings, rules.name) });
 }
 export const simplifyTable = tablePass('simplify');
 export const foldTable = tablePass('fold');

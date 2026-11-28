@@ -6,6 +6,7 @@ export * from './view.js';
 export * from './traversal.js';
 export * from './diff.js';
 export * from './correspondence.js';
+export * from './derivation.js';
 export * from './readers.js';
 export * from './patterns.js';
 export * from './rewrites.js';
