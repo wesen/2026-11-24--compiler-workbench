@@ -6,7 +6,6 @@ Topics:
     - compiler
     - ir
     - typescript
-    - stdlib
 DocType: design-doc
 Intent: long-term
 Owners: []
