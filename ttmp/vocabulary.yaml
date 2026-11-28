@@ -27,6 +27,12 @@ topics:
       description: GPU backends (CUDA on the GB10 machine)
     - slug: agents
       description: Coding agents as designers and implementers; model comparisons
+    - slug: framework
+      description: The IR Workbench framework layers
+    - slug: derivation
+      description: A producer's record of why a revision changed
+    - slug: correspondence
+      description: The entity correspondence between two revisions
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes
