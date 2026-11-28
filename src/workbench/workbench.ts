@@ -850,7 +850,7 @@ export function createWb(config: WbConfig = {}) {
       writes: x.typed.writes,
       entities: x.writes.entities,
       relations: x.writes.relations,
-      preserves: (x.preserves ?? []).map(d => ref(d as never)),
+      preserves: x.obligations.preserves.map(d => ref(d as never)),
       ...(def ? { source: `${def.path}:${def.line}` } : {}),
       ...(u ? { definedIn: u.definedIn, project: u.project, body: u.body } : {}),
     };

@@ -4,7 +4,8 @@
  * remaining `.typed` files in name order; they are concatenated (each ending in a newline) into one program whose
  * name is the project id with `-` replaced by `_`, and a file map records where each file starts.
  */
-import { applyPass, type PassResult } from '../framework/passes/define-pass.js';
+import type { PassResult } from '../framework/passes/define-pass.js';
+import { applyTransformation } from '../framework/passes/transformation.js';
 import type { AnalysisManager } from '../framework/contracts/analysis-manager.js';
 import type { Artifact } from '../framework/core/types.js';
 import { createIRArtifact } from '../framework/ir/adapters.js';
@@ -133,10 +134,10 @@ export async function runPipeline(
     const pass = PASSES[name];
     if (!pass) throw new Error(`unknownPass: no pass named "${name}"`);
     try {
-      const r = await applyPass(pass, cur, {
+      const r = await applyTransformation(pass, cur, {
         manager: options.manager,
-        contract,
-        contractInputs: { origin },
+        ensures: [contract],
+        inputs: { origin },
       });
       steps.push({
         pass: name,

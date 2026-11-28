@@ -1,19 +1,11 @@
 /**
- * IRWB-001 E3: passes with declared needs, writes and preservation, applied through v6's machinery.
+ * IRWB-001 E3, IRWB-052: what the pass runner is made of. The runner itself, the transformation type and the
+ * constructors are in transformation.ts.
  *
- * A pass is versioned code that turns one artifact revision into the next. It declares:
- *   - `needs`: analyses whose results it reads (v6 analyses, e.g. dataflow facts), computed for the exact input;
- *   - `writes`: the entity and relation kinds it may change; any other change is `undeclaredWrite`;
- *   - `preserves`: analyses whose results it claims survive. Each claim is checked: first by the analysis's own
- *     transfer verifier (E4: unchanged reads), otherwise by recomputing on the output and comparing. A claim that
- *     neither confirms is `preserveViolated`, and the pass is not published;
- *   - `contract`: an optional v6 transformation contract the output must satisfy before it is accepted.
- *
- * A pass edits either through a v6 `IREdit` on the logical projection (generic, pattern-friendly), or by returning
- * a new native value with explicit correspondence entries (efficient for domain code). Either way the framework
- * derives the v6 change set by diffing the two projections, validates the native value through the adapter, builds
- * the correspondence, enforces `writes`, runs the contract, and checks the preservation claims. Nothing is
- * published unless all of that succeeds.
+ * Here: `PassError`, the context a pass body receives, the result of an application, and the helpers the runner
+ * calls in order: `prepareNative` (the candidate, its change set and its correspondence from a native result),
+ * `enforceWrites` (any change outside the declared kinds is `undeclaredWrite`), `publishAccepted` (F33's one
+ * publication point) and `discardEvidence` (the rollback of a deferred contract execution).
  *
  * F33: publication is one step. The candidate is prepared on a store the caller cannot see, the contract runs with
  * `deferCommit`, and only after the preservation claims pass does `publishAccepted` make the revision the store's
@@ -88,6 +80,10 @@ export interface NativeResult<S> {
   readonly report?: unknown;
 }
 
+/**
+ * The earlier spelling of a transformation, which `definePass` still accepts: `run` for `prepare`, `legal` for
+ * `eligible`, and `preserves` and `contract` beside the body instead of under `obligations`.
+ */
 export interface PassSpec<S, N extends Needs, P = unknown> {
   readonly id: string;
   readonly version: string;
@@ -105,45 +101,7 @@ export interface PassSpec<S, N extends Needs, P = unknown> {
    * apply from a pass that failed or a candidate that a contract rejected.
    */
   legal?(ctx: { readonly before: Artifact<S>; readonly view: IRView<S>; readonly params: P }): CheckResult;
-  /** Extra contract inputs beyond `input` (e.g. `origin`: r0), supplied by the caller per application. */
   run(ctx: PassRunContext<S, N, P>): void | NativeResult<S> | Promise<void | NativeResult<S>>;
-}
-
-export type Pass<S, N extends Needs = Needs, P = unknown> = Readonly<PassSpec<S, N, P>> & {
-  readonly category: 'pass';
-};
-
-export function definePass<S, N extends Needs = {}, P = unknown>(spec: PassSpec<S, N, P>): Pass<S, N, P> {
-  if (!spec.id || !spec.version) throw new Error('A pass needs an id and a version');
-  if (typeof spec.run !== 'function') throw new Error(`Pass ${spec.id} needs run`);
-  if (spec.legal !== undefined && typeof spec.legal !== 'function')
-    throw new Error(`Pass ${spec.id}: legal must be a function`);
-  if (!spec.writes || !Array.isArray(spec.writes.entities) || !Array.isArray(spec.writes.relations))
-    throw new Error(`Pass ${spec.id} must declare writes { entities, relations }`);
-  return Object.freeze({
-    ...spec,
-    needs: spec.needs ?? ({} as N),
-    preserves: spec.preserves ?? [],
-    category: 'pass' as const,
-  });
-}
-
-export interface ApplyOptions<P> {
-  readonly manager: AnalysisManager;
-  readonly store?: IRStore;
-  readonly params?: P;
-  /** Additional contract inputs, e.g. `{ origin: r0 }` for a check against the original program. */
-  readonly contractInputs?: Readonly<Record<string, unknown>>;
-  /** Artifact id of the output (default: the input's). */
-  readonly outputId?: string;
-  /** A contract for this application, overriding the pass's own (e.g. one carrying a project's case inputs). */
-  readonly contract?: TransformationDefinition<Ports, Ports>;
-  /**
-   * Check every preservation claim, computing the fact on the input first when the manager does not hold it.
-   * By default a claim is checked only when the fact exists (there is otherwise nothing to keep); auditing
-   * makes every application a test of the pass's declarations.
-   */
-  readonly auditPreservation?: boolean;
 }
 
 export interface PreservationOutcome {
@@ -163,22 +121,6 @@ export interface PassResult<S> {
   readonly preserved: readonly PreservationOutcome[];
   readonly contract?: unknown;
   readonly report?: unknown;
-}
-
-function checkLegal<S, P>(
-  pass: Pick<PassSpec<S, any, P>, 'id' | 'legal'>,
-  before: Artifact<S>,
-  view: IRView<S>,
-  params: P,
-) {
-  if (!pass.legal) return;
-  const verdict = pass.legal({ before, view, params });
-  if (verdict?.ok !== true)
-    throw new PassError(
-      'illegal',
-      `Pass ${pass.id}: ${verdict?.reason ?? 'not applicable'}`,
-      verdict?.evidence,
-    );
 }
 
 const glob = (patterns: readonly string[], kind: string) =>
@@ -201,7 +143,7 @@ export function undeclaredWrites(
 
 /**
  * v6's semantic correspondence record for an entity correspondence between two revisions. The analysis manager
- * matches records to a contract's `correspondence` requirements by `id` and `relation`, so applyPass builds one
+ * matches records to a contract's `correspondence` requirements by `id` and `relation`, so the runner builds one
  * record per requirement (default: `entities` / `generic-ir-edit`, as v6's own labs name it).
  */
 export function semanticCorrespondence(
@@ -226,8 +168,8 @@ export function semanticCorrespondence(
   };
 }
 
-export function prepareNative<S, N extends Needs, P>(
-  pass: Pass<S, N, P>,
+export function prepareNative<S>(
+  pass: { readonly adapter: IRAdapter<S> },
   view: IRView<S>,
   produced: NativeResult<S>,
   id: string,
@@ -235,7 +177,7 @@ export function prepareNative<S, N extends Needs, P>(
   const before = view.artifact;
   const after = createIRArtifact(pass.adapter, id, produced.native);
   // F33: the candidate is opened on a private store, so preparing it publishes nothing the caller can observe;
-  // `applyPass` publishes it, and the evidence about it, once every check has accepted it.
+  // the runner publishes it, and the evidence about it, once every check has accepted it.
   const afterView = openIR(after, pass.adapter);
   const changes = diff(view, afterView);
   const correspondence = makeCorrespondence(
@@ -295,203 +237,4 @@ export function publishAccepted<S>(
     discardEvidence(prepared, `Pass ${pass.id} was not published: ${(e as Error).message}`);
     throw e;
   }
-}
-
-/** Run a synchronous native kernel; the caller supplies its synchronous semantic gate. */
-export function applyNativePassSync<S, P>(
-  pass: Pass<S, {}, P>,
-  before: Artifact<S>,
-  gate: (before: Artifact<S>, candidate: Artifact<S>) => CheckResult,
-  params?: P,
-): PassResult<S> {
-  if (Object.keys(pass.needs ?? {}).length || pass.preserves?.length || pass.contract)
-    throw new PassError('badResult', 'This pass requires the asynchronous analysis manager');
-  const view = openIR(before, pass.adapter);
-  checkLegal(pass, before, view, params as P);
-  const produced = pass.run({
-    before,
-    view,
-    params: params as P,
-    facts: {},
-    records: {},
-    get edit(): IREdit<S> {
-      throw new PassError('badResult', 'A native pass must return its native result');
-    },
-  });
-  if (!produced || !('native' in produced)) {
-    if (produced instanceof Promise) void produced.catch(() => {});
-    throw new PassError('badResult', 'Expected a synchronous native result');
-  }
-  const base = { pass: { id: pass.id, version: pass.version }, before, preserved: [] };
-  const { after, changes, correspondence, edits } = prepareNative(pass, view, produced, before.id);
-  if (after.revision === before.revision) return { ...base, changed: false, artifact: before, edits: 0 };
-  enforceWrites(pass, changes);
-  const contract = gate(before, after);
-  if (contract?.ok !== true)
-    throw new PassError('contractRejected', contract?.reason ?? 'Candidate rejected', contract?.evidence);
-  return {
-    ...base,
-    changed: true,
-    artifact: after,
-    edits,
-    changes,
-    correspondence,
-    contract,
-    report: produced.report,
-  };
-}
-
-export async function applyPass<S, N extends Needs, P>(
-  pass: Pass<S, N, P>,
-  before: Artifact<S>,
-  options: ApplyOptions<P>,
-): Promise<PassResult<S>> {
-  const { manager } = options;
-  const view = openIR(before, pass.adapter, options.store);
-  // the generation a head advance is checked against: what the caller's store held when the input was opened
-  const generation = options.store?.generation(before.id);
-  checkLegal(pass, before, view, options.params as P);
-  const facts: Record<string, unknown> = {},
-    records: Record<string, AnalysisRecord<unknown>> = {};
-  for (const [name, def] of Object.entries(pass.needs ?? {})) {
-    const record = await manager.analyse(def, before);
-    records[name] = record;
-    facts[name] = record.value;
-  }
-  // The edit opens on the first read of ctx.edit, so a pass that returns a native result works with an adapter that
-  // cannot rebuild (beginEdit throws ir.capability for one) (IRWB-019 F13).
-  let edit: IREdit<S> | undefined;
-  let produced: void | NativeResult<S>;
-  try {
-    produced = await pass.run({
-      before,
-      view,
-      facts: facts as FactValues<N>,
-      records: records as PassRunContext<S, N, P>['records'],
-      params: options.params as P,
-      get edit(): IREdit<S> {
-        return (edit ??= view.beginEdit());
-      },
-    });
-  } catch (e) {
-    if (edit?.state === 'open') edit.rollback('pass threw');
-    throw e;
-  }
-  let after: Artifact<S>, changes: ChangeSet, correspondence: EntityCorrespondence, edits: number;
-  let report: unknown;
-  if (produced && typeof produced === 'object' && 'native' in produced) {
-    if (edit?.state === 'open') edit.rollback('native result');
-    ({ after, changes, correspondence, edits } = prepareNative(
-      pass,
-      view,
-      produced,
-      options.outputId ?? before.id,
-    ));
-    report = produced.report;
-  } else {
-    if (edit && edit.state !== 'open')
-      throw new PassError('badResult', `Pass ${pass.id} closed its edit itself`);
-    if (!edit || edit.operationCount === 0) {
-      // IRWB-004: an edit with no operations is the identity (the projection and rebuild are inverses), so preparing
-      // it would rebuild, re-create and re-diff the unchanged program only to find nothing changed
-      edit?.rollback('no operations');
-      return {
-        pass: { id: pass.id, version: pass.version },
-        changed: false,
-        before,
-        artifact: before,
-        edits: 0,
-        preserved: [],
-      };
-    }
-    const prepared = edit.prepare();
-    after = prepared.artifact;
-    changes = prepared.changes;
-    correspondence = prepared.correspondence;
-    edits = changes.operations.filter(o => o.kind !== 'correspond').length;
-    edit.rollback('applyPass publishes revisions itself');
-  }
-  if (after.revision === before.revision && !changes.entities.length && !changes.relations.length)
-    return {
-      pass: { id: pass.id, version: pass.version },
-      changed: false,
-      before,
-      artifact: before,
-      edits: 0,
-      preserved: [],
-    };
-
-  enforceWrites(pass, changes);
-
-  let contract: PreparedTransformation | undefined;
-  const gate = options.contract ?? pass.contract;
-  if (gate) {
-    try {
-      // F33: deferred, so the evidence is committed at the publication boundary below and not before it
-      contract = await manager.verifyTransformation(
-        { input: before, ...(options.contractInputs ?? {}) } as never,
-        { output: after } as never,
-        gate,
-        gate.correspondence.length
-          ? gate.correspondence.map(req => semanticCorrespondence(correspondence, req.id, req.relation))
-          : [semanticCorrespondence(correspondence)],
-        { deferCommit: true },
-      );
-    } catch (e) {
-      throw new PassError('contractRejected', `Pass ${pass.id} output rejected: ${(e as Error).message}`, {
-        cause: String(e),
-      });
-    }
-  }
-
-  const preserved: PreservationOutcome[] = [];
-  try {
-    for (const def of pass.preserves ?? []) {
-      if (!manager.hasAnalysis(def, before)) {
-        if (!options.auditPreservation) continue; // nothing to keep
-        await manager.analyse(def, before);
-      }
-      try {
-        const record = await manager.preserve(def, before, after, semanticCorrespondence(correspondence));
-        preserved.push({ analysis: def.id, how: 'transferred', evidence: record.transfer?.evidence });
-      } catch {
-        const old = await manager.analyse(def, before),
-          fresh = await manager.analyse(def, after);
-        if (canonical(old.value) !== canonical(fresh.value))
-          throw new PassError(
-            'preserveViolated',
-            `Pass ${pass.id} claims to preserve ${def.id}, but it changed`,
-            {
-              analysis: def.id,
-            },
-          );
-        preserved.push({ analysis: def.id, how: 'confirmed-by-recompute', evidence: { equalValue: true } });
-      }
-    }
-    publishAccepted(pass, options.store, before, after, contract, generation);
-  } catch (e) {
-    // every rejection before, or at, publication leaves the manager holding nothing about the candidate: the
-    // contract's evidence is rolled back, and the preservation checks' analyses of the candidate are invalidated
-    // (IRWB-039 lane 0, after IRWB-045-B)
-    discardEvidence(contract, `Pass ${pass.id} rejected: ${(e as Error).message}`);
-    for (const def of pass.preserves ?? [])
-      try {
-        manager.invalidate(def, after, `Pass ${pass.id} was not accepted`);
-      } catch {
-        // cleanup must not mask the rejection
-      }
-    throw e;
-  }
-  return {
-    pass: { id: pass.id, version: pass.version },
-    changed: true,
-    before,
-    artifact: after,
-    changes,
-    correspondence,
-    edits,
-    preserved,
-    contract,
-    report,
-  };
 }

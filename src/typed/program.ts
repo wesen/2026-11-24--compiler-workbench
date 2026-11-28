@@ -1,7 +1,7 @@
 /**
  * A program and its revision timeline: the host the workbench, project scripts and the agent talk to (P3.1,
  * extensions E8 handles and E9 revisions). A port of the program handle in Compiler Workbench's api.js, on the
- * framework: every revision r0…rN is an immutable `typed.blocks` artifact, passes run through `applyPass` with the
+ * framework: every revision r0…rN is an immutable `typed.blocks` artifact, passes run through the pass runner with the
  * optimization contract against r0, facts come from the analysis manager, and `undo`/`checkout` move the head back
  * by dropping later revisions (as the prototype does). Because older revisions are intact artifacts, provenance
  * queries resolve an id by looking from the head backwards, so a removed statement still reads as it was.
@@ -12,7 +12,7 @@ import { AnalysisManager } from '../framework/contracts/analysis-manager.js';
 import type { Artifact } from '../framework/core/types.js';
 import type { EntityCorrespondence } from '../framework/ir/types.js';
 import { whyEntity, type WhyNode } from '../framework/ir/correspondence.js';
-import { applyPass } from '../framework/passes/define-pass.js';
+import { applyTransformation } from '../framework/passes/transformation.js';
 import { ANALYSES } from './analyses.js';
 import {
   agrees,
@@ -164,7 +164,10 @@ export class Program {
         const param = k.slice(0, dot),
           field = k.slice(dot + 1);
         const spec = ((out[f] ?? {})[param] ?? { record: {} }) as { record?: Record<string, unknown> };
-        out[f] = { ...(out[f] ?? {}), [param]: { ...spec, record: { ...(spec.record ?? {}), [field]: { oneOf: [v] } } } };
+        out[f] = {
+          ...(out[f] ?? {}),
+          [param]: { ...spec, record: { ...(spec.record ?? {}), [field]: { oneOf: [v] } } },
+        };
       }
     return out as ProgramInputs;
   }
@@ -189,7 +192,8 @@ export class Program {
         const st = storeOf(this.head.value);
         for (const f of st.fns.values())
           f.params.forEach((t, i) => {
-            if (t === b.record) (this.assumptions[f.name] ??= {})[`${f.locals[i].name}.${b.field}`] = b.value!;
+            if (t === b.record)
+              (this.assumptions[f.name] ??= {})[`${f.locals[i].name}.${b.field}`] = b.value!;
           });
         continue;
       }
@@ -277,11 +281,11 @@ export class Program {
             seed: opts.seed ?? 7,
             ...(this.options.entries ? { roots: this.options.entries } : {}),
           });
-    const r = await applyPass(pass, this.head, {
+    const r = await applyTransformation(pass, this.head, {
       manager: this.manager,
       params: opts.params,
-      contract,
-      contractInputs: { origin: this.origin },
+      ensures: contract ? [contract] : [],
+      inputs: { origin: this.origin },
     });
     const ms = +(now() - t0).toFixed(2);
     if (!r.changed) return { pass: pass.typed.name, rev: `r${this.rev}`, edits: 0, changed: false, ms };
@@ -322,7 +326,7 @@ export class Program {
   }> {
     const pass = this.resolvePass(x);
     try {
-      const r = await applyPass(pass, this.head, { manager: this.manager });
+      const r = await applyTransformation(pass, this.head, { manager: this.manager });
       const report = r.report as RevisionReport | undefined;
       return {
         pass: pass.typed.name,

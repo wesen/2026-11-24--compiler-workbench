@@ -1,23 +1,27 @@
 /**
- * IRWB-051-C (a spike for IRWB-039 phase 3): a transformation type, and one runner for it with two drivers.
+ * IRWB-051-C, IRWB-052 (IRWB-039 phase 3): the transformation type, and the one pass runner with its two drivers.
  *
- * A transformation is a pass that declares, besides `needs` and `writes`:
+ * A transformation is versioned code that turns one artifact revision into the next. It declares:
+ *   - `needs`: analyses whose results it reads, computed for the exact input through the analysis manager;
+ *   - `writes`: the entity and relation kinds it may change; any other change is `undeclaredWrite`;
  *   - `relation`: how its output relates to its input, `'exact'` or `'tolerance'` (within a bound the domain's
  *     `ensures` check defines). The gate reads it from the declaration; no caller chooses it by the pass's name;
- *   - `eligible`: whether it applies to this revision with these parameters and facts (today's `legal`);
- *   - `prepare`: the candidate (today's `run`);
+ *   - `eligible`: whether it applies to this revision with these parameters and facts;
+ *   - `prepare`: the candidate: a native value with correspondence entries, or operations on `ctx.edit`;
  *   - `obligations`: `requires` (checks on the input), `ensures` (checks on the candidate: a function, or a v6
  *     transformation contract) and `preserves` (analyses whose results it claims survive).
  *
  * `runTransformation` is the runner, written once as a generator of steps (contracts/steps.ts). It delegates to
- * the analysis manager's own steps for `needs` and `preserves`, so both drivers use the manager's cache and
- * records. `applyTransformation` drives it asynchronously and `applyTransformationSync` synchronously; the
- * synchronous driver stops only when a step actually answers with a promise (an asynchronous analysis, `prepare`
- * or obligation; a v6 contract always does).
+ * the analysis manager's own steps for `needs`, `preserves` and a contract, so both drivers use the manager's
+ * cache and records. `applyTransformation` drives it asynchronously and `applyTransformationSync` synchronously;
+ * the synchronous driver stops only when a step actually answers with a promise (an asynchronous analysis,
+ * `prepare` or obligation).
  *
- * The lifecycle: needs, requires, eligible, prepare, unchanged?, writes, ensures, preserves, publish. Candidate
- * construction, the write check, F33's publication boundary and the cleanup after a rejection are `applyPass`'s
- * own helpers.
+ * The lifecycle: needs, requires, eligible, prepare, unchanged?, writes, ensures, preserves, publish. Nothing is
+ * published unless all of it succeeds (F33; the helpers are in define-pass.ts).
+ *
+ * `definePass`, `applyPass` and `applyNativePassSync` are the earlier spellings, kept as a constructor and two
+ * wrappers of this runner (see each).
  */
 import type { Artifact } from '../core/types.js';
 import { canonical } from '../core/data.js';
@@ -42,7 +46,6 @@ import {
   type FactValues,
   type NativeResult,
   type Needs,
-  type Pass,
   type PassResult,
   type PassRunContext,
   type PassSpec,
@@ -78,7 +81,7 @@ export interface EnsuresCheck<S, P> {
   readonly id: string;
   check(ctx: EnsuresContext<S, P>): CheckResult | Promise<CheckResult>;
 }
-/** A check on the candidate, or a v6 contract verified by the analysis manager (asynchronous driver only). */
+/** A check on the candidate, or a v6 contract verified by the analysis manager and recorded there. */
 export type Ensures<S, P> = EnsuresCheck<S, P> | TransformationDefinition<any, any>;
 
 export interface Obligations<S, N extends Needs, P> {
@@ -101,50 +104,85 @@ export interface TransformationSpec<S, N extends Needs, P = unknown> {
   readonly obligations?: Obligations<S, N, P>;
 }
 
-/**
- * A transformation, which is also a `Pass`: `run`, `legal` and `preserves` are a view of `prepare`, `eligible`
- * and `obligations.preserves` for `applyPass` and `applyNativePassSync`, so a ported pass keeps working with every
- * existing caller. (The view's `legal` gives `eligible` no facts; the migration deletes the view.)
- */
-export type Transformation<S, N extends Needs = Needs, P = unknown> = Pass<S, N, P> &
-  Readonly<TransformationSpec<S, N, P>> & { readonly obligations: Required<Obligations<S, N, P>> };
+export type Transformation<S, N extends Needs = Needs, P = unknown> = Readonly<
+  TransformationSpec<S, N, P>
+> & {
+  readonly needs: N;
+  readonly obligations: Required<Obligations<S, N, P>>;
+  readonly category: 'pass';
+};
+/** A pass is a transformation; the name is kept for the code that says "pass". */
+export type Pass<S, N extends Needs = Needs, P = unknown> = Transformation<S, N, P>;
 
 export function transformation<S, N extends Needs = {}, P = unknown>(
   spec: TransformationSpec<S, N, P>,
 ): Transformation<S, N, P> {
-  if (!spec.id || !spec.version) throw new Error('A transformation needs an id and a version');
-  if (typeof spec.prepare !== 'function') throw new Error(`Transformation ${spec.id} needs prepare`);
+  if (!spec.id || !spec.version) throw new Error('A pass needs an id and a version');
+  if (typeof spec.prepare !== 'function') throw new Error(`Pass ${spec.id} needs prepare`);
+  if (spec.eligible !== undefined && typeof spec.eligible !== 'function')
+    throw new Error(`Pass ${spec.id}: eligible must be a function`);
   if (spec.relation !== 'exact' && spec.relation !== 'tolerance')
-    throw new Error(`Transformation ${spec.id} must declare its relation: 'exact' or 'tolerance'`);
+    throw new Error(`Pass ${spec.id} must declare its relation: 'exact' or 'tolerance'`);
   if (!spec.writes || !Array.isArray(spec.writes.entities) || !Array.isArray(spec.writes.relations))
-    throw new Error(`Transformation ${spec.id} must declare writes { entities, relations }`);
-  const obligations = {
-    requires: spec.obligations?.requires ?? [],
-    ensures: spec.obligations?.ensures ?? [],
-    preserves: spec.obligations?.preserves ?? [],
-  };
-  const eligible = spec.eligible;
+    throw new Error(`Pass ${spec.id} must declare writes { entities, relations }`);
   return Object.freeze({
     ...spec,
     needs: spec.needs ?? ({} as N),
-    obligations,
+    obligations: {
+      requires: spec.obligations?.requires ?? [],
+      ensures: spec.obligations?.ensures ?? [],
+      preserves: spec.obligations?.preserves ?? [],
+    },
     category: 'pass' as const,
-    run: spec.prepare,
-    preserves: obligations.preserves,
-    ...(eligible
-      ? {
-          legal: (ctx: Omit<EligibleContext<S, N, P>, 'facts'>) =>
-            eligible({ ...ctx, facts: {} as FactValues<N> }),
-        }
-      : {}),
   });
 }
 
-export const isTransformation = <S, N extends Needs, P>(
-  pass: Pass<S, N, P>,
-): pass is Transformation<S, N, P> =>
-  typeof (pass as Partial<Transformation<S, N, P>>).prepare === 'function' &&
-  typeof (pass as Partial<Transformation<S, N, P>>).relation === 'string';
+/**
+ * A pass written in the earlier spelling (`PassSpec`), or a transformation with fields of that spelling laid over
+ * it (`{ ...pass, run }`, `{ ...pass, preserves }`, as tests and probes build variants). Each earlier field, when
+ * present, replaces its counterpart: `run` is `prepare`, `legal` is `eligible`, `preserves` is
+ * `obligations.preserves`, and `contract` is the one `ensures` obligation. An undeclared relation is `'exact'`.
+ */
+export type PassLike<S, N extends Needs = Needs, P = unknown> =
+  | Transformation<S, N, P>
+  | (Partial<TransformationSpec<S, N, P>> & PassSpec<S, N, P>);
+
+const EARLIER = ['run', 'legal', 'preserves', 'contract'] as const;
+export function asTransformation<S, N extends Needs, P>(pass: PassLike<S, N, P>): Transformation<S, N, P> {
+  if (!EARLIER.some(k => k in pass) && isTransformation(pass as Transformation<S, N, P>))
+    return pass as Transformation<S, N, P>;
+  const { run, legal, preserves, contract, ...rest } = pass as Partial<TransformationSpec<S, N, P>> &
+    PassSpec<S, N, P>;
+  if (legal !== undefined && typeof legal !== 'function')
+    throw new Error(`Pass ${rest.id}: legal must be a function`);
+  if (run === undefined && rest.prepare === undefined) throw new Error(`Pass ${rest.id} needs run`);
+  return transformation<S, N, P>({
+    ...rest,
+    relation: rest.relation ?? 'exact',
+    prepare: run ?? rest.prepare!,
+    eligible: legal ?? rest.eligible,
+    obligations: {
+      requires: rest.obligations?.requires,
+      ensures: contract ? [contract] : rest.obligations?.ensures,
+      preserves: preserves ?? rest.obligations?.preserves,
+    },
+  });
+}
+
+/**
+ * The constructor for the earlier spelling. Kept because the schedule passes (src/tensor/schedule.ts) and about
+ * sixty test sites are written in it; what it returns is a transformation like any other.
+ */
+export function definePass<S, N extends Needs = {}, P = unknown>(
+  spec: PassSpec<S, N, P>,
+): Transformation<S, N, P> {
+  return asTransformation<S, N, P>(spec);
+}
+
+export const isTransformation = <S, N extends Needs, P>(pass: unknown): pass is Transformation<S, N, P> =>
+  typeof (pass as Partial<Transformation<S, N, P>> | undefined)?.prepare === 'function' &&
+  typeof (pass as Partial<Transformation<S, N, P>>).relation === 'string' &&
+  Array.isArray((pass as Partial<Transformation<S, N, P>>).obligations?.ensures);
 
 export interface TransformationOptions<S, P> {
   /** Needed when the transformation declares `needs` or `preserves`, or an `ensures` is a contract. */
@@ -152,7 +190,10 @@ export interface TransformationOptions<S, P> {
   readonly store?: IRStore;
   readonly params?: P;
   readonly inputs?: ApplicationInputs;
-  /** Obligations of this application, after the transformation's own (e.g. a project's optimization contract). */
+  /**
+   * Obligations of this application, after the transformation's own (e.g. a project's optimization contract). One
+   * application verifies at most one contract: F33 commits one prepared execution at the publication point.
+   */
   readonly ensures?: readonly Ensures<S, P>[];
   readonly outputId?: string;
   /** As `ApplyOptions.auditPreservation`: check every claim, computing the fact on the input when it is absent. */
@@ -277,37 +318,29 @@ export function* runTransformation<S, N extends Needs, P>(
 
   enforceWrites(t, changes);
 
-  // ensures, preserves, then the one publication point. Any exit before it leaves nothing about the candidate.
+  // ensures, preserves, then the one publication point. Any exit before it leaves nothing about the candidate:
+  // the contract's evidence is rolled back and the preservation checks' analyses of the candidate are invalidated
+  // (IRWB-039 lane 0, after IRWB-045-B). That cleanup is in `finally`, because a synchronous driver abandons the
+  // run at an asynchronous step with `return()`, which runs no `catch` (IRWB-052; the `catch` only keeps the reason).
   let contract: PreparedTransformation | undefined;
   let verdict: CheckResult | undefined;
   const preserved: PreservationOutcome[] = [];
-  let settled = false,
-    claimsChecked = false;
-  const discard = (reason: string) => {
-    discardEvidence(contract, reason);
-    if (claimsChecked)
-      for (const def of preserves)
-        try {
-          manager.invalidate(def, after, `Pass ${t.id} was not accepted`);
-        } catch {
-          // cleanup must not mask the rejection
-        }
-  };
+  let published = false,
+    claimsChecked = false,
+    reason = `Pass ${t.id} was abandoned at an asynchronous step`;
   try {
     for (const e of ensures) {
       if (isContract(e)) {
         try {
           // F33: deferred, so the evidence is committed at the publication boundary below and not before it
-          contract = yield* wait(
-            manager.verifyTransformation(
-              { input: before, ...inputs } as never,
-              { output: after } as never,
-              e,
-              e.correspondence.length
-                ? e.correspondence.map(req => semanticCorrespondence(correspondence, req.id, req.relation))
-                : [semanticCorrespondence(correspondence)],
-              { deferCommit: true },
-            ),
+          contract = yield* manager.verifyTransformationSteps(
+            { input: before, ...inputs } as never,
+            { output: after } as never,
+            e,
+            e.correspondence.length
+              ? e.correspondence.map(req => semanticCorrespondence(correspondence, req.id, req.relation))
+              : [semanticCorrespondence(correspondence)],
+            { deferCommit: true },
           );
         } catch (error) {
           throw new PassError(
@@ -356,14 +389,21 @@ export function* runTransformation<S, N extends Needs, P>(
       preserved.push({ analysis: def.id, how: 'confirmed-by-recompute', evidence: { equalValue: true } });
     }
     publishAccepted(t, options.store, before, after, contract, generation);
-    settled = true;
+    published = true;
   } catch (error) {
-    settled = true;
-    discard(`Pass ${t.id} rejected: ${(error as Error).message}`);
+    reason = `Pass ${t.id} rejected: ${(error as Error).message}`;
     throw error;
   } finally {
-    // not settled here only when a synchronous driver abandoned the run at an asynchronous step
-    if (!settled) discard(`Pass ${t.id} was abandoned at an asynchronous step`);
+    if (!published) {
+      discardEvidence(contract, reason);
+      if (claimsChecked)
+        for (const def of preserves)
+          try {
+            manager.invalidate(def, after, `Pass ${t.id} was not accepted`);
+          } catch {
+            // cleanup must not mask the rejection
+          }
+    }
   }
   return {
     ...base,
@@ -395,4 +435,56 @@ export function applyTransformationSync<S, N extends Needs, P>(
   options?: TransformationOptions<S, P>,
 ): TransformationResult<S> {
   return driveSync(runTransformation(t, before, options), `Pass ${t.id}`);
+}
+
+/**
+ * The transformation with `gate` as its one `ensures` obligation, in place of its own. The earlier entry points
+ * (`applyPass`'s `contract`, `applyNativePassSync`'s gate, the bridge's `contract`) each name the gate of an
+ * application this way; `TransformationOptions.ensures` adds obligations instead.
+ */
+export function gatedBy<S, N extends Needs, P>(
+  t: Transformation<S, N, P>,
+  gate: Ensures<S, P> | undefined,
+): Transformation<S, N, P> {
+  return gate ? { ...t, obligations: { ...t.obligations, ensures: [gate] } } : t;
+}
+
+/** `applyPass`'s options: `TransformationOptions` with the gate and the inputs under their earlier names. */
+export interface ApplyOptions<P> extends Omit<TransformationOptions<any, P>, 'inputs' | 'ensures'> {
+  readonly manager: AnalysisManager;
+  /** The application's inputs beside `input`, e.g. `{ origin: r0 }` for a check against the original program. */
+  readonly contractInputs?: ApplicationInputs;
+  /** The gate of this application, in place of the pass's own (e.g. a contract with a project's case inputs). */
+  readonly contract?: TransformationDefinition<any, any>;
+}
+/**
+ * `applyTransformation` under its earlier name and options, for a pass in either spelling. Kept as a wrapper
+ * because the tools and about forty test sites call it; the framework's and the domains' own code calls
+ * `applyTransformation`.
+ */
+export function applyPass<S, N extends Needs, P>(
+  pass: PassLike<S, N, P>,
+  before: Artifact<S>,
+  { contract, contractInputs, ...options }: ApplyOptions<P>,
+): Promise<TransformationResult<S>> {
+  return applyTransformation(gatedBy(asTransformation(pass), contract), before, {
+    ...options,
+    inputs: contractInputs,
+  });
+}
+
+/**
+ * `applyTransformationSync` with the caller's gate as the one `ensures` obligation, in place of the pass's own.
+ * Kept as a wrapper because the schedule passes' caller (src/tensor/schedule.ts) hands its gate over this way.
+ * The runner is the same one, so a pass with needs, preservation claims or an edit runs here too when the caller
+ * could give it a manager; this signature has no place for one, and such a pass is refused for that reason.
+ */
+export function applyNativePassSync<S, P>(
+  pass: PassLike<S, {}, P>,
+  before: Artifact<S>,
+  gate: (before: Artifact<S>, candidate: Artifact<S>) => CheckResult,
+  params?: P,
+): TransformationResult<S> {
+  const check = (c: EnsuresContext<S, P>) => gate(c.before, c.candidate);
+  return applyTransformationSync(gatedBy(asTransformation(pass), { id: 'gate', check }), before, { params });
 }
