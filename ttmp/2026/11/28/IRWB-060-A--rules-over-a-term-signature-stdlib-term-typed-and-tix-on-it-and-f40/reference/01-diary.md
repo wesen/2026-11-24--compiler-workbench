@@ -170,3 +170,49 @@ identical — worth a glance at `BITWISE`-eligible rules in `simplify.ts` if a n
 **Code review instructions.** Read `src/typed/rules/compile.ts` against the library's
 `match`/`firstMatch`/`instantiate`, and `src/typed/rules/verify.ts`'s four campaign blocks against
 `src/stdlib/term/verify.ts`; then run `node --test tests/typed/rules.test.mjs tests/typed/guards.test.mjs tests/typed/derivations.test.mjs` and the baselines check.
+
+## Step 4: Tix on the library (inline and split-sum as rules over the expression signature)
+
+**What I did.** `src/tensor/passes.ts`: a `Signature<Expr>` (the operator is the kind, with a load's
+tensor name and a reduction's op folded in; a reduction's child is its body, a load's indices are its
+own data); `split-sum` as the rule `{op: 'reduce:sum', args: [{var: 'body'}]}` with the guard
+"exactly one axis, a `dim` extent" (read off the matched term, which is why the library's guard
+callback receives it), applied by a `mapExpr` walk through the library's `firstMatch`; `inline` as a
+rule *instance* per producer — pattern `load:<producer>`, template a domain function that substitutes
+the producer's expression under the read's indices — with the pointwise/single-use/not-the-result
+conditions still the driver's (facts about the statement list, exactly as the intern guide says). The
+library's rule type gained the guide's allowance: the right-hand side may be a domain function
+(`Rhs<T, C> = Template<C> | ((b, matched) => T)`), because the library knows nothing of binders.
+
+**Why.** Item 3 of the brief: both Tix rewrites become rules through the same library Typed's tables
+use, and the revisions must not change, so the drivers keep today's statement order and merge
+recording verbatim.
+
+**What worked.** All 39 non-GPU tensor tests pass (passes, language, plans, r3-tix-in-plans, fusion,
+corpus), `tests/typed/derivations.test.mjs` passes, and the baselines check prints `no differences`
+(the `optimizeTix` revisions and CUDA sources are byte-identical).
+
+**What didn't work.** Only a quote-character syntax error in a string I edited in the library
+(`the domain's` inside single quotes); and Prettier flagged `src/tensor/passes.ts`, which turns out to
+have been one of the seven files the repo keeps unformatted — my rewrite is now formatted, which the
+report notes (the diff shows the old file's formatting noise, not a semantic change).
+
+**What I learned.** The subtlety that kept revisions identical: `mapExpr` walks post-order, so the
+matched reduce's body binding is the *already split* body — the rule sees exactly what today's inline
+callback saw. And a load's indices cannot be pattern children (they are affine forms, not
+expressions), which is why the pattern is the bare load and the template function reads the matched
+node's indices.
+
+**What was tricky.** Typing a rule whose right-hand side is a function without disturbing Typed's
+table types: `TermRule` gained a third parameter `T` (default `unknown`) used only by the function
+form, so Typed's `Rule` still fits structurally and Tix writes `TermRule<SplitGuard, never, Expr>`.
+
+**What warrants a second pair of eyes.** Tix's rules are verified only by the meaning gate, not by
+the library's verifier: `split-sum` is a tolerance rule (its exact-equality check would be the wrong
+job), and a rule-level checker for `inline` would duplicate what the gate already checks on every
+application — the guide's open question 3, answered here. If the coordinator wants Alive-style
+per-rule verification for Tix later, the case generator must produce shaped tensors, not scalars.
+
+**Code review instructions.** Read the three rule definitions in `src/tensor/passes.ts` against
+`corpus/tensor/` (each program's revisions are pinned by the baselines); run
+`node --test tests/tensor/passes.test.mjs tests/tensor/corpus.test.mjs` and the baselines check.

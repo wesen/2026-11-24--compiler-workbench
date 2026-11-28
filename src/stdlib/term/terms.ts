@@ -67,10 +67,12 @@ export function match<T>(sig: Signature<T>, p: Pattern, t: T, b: Map<string, T>)
 }
 
 /** Rules indexed by the operator of their pattern's root, tried in table order. */
-export type RuleIndex<G, C> = ReadonlyMap<string, readonly TermRule<G, C>[]>;
+export type RuleIndex<G, C, T> = ReadonlyMap<string, readonly TermRule<G, C, T>[]>;
 
-export function indexRules<G, C>(rules: readonly TermRule<G, C>[]): Map<string, TermRule<G, C>[]> {
-  const index = new Map<string, TermRule<G, C>[]>();
+export function indexRules<G, C, T = unknown>(
+  rules: readonly TermRule<G, C, T>[],
+): Map<string, TermRule<G, C, T>[]> {
+  const index = new Map<string, TermRule<G, C, T>[]>();
   for (const r of rules) {
     const list = index.get(r.lhs.op);
     if (list) list.push(r);
@@ -80,7 +82,7 @@ export function indexRules<G, C>(rules: readonly TermRule<G, C>[]): Map<string, 
 }
 
 export interface RuleMatch<T, G, C> {
-  readonly rule: TermRule<G, C>;
+  readonly rule: TermRule<G, C, T>;
   readonly bindings: Bindings<T>;
 }
 
@@ -89,8 +91,8 @@ export interface RuleMatch<T, G, C> {
  * guards; it receives the bindings and the matched term, because a side condition may read the
  * matched node itself (Tix's "exactly one axis, a `dim` extent").
  */
-export function firstMatch<T, G, C>(
-  index: RuleIndex<G, C>,
+export function firstMatch<T, G, C = number>(
+  index: RuleIndex<G, C, T>,
   sig: Signature<T>,
   t: T,
   holds: (g: G, b: Bindings<T>, t: T) => boolean,
