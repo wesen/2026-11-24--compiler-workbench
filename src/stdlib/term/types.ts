@@ -26,11 +26,18 @@ export type Template<C> =
   | { readonly const: C; readonly type?: string }
   | { readonly op: string; readonly args: readonly Template<C>[] };
 
+/**
+ * A rule's right-hand side: a template over the pattern's variables, or — for a rule over binders, which the
+ * library knows nothing of (an index substitution) — a domain function that builds the replacement from the
+ * bindings and the matched term.
+ */
+export type Rhs<T, C> = Template<C> | ((b: ReadonlyMap<string, T>, matched: T) => T);
+
 /** A rule over a signature: guards `G` are domain data; the library never interprets them. */
-export interface TermRule<G, C = number> {
+export interface TermRule<G, C = number, T = unknown> {
   readonly name: string;
   readonly version?: string;
   readonly lhs: OpPattern;
   readonly where?: readonly G[];
-  readonly rhs: Template<C>;
+  readonly rhs: Rhs<T, C>;
 }

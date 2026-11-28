@@ -238,6 +238,14 @@ export function verifyRule<V>(
   sem: RuleSemantics<V>,
   opts: { readonly enumerate?: number; readonly random?: number; readonly seed?: number } = {},
 ): RuleVerdict<V> {
+  if (typeof rule.rhs === 'function')
+    return {
+      rule: rule.name,
+      verdict: 'unsound',
+      methods: [],
+      reason:
+        "the rule-level entry verifies template right-hand sides only; a rule over binders is the domain's to check",
+    };
   const { binds } = patternVars(rule.lhs);
   const { uses, consts } = templateVars<number>(rule.rhs);
   const unbound = [...uses, ...consts].filter(x => !binds.includes(x));

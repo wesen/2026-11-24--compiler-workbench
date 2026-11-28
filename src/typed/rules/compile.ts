@@ -130,7 +130,7 @@ export function firstMatch(
   index: ReadonlyMap<string, readonly Rule[]>,
   v: ValueHandle,
 ): RuleApplication | undefined {
-  return termFirstMatch(index as RuleIndex<Guard, Num>, valueSig, v, (g, b) => guardHolds(g, b)) as
+  return termFirstMatch(index as RuleIndex<Guard, Num, ValueHandle>, valueSig, v, (g, b) => guardHolds(g, b)) as
     | RuleApplication
     | undefined;
 }
