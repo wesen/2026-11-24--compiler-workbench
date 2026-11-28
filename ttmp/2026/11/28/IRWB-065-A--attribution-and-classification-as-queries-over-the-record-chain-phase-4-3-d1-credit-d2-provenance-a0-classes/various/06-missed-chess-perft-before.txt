@@ -1,0 +1,167 @@
+10716 instructions; 2598 (24.2%) at statements no pass touched; 400 frame and backend
+
+statement shapes
+   instr  share untouched sites shape
+    1430  13.3%       576    41 if geu(x, load(x))
+                                 copies 651, ingest 576, copies+inline 203;  s:chessAttacked.36: if (at >=u load32[board+0]) goto .22 else .25
+    1042   9.7%         6    17 if lt(x, #)
+                                 subst-mem+thread 520, copies+inline 516, ingest 6;  s:chessAttacked.237: if (at < 128) goto .n53 else .20
+     890   8.3%        46    10 x = load16u(add(x, shl(x, 1)))
+                                 copies 788, copies+inline 56, ingest 46;  s:chessAttacked.40: piece = load16[(board + (at << 1))+4]
+     871   8.1%         4    11 if ge(x, #)
+                                 rotate 867, ingest 4;  s:chessPseudoMoves.558: if (dense >= 64) goto .2 else .3
+     443   4.1%       385    15 x = add(x, 1)
+                                 ingest 385, inline 42, inline+subst-mem 15, inline+licm 1;  s:chessPseudoMoves.24: dense = (dense + 1)
+     406   3.8%       406     3 store[x] = load16u(add(x, shl(x, 1)))
+                                 ingest 406;  s:chessMake.65: store16[t54+4] = load16[(board + (t17 << 1))+4]
+     371   3.5%        84    12 x = add(x, x)
+                                 copies 183, ingest 84, inline 56, copies+inline 48;  s:chessAttacked.82: at = (at + t18)
+     362   3.4%       172    46 x = x
+                                 ingest 172, inline 66, inline+licm 56, copies+inline 47, copies 21;  s:chessPseudoMoves.7: from = t9
+     350   3.3%         0     7 x = sub(#, mul(sub(x, #), #))
+                                 copies+inline 350;  s:chessAttacked.132: t16 = (18 - ((i - 2) * 36))
+     332   3.1%         0     3 if eqz(eqz(and(x, #)))
+                                 identities+subst-mem+thread 332;  s:chessAttacked.256: if !(!((at & 8))) goto .20 else .21
+     303   2.8%         0    15 if geu(#, load(x))
+                                 constprop 221, constprop+copies+inline 82;  s:chessMake.147: if (129 >=u load32[board+0]) goto .92 else .95
+     268   2.5%         2     9 if ge(x, 0)
+                                 rotate 193, copies+inline 73, ingest 2;  s:chessAttacked.267: if (at >= 0) goto .n50 else .20
+     256   2.4%         0     1 x = add(x, and(x, #))
+                                 copies+identities+inline 256;  s:chessPseudoMoves.38: t9 = (dense + (dense & -8))
+     224   2.1%       224     3 x = add(x, shl(x, 1))
+                                 ingest 224;  s:chessMake.60: t54 = (board + (t16 << 1))
+     223   2.1%       199     6 if ne(x, 0)
+                                 ingest 199, subst-mem+thread 10, copies 7, inline 7;  s:chessAttacked.41: if (piece != 0) goto .26 else .55
+     192   1.8%        91     9 store[add(x, shl(x, 1))] = x
+                                 ingest 91, copies 77, copies+inline 24;  s:chessMake.80: store16[(board + (t19 << 1))+4] = captured
+     168   1.6%         0     4 x = add(x, shl(div(x, #), #))
+                                 inline+simplify 168;  s:chessMake.315: chessFrom_t1 = (chessSquare_dense + ((chessSquare_dense / 8) << 3))
+     164   1.5%         0     2 if eq(load16u(add(x, shl(x, 1))), x)
+                                 subst-mem+thread 164;  s:chessAttacked.255: if (load16[(board + (chessIsPiece_square2 << 1))+4] == chessIsPiece_piece2) goto .11 else .14
+     112   1.0%        70     3 x = call(x, x, x)
+                                 ingest 70, copies+inline 42;  s:chessPerft.125: chessLegalMoves_t10 = chessLegal(board, chessLegalMoves_move, undo)
+     100   0.9%         0     4 if eqz(and(x, #))
+                                 identities+subst-mem+thread 100;  s:chessAttacked.252: if !((chessIsPiece_square2 & 8)) goto .n31 else .14
+      96   0.9%        84     4 x = add(#, x)
+                                 ingest 84, copies+inline 7, copies 5;  s:chessMake.59: t17 = (129 + i)
+      92   0.9%         0    13 br
+                                 inline 92;  s:chessAttacked.129: goto .n18
+      84   0.8%         0     2 x = rem(div(x, #), #)
+                                 copies+inline 84;  s:chessMake.313: chessSquare_dense = ((move / 64) % 64)
+      70   0.7%         0     4 if eq(sub(x, x), #)
+                                 copies 70;  s:chessMake.118: if ((t47 - t48) == 2) goto .74 else .85
+      70   0.7%         0     1 x = call(x, load16u(add(x, shl(x, 1))), sub(1, x))
+                                 copies+inline 70;  s:chessLegal.22: chessInCheck_t3 = chessAttacked(board, load16[(board + (chessInCheck_t2 << 1))+4], (1 - side))
+      64   0.6%         0     2 x = sub(#, shl(sub(x, #), #))
+                                 copies+inline+simplify 64;  s:chessAttacked.164: t18 = (16 - ((i - 2) << 5))
+      60   0.6%        42     5 if eq(x, 1)
+                                 ingest 42, copies 14, inline 4;  s:chessMake.158: if (kind == 1) goto .100 else .109
+      60   0.6%         0     1 return sub(x, shl(div(x, #), #))
+                                 simplify 60;  s:chessDense.0: return (square - ((square / 16) << 3))
+      57   0.5%         4     4 store[add(x, shl(x, 1))] = 0
+                                 copies 53, ingest 4;  s:chessMake.234: store16[(board + (from << 1))+4] = 0
+      56   0.5%         0     7 x = load16u(add(x, #))
+                                 fold 28, copies+fold+inline 21, subst-mem 7;  s:chessMake.19: enPassant = load16[(board + 260)+4]
+      56   0.5%         0     1 x = sub(#, mul(x, #))
+                                 copies+inline 56;  s:chessAttacked.128: t16 = (14 - (i * 28))
+      54   0.5%        45    11 x = add(x, #)
+                                 ingest 45, licm 7, inline 2;  s:chessAttacked.245: inv = (color + 2)
+      52   0.5%        40     8 if eq(x, #)
+                                 ingest 40, subst-mem+thread 6, inline 6;  s:chessMake.136: if (kind == 4) goto .86 else .88
+      49   0.5%         0     2 if eq(and(x, #), #)
+                                 strength 49;  s:chessMake.141: if ((captured & 7) == 4) goto .89 else .91
+      49   0.5%         0    11 if x
+                                 subst-mem+thread 17, inline 17, inline+licm 8, thread 3, copies+inline 2, copies+thread 2;  s:chessPseudoMoves.70: if inv3 goto .n21 else .n23
+      48   0.4%         0     2 x = sub(1, shl(x, 1))
+                                 copies+inline+simplify 48;  s:chessAttacked.160: t18 = (1 - (i << 1))
+      42   0.4%        36    14 x = 0
+                                 ingest 36, inline 6;  s:chessAttacked.14: i = 0
+      41   0.4%         0     2 x = eq(load16u(add(x, shl(x, 1))), x)
+                                 copies+inline 35, copies+inline+licm 6;  s:chessAttacked.121: chessIsPiece_t51 = (load16[(board + (chessIsPiece_square1 << 1))+4] == chessIsPiece_piece1)
+      40   0.4%         0     2 store[add(x, shl(x, 1))] = add(shl(x, #), x)
+                                 copies+inline+subst-mem 40;  s:chessPseudoMoves.326: store16[(chessPieceMoves_board + (chessAdd_t6 << 1))+4] = ((chessAdd_chessMove_t3 << 6) + chessAdd_chessMove_t4)
+      35   0.3%         0     3 store[add(x, #)] = x
+                                 fold 35;  s:chessMake.151: store16[(board + 258)+4] = rights
+
+node patterns (what a rule would match)
+   instr  share untouched sites rules shape
+    1042   9.7%         6    17     1 if lt(x, #)
+                                       subst-mem+thread 520, copies+inline 516, ingest 6;  v:chessAttacked.510: if (at < 128) goto .n53 else .20
+     935   8.7%       342    56     0 load(x)
+                                       ingest 342, copies 341, copies+inline 111, constprop 107, constprop+copies+inline 34;  v:chessAttacked.67: if (at >=u load32[board+0]) goto .22 else .25
+     871   8.1%         4    11     1 if ge(x, #)
+                                       rotate 867, ingest 4;  v:chessPseudoMoves.1532: if (dense >= 64) goto .2 else .3
+     822   7.7%       328    45     3 add(x, shl)
+                                       copies 353, ingest 328, copies+inline 56, subst-mem+thread 43, inline+simplify 28, copies+inline+subst-mem 12, copies+inline+licm 2;  v:chessAttacked.456: piece = load16[(board + (at << 1))+4]
+     642   6.0%       220    45     2 shl(x, 1)
+                                       copies 315, ingest 220, subst-mem+thread 42, copies+inline 35, copies+inline+simplify 16, copies+inline+subst-mem 7, inline+simplify 5, copies+inline+licm 1, copies+inline+strength+subst-mem 1;  v:chessAttacked.455: piece = load16[(board + (at << 1))+4]
+     636   5.9%       234    41     1 if geu(x, load)
+                                       copies 310, ingest 234, copies+inline 92;  v:chessAttacked.453: if (at >=u load32[board+0]) goto .22 else .25
+     593   5.5%         0    13     3 and(x, #)
+                                       identities+subst-mem+thread 432, copies+identities+inline 128, strength 31, copies+inline+strength 2;  v:chessAttacked.569: if !(!((at & 8))) goto .20 else .21
+     568   5.3%       198    31     0 load16u(add)
+                                       copies 221, ingest 198, subst-mem+thread 42, fold 42, copies+inline 29, copies+fold+inline 21, subst-mem 14, copies+inline+licm 1;  v:chessAttacked.457: piece = load16[(board + (at << 1))+4]
+     448   4.2%       386    17     3 add(x, 1)
+                                       ingest 386, inline 42, inline+subst-mem 15, subst-mem 4, inline+licm 1;  v:chessPseudoMoves.42: dense = (dense + 1)
+     371   3.5%        84    12     3 add(x, x)
+                                       copies 183, ingest 84, inline 56, copies+inline 48;  v:chessAttacked.464: at = (at + t18)
+     362   3.4%       172    46     0 set x
+                                       ingest 172, inline 66, inline+licm 56, copies+inline 47, copies 21;  s:chessPseudoMoves.7: from = t9
+     268   2.5%        16    12     2 div(x, #)
+                                       inline+simplify 112, copies+inline 84, simplify 40, ingest 16, copies+inline+simplify 16;  v:chessDense.3: return (square - ((square / 16) << 3))
+     268   2.5%         2     9     1 if ge(x, 0)
+                                       rotate 193, copies+inline 73, ingest 2;  v:chessAttacked.589: if (at >= 0) goto .n50 else .20
+     223   2.1%       199     6     1 if ne(x, 0)
+                                       ingest 199, subst-mem+thread 10, copies 7, inline 7;  v:chessAttacked.77: if (piece != 0) goto .26 else .55
+     172   1.6%         0    10     3 sub(#, mul)
+                                       copies+inline 168, copies+inline+strength+subst-mem 2, copies+inline+subst-mem 2;  v:chessAttacked.384: t16 = (14 - (i * 28))
+     162   1.5%         0    15     1 if geu(#, load)
+                                       constprop 114, constprop+copies+inline 48;  v:chessLegal.57: if (128 >=u load32[board+0]) goto .n2 else .n4
+     140   1.3%         0     7     7 mul(sub, #)
+                                       copies+inline 140;  v:chessAttacked.389: t16 = (18 - ((i - 2) * 36))
+     128   1.2%         0     1     3 add(x, and)
+                                       copies+identities+inline 128;  v:chessPseudoMoves.1497: t9 = (dense + (dense & -8))
+     112   1.0%        70     3     0 call(x, x, x)
+                                       ingest 70, copies+inline 42;  v:chessPerft.326: chessLegalMoves_t10 = chessLegal(board, chessLegalMoves_move, undo)
+      96   0.9%        84     4     3 add(#, x)
+                                       ingest 84, copies+inline 7, copies 5;  v:chessMake.102: t17 = (129 + i)
+      92   0.9%         0    13     0 br
+                                       inline 92;  s:chessAttacked.129: goto .n18
+      90   0.8%        28    12     0 store x
+                                       fold 35, ingest 28, copies 21, copies+inline 6;  s:chessMake.151: store16[(board + 258)+4] = rights
+      86   0.8%         0     9     3 sub(x, #)
+                                       copies+inline 70, copies+inline+simplify 16;  v:chessAttacked.388: t16 = (18 - ((i - 2) * 36))
+      60   0.6%        42     5     1 if eq(x, 1)
+                                       ingest 42, copies 14, inline 4;  v:chessMake.307: if (kind == 1) goto .100 else .109
+      54   0.5%        45    11     3 add(x, #)
+                                       ingest 45, licm 7, inline 2;  v:chessAttacked.42: inv = (color + 2)
+      52   0.5%        40     8     1 if eq(x, #)
+                                       ingest 40, subst-mem+thread 6, inline 6;  v:chessMake.169: if (kind == 6) goto .57 else .85
+      50   0.5%         0     4     1 if eq(sub, #)
+                                       copies 50;  v:chessMake.738: if ((t47 - t48) == 2) goto .74 else .85
+      49   0.5%         0    11     0 br_if x
+                                       subst-mem+thread 17, inline 17, inline+licm 8, thread 3, copies+inline 2, copies+thread 2;  s:chessPseudoMoves.70: if inv3 goto .n21 else .n23
+      45   0.4%         0     3     3 sub(1, x)
+                                       copies+fold 28, copies+inline 14, copies+inline+licm+simplify 3;  v:chessMake.768: store16[(board + 256)+4] = (1 - t49)
+      42   0.4%        36    14     0 set 0
+                                       ingest 36, inline 6;  s:chessAttacked.14: i = 0
+      42   0.4%         0     7     2 shl(div, #)
+                                       inline+simplify 28, simplify 10, copies+inline+simplify 4;  v:chessDense.8: return (square - ((square / 16) << 3))
+      41   0.4%         0     2     1 if eq(load16u, x)
+                                       subst-mem+thread 41;  v:chessAttacked.546: if (load16[(board + (chessIsPiece_square2 << 1))+4] == chessIsPiece_piece2) goto .11 else .14
+      39   0.4%         2     5     7 mul(x, #)
+                                       copies+inline 31, copies+inline+strength+subst-mem 3, copies+inline+subst-mem 3, ingest 2;  v:chessAttacked.383: t16 = (14 - (i * 28))
+      38   0.4%         0     3     1 rem(div, #)
+                                       copies+inline 28, copies+inline+subst-mem 10;  v:chessMake.657: chessSquare_dense = ((move / 64) % 64)
+      35   0.3%         0     1     0 call(x, load16u, sub)
+                                       copies+inline 35;  v:chessLegal.73: chessInCheck_t3 = chessAttacked(board, load16[(board + (chessInCheck_t2 << 1))+4], (1 - side))
+      32   0.3%         0     4     1 rem(x, #)
+                                       copies+inline 28, copies 4;  v:chessMake.660: chessSquare_dense1 = (move % 64)
+      32   0.3%         0     2     3 sub(#, shl)
+                                       copies+inline+simplify 32;  v:chessAttacked.430: t18 = (16 - ((i - 2) << 5))
+      32   0.3%         0     2     3 sub(1, shl)
+                                       copies+inline+simplify 32;  v:chessAttacked.424: t18 = (1 - (i << 1))
+      30   0.3%         0     2     0 call(x)
+                                       copies+inline 30;  v:chessPseudoMoves.1098: chessAdd_chessMove_t3 = chessDense(chessAdd_from)
+      30   0.3%         0     4     1 if ge(x, x)
+                                       rotate 30;  v:chessPseudoMoves.1520: if (chessPieceMoves_i >= chessPieceMoves_last) goto .n19 else .n20
