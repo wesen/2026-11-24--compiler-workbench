@@ -1,0 +1,10 @@
+(a1) throw through yield*: ["finally","closed"] | cleanup yield seen: cleanup | rethrown: again
+(a2) one yield* round trip: 215.3 ns
+(b1) licm changes r0 of 12: blend, bytecode-vm, chess-search, f32-dsp, fragments, licm-nested, lz-roundtrip, nested-loops, orders, params-demo, regex-nfa, sha-chacha
+(b1) bce changes r0 of 10: bounds-lab, bounds-two, checksum, early-exit, histogram, ramp, start-here, strength, strings, wrong-shift
+(b1) dce changes r0 of 3: branches, dead-code, match-enum
+(b1) strength changes r0 of 3: chess-search, sha-chacha, strength
+(b1) strength: needs ranges, preserves typed.cfg,typed.dominators,typed.loops
+(b1) licm: needs loops, preserves 
+(b1) bce: needs dom,ssa,ranges, preserves 
+(b2) applyNativePassSync(inline, attention), trivial gate: 1.729 ms
