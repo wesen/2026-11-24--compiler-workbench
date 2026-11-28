@@ -1,0 +1,20 @@
+{
+ "IRWB-048-A": {
+  "task": "lattice",
+  "config": "g-h",
+  "model": "lunaroute/glm-5.3",
+  "effort": "high",
+  "round": "v7-lattice-g-h",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ },
+ "IRWB-048-B": {
+  "task": "lattice",
+  "config": "ds-x",
+  "model": "lunaroute/deepseek-4.1-flash",
+  "effort": "xhigh",
+  "round": "v7-lattice-ds-x",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ }
+}

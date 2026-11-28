@@ -1,0 +1,26 @@
+{
+ "IRWB-051-A": {
+  "task": "spike",
+  "config": "sl",
+  "model": "gpt-6.2-sol",
+  "effort": "low",
+  "round": "v7-spike-sl",
+  "harness": "codex"
+ },
+ "IRWB-051-B": {
+  "task": "spike",
+  "config": "al",
+  "model": "gpt-6.2-astra",
+  "effort": "low",
+  "round": "v7-spike-al",
+  "harness": "codex"
+ },
+ "IRWB-051-C": {
+  "task": "spike",
+  "config": "fa",
+  "model": "fable",
+  "effort": "default",
+  "round": "v7-spike-fa",
+  "harness": "claude-code-subagent"
+ }
+}
