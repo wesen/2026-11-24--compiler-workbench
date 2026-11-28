@@ -5,6 +5,7 @@ import { Check, JsonValue, definitionRef, describeDefinition, validateArtifact }
 import { MemoryResources } from './effects.js';
 import { assuranceOf } from './differential.js';
 import { ContractRegistry } from './registry.js';
+import { driveAsync, driveSync, wait, type Steps } from './steps.js';
 import type {
   AnalysisDefinition,
   AnalysisRecord,
@@ -459,9 +460,12 @@ export class AnalysisManager {
       },
     };
   }
-  private async drain(frame: Frame): Promise<void> {
+  private drain(frame: Frame): Promise<void> {
+    return driveAsync(this.drainSteps(frame));
+  }
+  private *drainSteps(frame: Frame): Steps<void> {
     if (!frame.pending.size) return;
-    await Promise.allSettled([...frame.pending]);
+    yield Promise.allSettled([...frame.pending]);
     throw new ContractError(
       'unawaited-analysis',
       'All requested analyses and property checks must be awaited before returning',
@@ -525,12 +529,40 @@ export class AnalysisManager {
   ): Promise<AnalysisRecord<R>> {
     return this.analyseInternal(definition, subject, params);
   }
-  private async analyseInternal<S, R>(
+  /**
+   * IRWB-051-C: `analyse` for a caller that cannot wait. The cache, the record and the events are `analyse`'s (both
+   * drive `analyseSteps`). It answers pure analyses: `run` returns a value and leaves no request pending. For any
+   * other analysis it throws and records nothing.
+   */
+  analyseSync<S, R>(
+    definition: AnalysisDefinition<S, R>,
+    subject: Artifact<S>,
+    params: unknown = null,
+  ): AnalysisRecord<R> {
+    return driveSync(this.analyseSteps(definition, subject, params), `Analysis ${definition.id}`);
+  }
+  /** `analyse` as steps, for a runner that is itself driven synchronously or asynchronously (steps.ts). */
+  analyseSteps<S, R>(
+    definition: AnalysisDefinition<S, R>,
+    subject: Artifact<S>,
+    params: unknown = null,
+  ): Steps<AnalysisRecord<R>> {
+    return this.analyseFrom(definition, subject, params);
+  }
+  private analyseInternal<S, R>(
     definition: AnalysisDefinition<S, R>,
     subject: Artifact<S>,
     params: unknown,
     parent?: Frame,
   ): Promise<AnalysisRecord<R>> {
+    return driveAsync(this.analyseFrom(definition, subject, params, parent));
+  }
+  private *analyseFrom<S, R>(
+    definition: AnalysisDefinition<S, R>,
+    subject: Artifact<S>,
+    params: unknown,
+    parent?: Frame,
+  ): Steps<AnalysisRecord<R>> {
     if (parent) this.checkActive(parent);
     this.registry.register(definition);
     subject = this.snapshotArtifact(subject, definition.input);
@@ -573,8 +605,8 @@ export class AnalysisManager {
     const frame = this.freshFrame(definition.effects, store, parent);
     frame.stack = [...(parent?.stack ?? []), `a:${key}`];
     try {
-      const value = immutable(await definition.run(this.context(frame), immutable(subject), captured));
-      await this.drain(frame);
+      const value = immutable(yield* wait(definition.run(this.context(frame), immutable(subject), captured)));
+      yield* this.drainSteps(frame);
       definition.output.validate(value);
       this.checkActive(frame);
       if (this.epoch(definition, subject) !== epoch)
@@ -624,8 +656,11 @@ export class AnalysisManager {
       );
       return record;
     } finally {
-      await Promise.allSettled([...frame.pending]);
-      frame.active = false;
+      try {
+        if (frame.pending.size) yield Promise.allSettled([...frame.pending]);
+      } finally {
+        frame.active = false;
+      }
     }
   }
   hasAnalysis<S, R>(
@@ -935,7 +970,30 @@ export class AnalysisManager {
   ): Promise<AnalysisRecord<R>> {
     return this.preserveInternal(definition, from, to, correspondence, undefined, params);
   }
-  private async preserveInternal<S, R>(
+  /** IRWB-051-C: `preserve` for a caller that cannot wait; it answers transfer verifiers that return a value. */
+  preserveSync<S, R>(
+    definition: AnalysisDefinition<S, R>,
+    from: Artifact<S>,
+    to: Artifact<S>,
+    correspondence: Correspondence,
+    params: unknown = null,
+  ): AnalysisRecord<R> {
+    return driveSync(
+      this.preserveFrom(definition, from, to, correspondence, undefined, params),
+      `Transfer of ${definition.id}`,
+    );
+  }
+  /** `preserve` as steps (see `analyseSteps`). */
+  preserveSteps<S, R>(
+    definition: AnalysisDefinition<S, R>,
+    from: Artifact<S>,
+    to: Artifact<S>,
+    correspondence: Correspondence,
+    params: unknown = null,
+  ): Steps<AnalysisRecord<R>> {
+    return this.preserveFrom(definition, from, to, correspondence, undefined, params);
+  }
+  private preserveInternal<S, R>(
     definition: AnalysisDefinition<S, R>,
     from: Artifact<S>,
     to: Artifact<S>,
@@ -943,6 +1001,16 @@ export class AnalysisManager {
     parent?: Frame,
     params: unknown = null,
   ): Promise<AnalysisRecord<R>> {
+    return driveAsync(this.preserveFrom(definition, from, to, correspondence, parent, params));
+  }
+  private *preserveFrom<S, R>(
+    definition: AnalysisDefinition<S, R>,
+    from: Artifact<S>,
+    to: Artifact<S>,
+    correspondence: Correspondence,
+    parent?: Frame,
+    params: unknown = null,
+  ): Steps<AnalysisRecord<R>> {
     if (parent) this.checkActive(parent);
     this.registry.register(definition);
     from = this.snapshotArtifact(from, definition.input);
@@ -977,14 +1045,16 @@ export class AnalysisManager {
     const frame = this.freshFrame(definition.effects, store, parent);
     try {
       const justification = checkResult(
-        await definition.transfer.verify(this.context(frame), {
-          from: immutable(from),
-          to: immutable(to),
-          record: source as AnalysisRecord<R>,
-          correspondence: immutable(correspondence),
-        }),
+        yield* wait(
+          definition.transfer.verify(this.context(frame), {
+            from: immutable(from),
+            to: immutable(to),
+            record: source as AnalysisRecord<R>,
+            correspondence: immutable(correspondence),
+          }),
+        ),
       );
-      await this.drain(frame);
+      yield* this.drainSteps(frame);
       this.checkActive(frame);
       if (this.epoch(definition, to) !== epoch || !this.epochValid(source))
         throw new ContractError(
@@ -1049,8 +1119,11 @@ export class AnalysisManager {
       );
       return record;
     } finally {
-      await Promise.allSettled([...frame.pending]);
-      frame.active = false;
+      try {
+        if (frame.pending.size) yield Promise.allSettled([...frame.pending]);
+      } finally {
+        frame.active = false;
+      }
     }
   }
   async evaluateObjective<S>(
