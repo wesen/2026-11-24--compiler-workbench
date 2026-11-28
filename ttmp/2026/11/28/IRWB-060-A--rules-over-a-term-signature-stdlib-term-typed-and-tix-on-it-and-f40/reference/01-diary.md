@@ -216,3 +216,56 @@ per-rule verification for Tix later, the case generator must produce shaped tens
 **Code review instructions.** Read the three rule definitions in `src/tensor/passes.ts` against
 `corpus/tensor/` (each program's revisions are pinned by the baselines); run
 `node --test tests/tensor/passes.test.mjs tests/tensor/corpus.test.mjs` and the baselines check.
+
+## Step 5: F40 — the merged statement's correspondence entry says `merged`
+
+**What I did.** One branch in `stepEntries` (`src/framework/ir/derivation.ts`): a step with relation
+`merged` whose produced entities are in the target maps its antecedent (the consumed statement) to the
+entities it produced — which the output already had — and the entry is named by the step's own relation
+(`merged`), not the derivation's label; a group's relation is the label unless a merge names it. Updated
+the module comment. Updated the three tests that pinned the 056-B decision:
+`tests/framework/derivation.test.mjs` ("a merge records the link without changing the correspondence"
+→ "a merge records the consumed statement as merged into its consumer", and the runner test's
+`squareCopy` entry) and `tests/typed/derivations.test.mjs:182` (now asserts
+`{from: ['f/a'], to: ['f/b'], relation: 'merged', note: '…substituted into…'}`).
+
+**Why.** The brief requires F40 and points at IRWB-056-A's `src/tensor/passes.ts`; but as established in
+step 1, the recording (the derivation step) was already truthful — 056-B's framework simply dropped the
+merge from the correspondence, and a native result cannot give both a derivation and explicit entries.
+The truthful entry needs the framework to read `merged` steps; without that branch the deliverable is
+impossible from `src/tensor/passes.ts` alone. This is the one place this lane steps outside its stated
+file scope (`src/framework/ir/derivation.ts`, `stepEntries` only), and it is flagged for the
+coordinator: F41's lane owns the file's coverage parts; my change touches `stepEntries`, and both can be
+merged by union.
+
+**What worked.** All 266 framework tests pass (with the two updated assertions), the 12 derivation
+tests pass, and the baselines still print `no differences` (the correspondence is not part of them —
+the Tix revisions and CUDA bytes are unchanged, as required).
+
+**What didn't work.** The updated equality test failed once on a detail I had not expected: the merged
+entry also carries the step's `note` ("f/a is substituted into f/b, which returns its result") — the
+step's note rides to the correspondence entry exactly as a `modified` step's does. The test now asserts
+it; it is evidence, not noise.
+
+**What I learned.** The framework tests *documented* the 056-B decision ("a merge records the link
+without changing the correspondence") — F40 reverses a recorded design decision, which is why the test
+names were updated rather than the assertions alone: the reader should see that the policy changed, and
+where.
+
+**What was tricky.** Keeping `modified` steps' entries named by the label (`simplify`, `fold`) — using
+the step's relation for every entry, as 056-A did, would have changed every Typed correspondence's
+entry relations from the pass's label to `modified` and broken the derivation-equals-today check. So
+only `merged` steps name their entry; the comment says why (the entry states what happened to the
+consumed side, which the label does not describe).
+
+**What warrants a second pair of eyes.** (a) The scope exception itself, and whether the coordinator
+would rather have had F40 in F41's lane. (b) A merge chain (`a` into `b`, then `b` into `c`) now yields
+two merged entries (`a→b`, `b→c`) rather than 056-A's resolved final survivor — today's derivation
+records direct consumers (pinned), so the correspondence follows the steps; tracing through both hops
+reaches `c`. (c) The merged entry's `to` names an entity another entry (`retained`) also names as `to`
+— allowed by `validateCorrespondence` (each side must be *covered*, not partitioned), but worth a look.
+
+**Code review instructions.** Read the `merged` branch in `stepEntries` against the `removed` branch
+below it and the 056-A version (`git show v7-derivations-g-h/irwb-056-a:src/framework/ir/derivation.ts`,
+`stepEntries`); run `node --test tests/framework/derivation.test.mjs tests/typed/derivations.test.mjs`;
+then re-run probe 01 to see the new entry.

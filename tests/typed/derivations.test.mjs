@@ -179,7 +179,7 @@ test("both policies as queries over the same records: 203 (scoped) and 393 (in-p
   }
 });
 
-test('Tix inline records which statement was merged into which, and its correspondence is unchanged', () => {
+test('Tix inline records which statement was merged into which, and the correspondence says the merge (F40)', () => {
   const p = T.compileTix('fn f(x:f32[N]):f32[N]{a[i]=x[i]*2;b[i]=a[i]+1;return b;}');
   const r = applyNativePassSync(inlinePass, p.current, () => ({ ok: true }));
   assert.ok(r.changed);
@@ -188,9 +188,14 @@ test('Tix inline records which statement was merged into which, and its correspo
     [[{ decision: 'inline.merge' }, ['f/a'], ['f/b'], 'merged']],
   );
   assert.deepEqual([...mergedInto(r.derivation)], [['f/a', 'f/b']]);
-  // R3's probe: the merged statement is `removed`, its consumer `retained`; the link is in the derivation
+  // F40: the merged statement is `merged` into its consumer, which stays `retained` under its own name
   const byFrom = Object.fromEntries(r.correspondence.entries.map(e => [e.from.join(','), e]));
-  assert.deepEqual(byFrom['f/a'], { from: ['f/a'], to: [], relation: 'removed' });
+  assert.deepEqual(byFrom['f/a'], {
+    from: ['f/a'],
+    to: ['f/b'],
+    relation: 'merged',
+    note: 'f/a is substituted into f/b, which returns its result',
+  });
   assert.deepEqual(byFrom['f/b'], { from: ['f/b'], to: ['f/b'], relation: 'retained' });
   assert.equal(mergedInto(r.derivation).get('f/a'), 'f/b');
   // a derivation with a step that names a statement the module does not have is refused
