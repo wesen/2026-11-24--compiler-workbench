@@ -10,12 +10,15 @@
  *     the target's result (double rounding is innocuous for + - * / sqrt: 53 ≥ 2·24 + 2);
  *   - a NaN result of arithmetic is the canonical NaN 0x7fc00000 (RISC-V);
  *   - neg, abs, copysign change only the sign bit (fsgnjn, fsgnjx, fsgnj), so NaN payloads are kept;
- *   - min and max (fmin.s, fmax.s): the other operand when one is a NaN, the canonical NaN when both are, -0 < +0;
+ *   - min and max (fmin.s, fmax.s): the other operand when one is a NaN, the canonical NaN when both are, -0 < +0 —
+ *     the library's (`stdlib/num/minmax.ts`) maximumNumber/minimumNumber, called across the bits↔number boundary;
  *   - comparisons are false when an operand is a NaN, except ne;
  *   - to_i32, to_u32 (fcvt.w.s, fcvt.wu.s rtz): toward zero, saturating; NaN gives 2^31 - 1 and 2^32 - 1;
  *   - floor, ceil, trunc: x itself when |x| ≥ 2^23, x is infinite or a NaN; otherwise the integer in that direction
  *     with x's sign (floats.js `round`: fcvt.w.s rm, fcvt.s.w rm, fsgnj.s), so ceil(-0.5) is -0.
  */
+
+import { maximumNumber, minimumNumber } from '../stdlib/num/minmax.js';
 
 const F = new Float32Array(1);
 const I = new Int32Array(F.buffer);
@@ -36,12 +39,6 @@ export function toBits(x: number): number {
 }
 export const isNaNBits = (b: number): boolean => (b & 0x7fffffff) > 0x7f800000;
 
-const order = (b: number) => (b < 0 ? -(b & 0x7fffffff) - 1 : b);
-function minmax(a: number, b: number, max: boolean): number {
-  if (isNaNBits(a)) return isNaNBits(b) ? CANONICAL_NAN : b;
-  if (isNaNBits(b)) return a;
-  return order(a) < order(b) === max ? b : a;
-}
 function round(a: number, f: (x: number) => number): number {
   if ((a << 1) >>> 0 >= 0x96000000) return a; // |x| ≥ 2^23, an infinity or a NaN
   return (toBits(f(fromBits(a))) & 0x7fffffff) | (a & SIGN);
@@ -59,8 +56,8 @@ export const F32_BINARY: Readonly<Record<string, (a: number, b: number) => numbe
   fsub: (a, b) => toBits(fromBits(a) - fromBits(b)),
   fmul: (a, b) => toBits(fromBits(a) * fromBits(b)),
   fdiv: (a, b) => toBits(fromBits(a) / fromBits(b)),
-  fmin: (a, b) => minmax(a, b, false),
-  fmax: (a, b) => minmax(a, b, true),
+  fmin: (a, b) => toBits(minimumNumber(fromBits(a), fromBits(b))),
+  fmax: (a, b) => toBits(maximumNumber(fromBits(a), fromBits(b))),
   fcopysign: (a, b) => (a & 0x7fffffff) | (b & SIGN),
 };
 /** f32 × f32 → i32 (0 or 1). */

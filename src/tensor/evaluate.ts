@@ -1,4 +1,5 @@
 import { plain, value, width, type Axis, type Expr, type Fn, type Op } from './model.js';
+import { maximum, minimum } from '../stdlib/num/minmax.js';
 export interface BufferValue {
   shape: number[];
   data: Float32Array | Float64Array;
@@ -16,8 +17,8 @@ const operations: Record<Op, (a: number, b: number) => number> = {
   log: Math.log,
   sqrt: Math.sqrt,
   tanh: Math.tanh,
-  max: Math.max,
-  min: Math.min,
+  max: maximum,
+  min: minimum,
 };
 export class OutsideSample extends Error {}
 // Limits apply only when selecting the contract's cases.
@@ -82,7 +83,7 @@ export function evaluate(fn: Fn, inputs: Inputs, precision: Precision, sampling 
         let acc = e.op === 'sum' ? 0 : -Infinity;
         loop(e.axes, 0, () => {
           const x = scalar(e.body);
-          acc = round(e.op === 'sum' ? acc + x : Math.max(acc, x));
+          acc = round(e.op === 'sum' ? acc + x : maximum(acc, x));
         });
         return acc;
       }

@@ -10,6 +10,7 @@
  *
  * What exists now:
  *   flow/     liveness — backward gen/kill liveness over blocks, with an explicit scope
+ *   num/      minmax — the IEEE 754-2019 min/max family, one named operation per profile
  *
  * Later modules, one line each (each enters under the admission rule, with its two clients):
  *   graph/    dominators and loops — the dominator tree, dominance frontiers, natural loops
@@ -25,3 +26,4 @@
  */
 export { liveness, reachableBlocks } from './flow/liveness.js';
 export type { LiveBlock, LiveGraph, Liveness, LivenessScope } from './flow/liveness.js';
+export { maximum, maximumNumber, minimum, minimumNumber } from './num/minmax.js';
